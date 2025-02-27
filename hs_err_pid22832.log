@@ -16,7 +16,7 @@
 
 ---------------  S U M M A R Y ------------
 
-Command Line: -XX:+ShowCodeDetailsInExceptionMessages -agentlib:jdwp=transport=dt_socket,suspend=y,address=localhost:51255 -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=51254 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=localhost -Dspring.jmx.enabled=true -Dmanagement.endpoints.jmx.exposure.include=* -Dspring.application.admin.enabled=true -XX:TieredStopAtLevel=1 -Dspring.boot.project.name=generator -javaagent:C:\sts\spring-tool-suite-4-4.22.0.RELEASE-e4.31.0-win32.win32.x86_64.self-extracting\sts-4.22.0.RELEASE\configuration\org.eclipse.osgi\266\0\.cp\lib\javaagent-shaded.jar -Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8 com.nsone.generator.GeneratorApplication --spring.output.ansi.enabled=always
+Command Line: -XX:+ShowCodeDetailsInExceptionMessages -agentlib:jdwp=transport=dt_socket,suspend=y,address=localhost:51255 -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=51254 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=localhost -Dspring.jmx.enabled=true -Dmanagement.endpoints.jmx.exposure.include=* -Dspring.application.admin.enabled=true -XX:TieredStopAtLevel=1 -Dspring.boot.project.name=generator -javaagent:C:\sts\spring-tool-suite-4-4.22.0.RELEASE-e4.31.0-win32.win32.x86_64.self-extracting\sts-4.22.0.RELEASE\configuration\org.eclipse.osgi\266\0\.cp\lib\javaagent-shaded.jar -Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8 com.all4land.generator.GeneratorApplication --spring.output.ansi.enabled=always
 
 Host: 13th Gen Intel(R) Core(TM) i7-13620H, 16 cores, 31G,  Windows 10 , 64 bit Build 22621 (10.0.22621.3958)
 Time: Fri Aug 16 18:51:20 2024  Windows 10 , 64 bit Build 22621 (10.0.22621.3958) elapsed time: 277.881181 seconds (0d 0h 4m 37s)
@@ -54,7 +54,7 @@ R11=0x00000084d83ff6a0 is pointing into the stack for thread: 0x00000218acd815b0
 R12=0x00000084d83ff7d8 is pointing into the stack for thread: 0x00000218acd815b0
 R13=0x0 is NULL
 R14=0x00000008011579a0 is a pointer to class: 
-com.nsone.generator.system.netty.send.config.TcpServerHandler {0x00000008011579a8}
+com.all4land.generator.system.netty.send.config.TcpServerHandler {0x00000008011579a8}
  - instance size:     16
  - klass size:        99
  - access:            public synchronized 
@@ -152,7 +152,7 @@ Instructions: (pc=0x00007ff94babbeca)
 Stack slot to memory mapping:
 stack at sp + 0 slots: 0x000000000000003d is an unknown value
 stack at sp + 1 slots: 0x00000008011579a0 is a pointer to class: 
-com.nsone.generator.system.netty.send.config.TcpServerHandler {0x00000008011579a8}
+com.all4land.generator.system.netty.send.config.TcpServerHandler {0x00000008011579a8}
  - instance size:     16
  - klass size:        99
  - access:            public synchronized 
@@ -1063,7 +1063,7 @@ Event: 253.020 Thread 0x00000218acd8a910 nmethod 8953 0x00000218939a7b90 code [0
 Event: 253.020 Thread 0x00000218ac1dc030 nmethod 8955 0x00000218939a7810 code [0x00000218939a79a0, 0x00000218939a7aa8]
 Event: 253.020 Thread 0x00000218acd89ef0 nmethod 8952 0x00000218939a7410 code [0x00000218939a75c0, 0x00000218939a7748]
 Event: 253.020 Thread 0x00000218acd8c770 nmethod 8954 0x00000218939a7090 code [0x00000218939a7220, 0x00000218939a7328]
-Event: 257.013 Thread 0x00000218acd89ef0 8956       1       com.nsone.generator.system.schedule.OccupancyinformationService::process (333 bytes)
+Event: 257.013 Thread 0x00000218acd89ef0 8956       1       com.all4land.generator.system.schedule.OccupancyinformationService::process (333 bytes)
 Event: 257.016 Thread 0x00000218acd89ef0 nmethod 8956 0x00000218939a3810 code [0x00000218939a3e80, 0x00000218939a5848]
 Event: 259.292 Thread 0x00000218acd89ef0 8957       1       org.quartz.TriggerBuilder::forJob (31 bytes)
 Event: 259.292 Thread 0x00000218acd8c770 8958       1       org.quartz.impl.StdScheduler::checkExists (9 bytes)
@@ -1244,7 +1244,7 @@ Classes unloaded (0 events):
 No events
 
 Classes redefined (1 events):
-Event: 277.762 Thread 0x00000218ac1a02b0 redefined class name=com.nsone.generator.system.netty.send.config.TcpServerHandler, count=1
+Event: 277.762 Thread 0x00000218ac1a02b0 redefined class name=com.all4land.generator.system.netty.send.config.TcpServerHandler, count=1
 
 Internal exceptions (20 events):
 Event: 1.856 Thread 0x000002188bf2c9a0 Exception <a 'java/lang/NoSuchMethodError'{0x000000060f1fe018}: 'java.lang.Object java.lang.invoke.Invokers$Holder.linkToTargetMethod(java.lang.Object, int, java.lang.Object, java.lang.Object, java.lang.Object)'> (0x000000060f1fe018) 
@@ -1451,7 +1451,7 @@ symbol engine: initialized successfully - sym options: 0x614 - pdb path: .;C:\ja
 
 VM Arguments:
 jvm_args: -XX:+ShowCodeDetailsInExceptionMessages -agentlib:jdwp=transport=dt_socket,suspend=y,address=localhost:51255 -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=51254 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=localhost -Dspring.jmx.enabled=true -Dmanagement.endpoints.jmx.exposure.include=* -Dspring.application.admin.enabled=true -XX:TieredStopAtLevel=1 -Dspring.boot.project.name=generator -javaagent:C:\sts\spring-tool-suite-4-4.22.0.RELEASE-e4.31.0-win32.win32.x86_64.self-extracting\sts-4.22.0.RELEASE\configuration\org.eclipse.osgi\266\0\.cp\lib\javaagent-shaded.jar -Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8 
-java_command: com.nsone.generator.GeneratorApplication --spring.output.ansi.enabled=always
+java_command: com.all4land.generator.GeneratorApplication --spring.output.ansi.enabled=always
 java_class_path (initial): C:\workspace_message_generator+ASM\generator\target\classes;C:\Users\Lenovo\.m2\repository\org\springframework\boot\spring-boot-starter\3.2.2\spring-boot-starter-3.2.2.jar;C:\Users\Lenovo\.m2\repository\org\springframework\boot\spring-boot\3.2.2\spring-boot-3.2.2.jar;C:\Users\Lenovo\.m2\repository\org\springframework\spring-context\6.1.3\spring-context-6.1.3.jar;C:\Users\Lenovo\.m2\repository\org\springframework\spring-aop\6.1.3\spring-aop-6.1.3.jar;C:\Users\Lenovo\.m2\repository\org\springframework\spring-expression\6.1.3\spring-expression-6.1.3.jar;C:\Users\Lenovo\.m2\repository\io\micrometer\micrometer-observation\1.12.2\micrometer-observation-1.12.2.jar;C:\Users\Lenovo\.m2\repository\io\micrometer\micrometer-commons\1.12.2\micrometer-commons-1.12.2.jar;C:\Users\Lenovo\.m2\repository\org\springframework\boot\spring-boot-autoconfigure\3.2.2\spring-boot-autoconfigure-3.2.2.jar;C:\Users\Lenovo\.m2\repository\org\springframework\boot\spring-boot-starter-logging\3.2.2\spring-boot-starter-logging-3.2.2.jar;C:\Users\Lenovo\.m2\repository\ch\qos\logback\logback-classic\1.4.14\logback-classic-1.4.14.jar;C:\Users\Lenovo\.m2\repository\ch\qos\logback\logback-core\1.4.14\logback-core-1.4.14.jar;C:\Users\Lenovo\.m2\repository\org\apache\logging\log4j\log4j-to-slf4j\2.21.1\log4j-to-slf4j-2.21.1.jar;C:\Users\Lenovo\.m2\repository\org\apache\logging\log4j\log4j-api\2.21.1\log4j-api-2.21.1.jar;C:\Users\Lenovo\.m2\repository\org\slf4j\jul-to-slf4j\2.0.11\jul-to-slf4j-2.0.11.jar;C:\Users\Lenovo\.m2\repository\jakarta\annotation\jakarta.annotation-api\2.1.1\jakarta.annotation-api-2.1.1.jar;C:\Users\Lenovo\.m2\repository\org\springframework\spring-core\6.1.3\spring-core-6.1.3.jar;C:\Users\Lenovo\.m2\repository\org\springframework\spring-jcl\6.1.3\spring-jcl-6.1.3.jar;C:\Users\Lenovo\.m2\repository\org\yaml\snakeyaml\2.2\snakeyaml-2.2.jar;C:\Users\Lenovo\.m2\repository\org\projectlombok\lombok\1.18.30\lombok-1.18.30.jar;C:\Users\Lenovo\.m2\repository\org\s
 Launcher Type: SUN_STANDARD
 
