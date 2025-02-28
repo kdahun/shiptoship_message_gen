@@ -13,12 +13,9 @@ import com.all4land.generator.system.constant.SystemConstMessage;
 import com.all4land.generator.system.netty.send.config.NettyUdpServerConfig;
 import com.all4land.generator.system.netty.server.ServerFactory;
 import com.all4land.generator.ui.tab.ais.entity.GlobalSlotNumber;
-import com.all4land.generator.ui.tab.ais.entity.TcpServerTableEntity;
 import com.all4land.generator.ui.tab.ais.entity.UdpServerTableEntity;
-import com.all4land.generator.ui.tab.ais.entity.TcpTargetClientInfoEntity;
 import com.all4land.generator.ui.tab.ais.entity.UdpTargetClientTableEntity;
 
-import io.netty.channel.Channel;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -172,7 +169,7 @@ public class UdpServerTableModel extends DefaultTableModel {
 						//
 						if(udpTargetClientTableEntity.isAis()) {
 							String ip = udpTargetClientTableEntity.getIp();
-							int port = Integer.valueOf(udpTargetClientTableEntity.getPort());
+							int port = udpTargetClientTableEntity.getPort();
 							sendTableEntity.getNettyServerUDPConfiguration().sendToClient(ip, port, sb.toString());
 						}
 					}
@@ -197,7 +194,7 @@ public class UdpServerTableModel extends DefaultTableModel {
 						//
 						if(udpTargetClientTableEntity.isAis()) {
 							String ip = udpTargetClientTableEntity.getIp();
-							int port = Integer.valueOf(udpTargetClientTableEntity.getPort());
+							int port = udpTargetClientTableEntity.getPort();
 							udpServerTableEntity.getNettyServerUDPConfiguration().sendToClient(ip, port, asmMessageAndVsiMessage);
 						}
 					}
@@ -415,7 +412,7 @@ public class UdpServerTableModel extends DefaultTableModel {
 			super.setValueAt(value, row, column);
 		} else if (column == 2) {
 			//
-			this.udpServerTableEntitys.get(row).setPort(Integer.valueOf(value.toString()) );
+			this.udpServerTableEntitys.get(row).setPort(Integer.parseInt(value.toString()) );
 			super.setValueAt(value, row, column);
 		} else if (column == 3) {
 			//

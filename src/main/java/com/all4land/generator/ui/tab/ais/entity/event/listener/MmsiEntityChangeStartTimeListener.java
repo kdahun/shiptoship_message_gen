@@ -5,9 +5,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
 
-import org.quartz.JobBuilder;
 import org.quartz.JobDataMap;
-import org.quartz.JobDetail;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.Trigger;
@@ -18,7 +16,6 @@ import org.springframework.stereotype.Component;
 import com.all4land.generator.system.schedule.QuartzCoreService;
 import com.all4land.generator.ui.tab.ais.entity.MmsiEntity;
 import com.all4land.generator.ui.tab.ais.entity.event.change.MmsiEntityChangeStartTimeEvent;
-import com.all4land.generator.ui.tab.ais.entity.event.quartz.MmsiEntityChangeStartDate;
 
 @Component
 public class MmsiEntityChangeStartTimeListener {
@@ -53,7 +50,8 @@ public class MmsiEntityChangeStartTimeListener {
 		Trigger trigger = null;
 		if(mmsiEntity.getJob() == null) {
 			// Quartz Trigger 생성
-			trigger = TriggerBuilder.newTrigger().withIdentity(localDateTimeString, mmsi)
+			trigger = TriggerBuilder.newTrigger()
+					.withIdentity(localDateTimeString, mmsi)
 					.startAt(Date.from(localDateTime.atZone(ZoneId.systemDefault()).toInstant()))
 					.build();
 		}else {
@@ -68,7 +66,6 @@ public class MmsiEntityChangeStartTimeListener {
 		try {
 			this.quartzCoreService.addScheduleJob(trigger, mmsiEntity);
 		} catch (SchedulerException | ParseException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		

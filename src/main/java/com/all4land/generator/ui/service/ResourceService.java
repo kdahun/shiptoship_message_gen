@@ -127,7 +127,7 @@ public class ResourceService {
 		Formatter_61162 Formatter_61162ESI = new Formatter_61162(tagBlockESI);
 		String Formatter_61162_messageESI = Formatter_61162ESI.getMessage();
 
-		String tdmaFrame = String.valueOf(renderer.getTdmaFrame(Integer.valueOf(slotNumber)));
+		String tdmaFrame = String.valueOf(renderer.getTdmaFrame(Integer.parseInt(slotNumber)));
 		String tdmachannel = "0";
 		String totalAccountSlot = "14";
 		String firstSlotNumber = slotNumber;
@@ -154,7 +154,7 @@ public class ResourceService {
 		Channel clientChannel = tcpTargetClientInfoEntity.getClientChannel();
 		String ip = tcpTargetClientInfoEntity.getIp();
 		int port = tcpTargetClientInfoEntity.getPort();
-		this.paintTsqMessageStartSlot(Integer.valueOf(slotNumber));
+		this.paintTsqMessageStartSlot(Integer.parseInt(slotNumber));
 		System.out.println("send TCP tsq msg : " + sb.toString());
 		nettyServerTCPConfiguration.sendToClient(clientChannel, ip, port, sb.toString());
 //		}
@@ -227,7 +227,7 @@ public class ResourceService {
 		Formatter_61162 Formatter_61162ESI = new Formatter_61162(tagBlockESI);
 		String Formatter_61162_messageESI = Formatter_61162ESI.getMessage();
 
-		String tdmaFrame = String.valueOf(renderer.getTdmaFrame(Integer.valueOf(slotNumber)));
+		String tdmaFrame = String.valueOf(renderer.getTdmaFrame(Integer.parseInt(slotNumber)));
 		String tdmachannel = "0";
 		String totalAccountSlot = "14";
 		String firstSlotNumber = slotNumber;
@@ -255,7 +255,7 @@ public class ResourceService {
 //		Channel clientChannel = tcpTargetClientInfoEntity.getClientChannel();
 //		String ip = udpTargetClientTableEntity.getIp();
 //		int port = udpTargetClientTableEntity.getPort();
-		this.paintTsqMessageStartSlot(Integer.valueOf(slotNumber));
+		this.paintTsqMessageStartSlot(Integer.parseInt(slotNumber));
 		System.out.println("send UDP tsq msg : " + sb.toString());
 		nettyServerUDPConfiguration.sendToClient(sb.toString());
 //		}

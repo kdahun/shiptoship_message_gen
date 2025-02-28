@@ -73,7 +73,7 @@ public class MMSIPopUpFrame extends javax.swing.JFrame {
                 if (e.getStateChange() == ItemEvent.SELECTED) {
                     String selected = (String) jComboBox1.getSelectedItem();
                     // 선택된 항목에 대한 처리를 수행합니다.
-                    mmsiEntity.setSlotTimeOut(Integer.valueOf(selected));
+                    mmsiEntity.setSlotTimeOut(Integer.parseInt(selected));
                 }
             }
         });
@@ -90,7 +90,7 @@ public class MMSIPopUpFrame extends javax.swing.JFrame {
                 if (e.getStateChange() == ItemEvent.SELECTED) {
                     String selected = (String) jComboBox6.getSelectedItem();
                     // 선택된 항목에 대한 처리를 수행합니다.
-                    mmsiEntity.setSpeed(Integer.valueOf(selected));
+                    mmsiEntity.setSpeed(Integer.parseInt(selected));
                 }
             }
         });
@@ -139,7 +139,7 @@ public class MMSIPopUpFrame extends javax.swing.JFrame {
             public void itemStateChanged(ItemEvent e) {
                 if (e.getStateChange() == ItemEvent.SELECTED) {
                     String selectedItem = (String) jComboBox2.getSelectedItem();
-                    mmsiEntity.getAsmEntity().setSlotCount(Integer.valueOf(selectedItem));
+                    mmsiEntity.getAsmEntity().setSlotCount(Integer.parseInt(selectedItem));
                 }
             }
         });

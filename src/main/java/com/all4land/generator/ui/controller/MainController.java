@@ -29,10 +29,10 @@ public class MainController {
 	public void prepareAndOpenFrame() throws Exception {
 		//
 		// ClassPathResource를 사용하여 resources 폴더에 있는 이미지를 읽어옴
-        ClassPathResource iconResource = new ClassPathResource("logo_nsonesoft_symbol01.png");
+        ClassPathResource iconResource = new ClassPathResource("all4land_logo.png");
         Image iconImage = loadImageIcon(iconResource).getImage();
 
-        this.mainFrame.setTitle("NSone Message Generator Application.");
+        this.mainFrame.setTitle("All4land Message Generator Application");
         // JFrame에 아이콘 설정
         this.mainFrame.setIconImage(iconImage);
         this.mainFrame.setExtendedState(Sample1.MAXIMIZED_BOTH); // 최대화 상태로 설정

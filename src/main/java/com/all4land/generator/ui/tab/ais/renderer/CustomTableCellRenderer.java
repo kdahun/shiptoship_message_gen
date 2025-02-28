@@ -6,7 +6,6 @@ import java.awt.Font;
 import java.awt.Point;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -519,7 +518,7 @@ public class CustomTableCellRenderer extends DefaultTableCellRenderer {
     	for(Entry<Point, CellInfos> cellInfo : this.cellInfos.entrySet()) {
     		//
     		if(this.cellInfos.get(cellInfo.getKey()).getAisCellInfos() != null) {
-    			//
+    			//0
     			if(this.cellInfos.get(cellInfo.getKey()).getAisCellInfos().getChannelATime() != null) {
     				aisChannelACount = aisChannelACount +1;
     			}
@@ -727,13 +726,13 @@ public class CustomTableCellRenderer extends DefaultTableCellRenderer {
     	//
     	Point cellKey = new Point(row, column);
     	CellInfos cellInfos = new CellInfos();
-    	cellInfos.setSlotNumber(Integer.valueOf(text));
+    	cellInfos.setSlotNumber(Integer.parseInt(text));
     	cellInfos.setColor(color);
     	cellInfos.setDefaultColor(color);
     	this.cellInfos.put(cellKey, cellInfos);
     	
     	CellInfos cellInfosDefault = new CellInfos();
-    	cellInfosDefault.setSlotNumber(Integer.valueOf(text));
+    	cellInfosDefault.setSlotNumber(Integer.parseInt(text));
     	cellInfosDefault.setColor(color);
     	cellInfosDefault.setDefaultColor(color);
     	this.cellInfosDefault.put(new Point(row, column), cellInfosDefault);

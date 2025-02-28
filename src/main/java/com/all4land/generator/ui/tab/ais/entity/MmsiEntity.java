@@ -20,7 +20,10 @@ import org.quartz.SchedulerException;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
+import com.all4land.generator.ais.DestinationIdentification;
 import com.all4land.generator.ais.Formatter_61162;
+import com.all4land.generator.ais.GroupControl;
+import com.all4land.generator.ais.SourceIdentification;
 import com.all4land.generator.ais.TagBlock;
 import com.all4land.generator.ais.VSIMessageUtil;
 import com.all4land.generator.system.component.TimeMapRangeCompnents;
@@ -33,12 +36,7 @@ import com.all4land.generator.ui.tab.ais.model.TcpServerTableModel;
 import com.all4land.generator.ui.tab.ais.model.UdpServerTableModel;
 import com.all4land.generator.ui.util.TimeString;
 import com.all4land.generator.util.RandomGenerator;
-import com.all4land.generator.ais.DestinationIdentification;
-import com.all4land.generator.ais.GroupControl;
-import com.all4land.generator.ais.SourceIdentification;
 
-import dk.dma.ais.message.AisMessage;
-import dk.dma.ais.message.AisMessage1;
 import dk.dma.ais.sentence.Vdm;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
@@ -165,27 +163,17 @@ public class MmsiEntity {
 		return positionsCnt;
 	}
 
-
-
 	public void setPositionsCnt(int positionsCnt) {
 		this.positionsCnt = positionsCnt;
 	}
-
-
 
 	public Map<Integer, double[]> getPositions() {
 		return positions;
 	}
 
-
-
 	public void setPositions(Map<Integer, double[]> positions) {
 		this.positions = positions;
 	}
-
-
-	
-	
 	
 	public int getSlotTimeOut_default() {
 		return slotTimeOut_default;
@@ -632,7 +620,7 @@ public class MmsiEntity {
 			//
 			if(this.format450_AIS >= 99) {
 				//
-				this.format450_AIS = 0;
+				this.format450_AIS = 0; 
 			}
 			GroupControl groupControl = new GroupControl(1,2,this.format450_AIS);
 			SourceIdentification sourceIdentification = new SourceIdentification(this.jTextFieldSFI.getText());
@@ -685,7 +673,7 @@ public class MmsiEntity {
 		
 	public void setAsmMessageList(List<String> asmMessageList, String slotNumber) {
 		//
-		String vsiMessage = this.makeSendVsiMessage(Integer.valueOf(slotNumber), this.getAsmMessageSequence(), this.asmEntity.getStartTime());
+		String vsiMessage = this.makeSendVsiMessage(Integer.parseInt(slotNumber), this.getAsmMessageSequence(), this.asmEntity.getStartTime());
 		
 		this.asmMessageList = asmMessageList;
 		StringBuilder sb = new StringBuilder();

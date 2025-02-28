@@ -13,11 +13,11 @@ import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 
 import org.quartz.Scheduler;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
-import com.all4land.generator.system.constant.SystemConstMessage;
 import com.all4land.generator.system.schedule.QuartzCoreService;
 import com.all4land.generator.ui.service.ResourceService;
 import com.all4land.generator.ui.tab.ais.entity.GlobalEntityManager;
@@ -114,6 +114,7 @@ public class Sample1 extends javax.swing.JFrame {
 	Set<Long> generatedMmsiSetForAsm = new HashSet<>();
 	Set<Color> generatedColorsForAsm = new HashSet<>();
 
+    @Autowired
 	public Sample1(ApplicationEventPublisher eventPublisher, Scheduler scheduler, QuartzCoreService quartzCoreService
 			, GlobalEntityManager globalEntityManager, @Qualifier("mmsiJTableName") JTable mmsiJTableName
 			, @Qualifier("udpServerJTableName") JTable udpServerJTableName
@@ -511,16 +512,14 @@ public class Sample1 extends javax.swing.JFrame {
 				try {
 					Thread.sleep(200);
 				} catch (InterruptedException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
+					log.error("Exception [Err_Location] : {}", e1.getStackTrace()[0]);
 				}
 			}
 			
 			try {
 				Thread.sleep(200);
 			} catch (InterruptedException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
+				log.error("Exception [Err_Location] : {}", e1.getStackTrace()[0]);
 			}
 			
 			for (int i = 0; i < 10; i++) {
@@ -528,16 +527,14 @@ public class Sample1 extends javax.swing.JFrame {
 				try {
 					Thread.sleep(200);
 				} catch (InterruptedException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
+					log.error("Exception [Err_Location] : {}", e1.getStackTrace()[0]);
 				}
 			}
 			
 			try {
 				Thread.sleep(200);
 			} catch (InterruptedException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
+				log.error("Exception [Err_Location] : {}", e1.getStackTrace()[0]);
 			}
 			
 			for (int i = 0; i < 100; i++) {
@@ -545,8 +542,7 @@ public class Sample1 extends javax.swing.JFrame {
 				try {
 					Thread.sleep(200);
 				} catch (InterruptedException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
+					log.error("Exception [Err_Location] : {}", e1.getStackTrace()[0]);
 				}
 			}
 		});
@@ -559,8 +555,7 @@ public class Sample1 extends javax.swing.JFrame {
 				try {
 					Thread.sleep(200);
 				} catch (InterruptedException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
+					log.error("Exception [Err_Location] : {}", e1.getStackTrace()[0]);
 				}
 			}
 			
@@ -574,8 +569,7 @@ public class Sample1 extends javax.swing.JFrame {
 				try {
 					Thread.sleep(200);
 				} catch (InterruptedException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
+					log.error("Exception [Err_Location] : {}", e1.getStackTrace()[0]);
 				}
 			}
 			
@@ -586,12 +580,11 @@ public class Sample1 extends javax.swing.JFrame {
 			//
 			for (int i = 0; i < 5; i++) {
 				this.globalEntityManager.addMmsiEntity2(this.scheduler, this.quartzCoreService, this.aisTabjTextAreaName);
-				try {
-					Thread.sleep(200);
-				} catch (InterruptedException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
+				// try {
+					// Thread.sleep(200);
+				// } catch (InterruptedException e1) {
+				// 	log.error("Exception [Err_Location] : {}", e1.getStackTrace()[0]);
+				// }
 			}
 			
 		});

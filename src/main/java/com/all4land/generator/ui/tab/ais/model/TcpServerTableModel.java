@@ -5,7 +5,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import javax.swing.JTable;
-import javax.swing.JTextArea;
 import javax.swing.table.DefaultTableModel;
 
 import org.springframework.context.ApplicationEventPublisher;
@@ -13,15 +12,11 @@ import org.springframework.stereotype.Component;
 
 import com.all4land.generator.system.constant.SystemConstMessage;
 import com.all4land.generator.system.netty.send.config.NettyTcpServerConfig;
-import com.all4land.generator.system.netty.send.config.NettyUdpServerConfig;
 import com.all4land.generator.system.netty.server.ServerFactory;
 import com.all4land.generator.ui.tab.ais.entity.GlobalSlotNumber;
 import com.all4land.generator.ui.tab.ais.entity.TcpServerTableEntity;
-import com.all4land.generator.ui.tab.ais.entity.UdpServerTableEntity;
 import com.all4land.generator.ui.tab.ais.entity.TcpTargetClientInfoEntity;
-import com.all4land.generator.ui.tab.ais.entity.UdpTargetClientTableEntity;
 
-import io.netty.channel.Channel;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -181,7 +176,7 @@ public class TcpServerTableModel extends DefaultTableModel {
 					//
 					if(tcpTargetClientInfoEntity.isAis()) {
 						String ip = tcpTargetClientInfoEntity.getIp();
-						int port = Integer.valueOf(tcpTargetClientInfoEntity.getPort());
+						int port = tcpTargetClientInfoEntity.getPort();
 						tcpServerTableEntity.getNettyServerTCPConfiguration().sendToClient(tcpTargetClientInfoEntity.getClientChannel()
 								,ip, port, sb.toString());
 					}
@@ -200,7 +195,7 @@ public class TcpServerTableModel extends DefaultTableModel {
 					//
 					if(tcpTargetClientInfoEntity.isAsm()) {
 						String ip = tcpTargetClientInfoEntity.getIp();
-						int port = Integer.valueOf(tcpTargetClientInfoEntity.getPort());
+						int port = tcpTargetClientInfoEntity.getPort();
 						tcpServerTableEntity.getNettyServerTCPConfiguration().sendToClient(tcpTargetClientInfoEntity.getClientChannel()
 								,ip, port, asmMessageAndVsiMessage);
 					}
@@ -222,7 +217,7 @@ public class TcpServerTableModel extends DefaultTableModel {
 			super.setValueAt(value, row, column);
 		} else if (column == 1) {
 			//
-			this.tcpServerTableEntitys.get(row).setPort(Integer.valueOf(value.toString()) );
+			this.tcpServerTableEntitys.get(row).setPort(Integer.parseInt(value.toString()) );
 			super.setValueAt(value, row, column);
 		} else if (column == 2) {
 			//

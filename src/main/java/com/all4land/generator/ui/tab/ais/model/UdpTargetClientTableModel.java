@@ -6,8 +6,6 @@ import javax.swing.table.DefaultTableModel;
 
 import org.springframework.stereotype.Component;
 
-import com.all4land.generator.ui.tab.ais.entity.TcpServerTableEntity;
-import com.all4land.generator.ui.tab.ais.entity.UdpServerTableEntity;
 import com.all4land.generator.ui.tab.ais.entity.UdpTargetClientTableEntity;
 
 import lombok.extern.slf4j.Slf4j;
@@ -58,7 +56,7 @@ public class UdpTargetClientTableModel extends DefaultTableModel {
 			super.setValueAt(value, row, column);
 		} else if (column == 2) {
 			//
-			this.udpTargetClientTableEntitys.get(row).setPort(Integer.valueOf(value.toString()) );
+			this.udpTargetClientTableEntitys.get(row).setPort(Integer.parseInt(value.toString()) );
 			super.setValueAt(value, row, column);
 		} else if (column == 3) {
 			//

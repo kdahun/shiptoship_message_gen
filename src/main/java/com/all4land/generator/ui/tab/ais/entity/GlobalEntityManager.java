@@ -1,7 +1,6 @@
 package com.all4land.generator.ui.tab.ais.entity;
 
 import java.awt.Point;
-import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -414,214 +413,130 @@ public class GlobalEntityManager {
 	}
 
 	private void make10(MmsiEntity mmsi, int index) {
-		//
-		if(index == 10) {
-			mmsi.testInit(10, 1, SystemConstMessage.positions_10_0);
-		}else if(index == 11) {
-			mmsi.testInit(10, 1, SystemConstMessage.positions_10_1);
-		}else if(index == 12) {
-			mmsi.testInit(10, 2, SystemConstMessage.positions_10_2);
-		}else if(index == 13) {
-			mmsi.testInit(10, 2, SystemConstMessage.positions_10_3);
-		}else if(index == 14) {
-			mmsi.testInit(10, 3, SystemConstMessage.positions_10_4);
-		}else if(index == 15) {
-			mmsi.testInit(10, 3, SystemConstMessage.positions_10_5);
-		}
-		else if(index == 16) {
-			mmsi.testInit(10, 4, SystemConstMessage.positions_10_6);
-		}else if(index == 17) {
-			mmsi.testInit(10, 4, SystemConstMessage.positions_10_7);
-		}else if(index == 18) {
-			mmsi.testInit(10, 5, SystemConstMessage.positions_10_8);
-		}else if(index == 19) {
-			mmsi.testInit(10, 6, SystemConstMessage.positions_10_9);
-		}
+            //
+            switch (index) {
+                case 10 -> mmsi.testInit(10, 1, SystemConstMessage.positions_10_0);
+                case 11 -> mmsi.testInit(10, 1, SystemConstMessage.positions_10_1);
+                case 12 -> mmsi.testInit(10, 2, SystemConstMessage.positions_10_2);
+                case 13 -> mmsi.testInit(10, 2, SystemConstMessage.positions_10_3);
+                case 14 -> mmsi.testInit(10, 3, SystemConstMessage.positions_10_4);
+                case 15 -> mmsi.testInit(10, 3, SystemConstMessage.positions_10_5);
+                case 16 -> mmsi.testInit(10, 4, SystemConstMessage.positions_10_6);
+                case 17 -> mmsi.testInit(10, 4, SystemConstMessage.positions_10_7);
+                case 18 -> mmsi.testInit(10, 5, SystemConstMessage.positions_10_8);
+                case 19 -> mmsi.testInit(10, 6, SystemConstMessage.positions_10_9);
+                default -> {
+                }
+            }
 	}
 	
 	private void make6(MmsiEntity mmsi, int index) {
-		//
-		if(index == 30) {
-			mmsi.testInit(6, 1, SystemConstMessage.positions_6_0);
-		}else if(index == 31) {
-			mmsi.testInit(6, 2, SystemConstMessage.positions_6_1);
-		}else if(index == 32) {
-			mmsi.testInit(6, 3, SystemConstMessage.positions_6_2);
-		}else if(index == 33) {
-			mmsi.testInit(6, 4, SystemConstMessage.positions_6_3);
-		}else if(index == 34) {
-			mmsi.testInit(6, 5, SystemConstMessage.positions_6_4);
-		}
+            //
+            switch (index) {
+                case 30 -> mmsi.testInit(6, 1, SystemConstMessage.positions_6_0);
+                case 31 -> mmsi.testInit(6, 2, SystemConstMessage.positions_6_1);
+                case 32 -> mmsi.testInit(6, 3, SystemConstMessage.positions_6_2);
+                case 33 -> mmsi.testInit(6, 4, SystemConstMessage.positions_6_3);
+                case 34 -> mmsi.testInit(6, 5, SystemConstMessage.positions_6_4);
+                default -> {
+                }
+            }
 	}
 	
 	
 	private void make2(MmsiEntity mmsi, int index) {
-		//
-		if(index == 20) {
-			mmsi.testInit(2, 1, SystemConstMessage.positions_2_0);
-		}else if(index == 21) {
-			mmsi.testInit(2, 2, SystemConstMessage.positions_2_1);
-		}else if(index == 22) {
-			mmsi.testInit(2, 3, SystemConstMessage.positions_2_2);
-		}else if(index == 23) {
-			mmsi.testInit(2, 4, SystemConstMessage.positions_2_3);
-		}else if(index == 24) {
-			mmsi.testInit(2, 5, SystemConstMessage.positions_2_4);
-		}else if(index == 25) {
-			mmsi.testInit(2, 6, SystemConstMessage.positions_2_5);
-		}else if(index == 26) {
-			mmsi.testInit(2, 7, SystemConstMessage.positions_2_6);
-		}else if(index == 27) {
-			mmsi.testInit(2, 7, SystemConstMessage.positions_2_7);
-		}else if(index == 28) {
-			mmsi.testInit(2, 7, SystemConstMessage.positions_2_8);
-		}else if(index == 29) {
-			mmsi.testInit(2, 7, SystemConstMessage.positions_2_9);
-		}
+            //
+            switch (index) {
+                case 20 -> mmsi.testInit(2, 1, SystemConstMessage.positions_2_0);
+                case 21 -> mmsi.testInit(2, 2, SystemConstMessage.positions_2_1);
+                case 22 -> mmsi.testInit(2, 3, SystemConstMessage.positions_2_2);
+                case 23 -> mmsi.testInit(2, 4, SystemConstMessage.positions_2_3);
+                case 24 -> mmsi.testInit(2, 5, SystemConstMessage.positions_2_4);
+                case 25 -> mmsi.testInit(2, 6, SystemConstMessage.positions_2_5);
+                case 26 -> mmsi.testInit(2, 7, SystemConstMessage.positions_2_6);
+                case 27 -> mmsi.testInit(2, 7, SystemConstMessage.positions_2_7);
+                case 28 -> mmsi.testInit(2, 7, SystemConstMessage.positions_2_8);
+                case 29 -> mmsi.testInit(2, 7, SystemConstMessage.positions_2_9);
+                default -> {
+                }
+            }
 	}
 	private void make180(MmsiEntity mmsi, int index) {
-		//
-		if(index == 0) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_0);
-		}else if(index == 1) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_1);
-		}else if(index == 2) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_2);
-		}else if(index == 3) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_3);
-		}else if(index == 4) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_4);
-		}else if(index == 5) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_5);
-		}else if(index == 6) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_6);
-		}else if(index == 7) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_7);
-		}else if(index == 8) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_8);
-		}else if(index == 9) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_9);
-		}else if(index == 10) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_10);
-		}else if(index == 11) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_11);
-		}else if(index == 12) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_12);
-		}else if(index == 13) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_13);
-		}else if(index == 14) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_14);
-		}else if(index == 15) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_15);
-		}else if(index == 16) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_16);
-		}else if(index == 17) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_17);
-		}else if(index == 18) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_18);
-		}else if(index == 19) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_19);
-		}else if(index == 20) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_20);
-		}else if(index == 21) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_21);
-		}else if(index == 22) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_22);
-		}else if(index == 23) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_23);
-		}else if(index == 24) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_24);
-		}else if(index == 25) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_25);
-		}else if(index == 26) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_26);
-		}else if(index == 27) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_27);
-		}else if(index == 28) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_28);
-		}else if(index == 29) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_29);
-		}else if(index == 30) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_30);
-		}else if(index == 31) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_31);
-		}else if(index == 32) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_32);
-		}else if(index == 33) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_33);
-		}else if(index == 34) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_34);
-		}else if(index == 35) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_35);
-		}else if(index == 36) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_36);
-		}else if(index == 37) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_37);
-		}else if(index == 38) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_38);
-		}else if(index == 39) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_39);
-		}else if(index == 40) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_40);
-		}else if(index == 41) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_41);
-		}else if(index == 42) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_42);
-		}else if(index == 43) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_43);
-		}else if(index == 44) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_44);
-		}else if(index == 45) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_45);
-		}else if(index == 46) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_46);
-		}else if(index == 47) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_47);
-		}else if(index == 48) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_48);
-		}else if(index == 49) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_49);
-		}else if(index == 50) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_50);
-		}else if(index == 51) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_51);
-		}else if(index == 52) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_52);
-		}else if(index == 53) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_53);
-		}else if(index == 54) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_54);
-		}else if(index == 55) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_55);
-		}else if(index == 56) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_56);
-		}else if(index == 57) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_57);
-		}else if(index == 58) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_58);
-		}else if(index == 59) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_59);
-		}else if(index == 60) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_60);
-		}else if(index == 61) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_61);
-		}else if(index == 62) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_62);
-		}else if(index == 63) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_63);
-		}else if(index == 64) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_64);
-		}else if(index == 65) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_65);
-		}else if(index == 66) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_66);
-		}else if(index == 67) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_67);
-		}else if(index == 68) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_68);
-		}else if(index == 69) {
-			mmsi.testInit(180, 3, SystemConstTestData180.positions_180_69);
-		}
+            //
+            switch (index) {
+                case 0 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_0);
+                case 1 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_1);
+                case 2 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_2);
+                case 3 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_3);
+                case 4 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_4);
+                case 5 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_5);
+                case 6 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_6);
+                case 7 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_7);
+                case 8 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_8);
+                case 9 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_9);
+                case 10 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_10);
+                case 11 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_11);
+                case 12 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_12);
+                case 13 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_13);
+                case 14 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_14);
+                case 15 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_15);
+                case 16 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_16);
+                case 17 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_17);
+                case 18 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_18);
+                case 19 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_19);
+                case 20 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_20);
+                case 21 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_21);
+                case 22 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_22);
+                case 23 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_23);
+                case 24 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_24);
+                case 25 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_25);
+                case 26 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_26);
+                case 27 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_27);
+                case 28 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_28);
+                case 29 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_29);
+                case 30 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_30);
+                case 31 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_31);
+                case 32 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_32);
+                case 33 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_33);
+                case 34 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_34);
+                case 35 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_35);
+                case 36 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_36);
+                case 37 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_37);
+                case 38 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_38);
+                case 39 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_39);
+                case 40 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_40);
+                case 41 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_41);
+                case 42 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_42);
+                case 43 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_43);
+                case 44 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_44);
+                case 45 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_45);
+                case 46 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_46);
+                case 47 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_47);
+                case 48 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_48);
+                case 49 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_49);
+                case 50 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_50);
+                case 51 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_51);
+                case 52 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_52);
+                case 53 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_53);
+                case 54 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_54);
+                case 55 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_55);
+                case 56 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_56);
+                case 57 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_57);
+                case 58 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_58);
+                case 59 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_59);
+                case 60 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_60);
+                case 61 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_61);
+                case 62 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_62);
+                case 63 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_63);
+                case 64 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_64);
+                case 65 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_65);
+                case 66 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_66);
+                case 67 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_67);
+                case 68 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_68);
+                case 69 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_69);
+                default -> {
+                }
+            }
 		
 	}
 	
@@ -913,6 +828,11 @@ public class GlobalEntityManager {
 		return false;
 	}
 
+	/**
+	 * 슬롯 검색 및 
+	 * @param mmsiEntity
+	 * @return
+	 */
 	public int findSlotAndMarking(MmsiEntity mmsiEntity) {
 		//
 		try {
@@ -925,7 +845,7 @@ public class GlobalEntityManager {
 			int x1 = x0 / 7;
 			int x2 = x0 % 7;
 			int y0 = (int) cellInfoPoint.getY();
-			DecimalFormat decimalFormat = new DecimalFormat("#.####");
+			// DecimalFormat decimalFormat = new DecimalFormat("#.####");
 
 //			log.info("SI:{}, x0: {}, x1: {}, x2: {}, y0: {}", mmsiEntity.getSI()[0], x0, x1, x2, y0);
 
@@ -935,7 +855,7 @@ public class GlobalEntityManager {
 			int rowCount = model.getRowCount();
 			int columnCount = model.getColumnCount();
 			int rowsPerPage = 7;
-			long startTime = System.nanoTime(); // 시작 시간 기록
+			// long startTime = System.nanoTime(); // 시작 시간 기록
 
 //			for (int i = 0; i < rowCount; i += rowsPerPage) {
 //				for (int col = 0; col < columnCount; col++) {
@@ -949,7 +869,7 @@ public class GlobalEntityManager {
 //						log.info("SI:{}, x0: {}, x1: {}, x2: {}, y0: {}, i: {}, j: {}, col: {}", mmsiEntity.getSI()[0], x0, x1, x2, y0, i, j, col);
 						if (i + j < 90 && isValidCell(i + j, col)) {
 							//
-							int cellSlotNumber = Integer.valueOf(renderer.getCellSlotNumber(i + j, col));
+							int cellSlotNumber = Integer.parseInt(renderer.getCellSlotNumber(i + j, col));
 //							log.info("cellSlotNumber: {}", cellSlotNumber);
 							if (!renderer.verifyAisAllChannelIsEmpty(i + j, col)
 									&& mmsiEntity.getSI()[0] <= cellSlotNumber
@@ -965,8 +885,7 @@ public class GlobalEntityManager {
 								if (consecutiveCount == 4) {
 									// 연속으로 비어있는곳 발견
 									TargetCellInfoEntity s = RandomGenerator.generateRandomAisTarget(targetInfoList);
-									int slotNumber = Integer
-											.valueOf(renderer.getCellSlotNumber(s.getRow(), s.getCol()));
+									int slotNumber = Integer.parseInt(renderer.getCellSlotNumber(s.getRow(), s.getCol()));
 
 									if (mmsiEntity.getSlotTimeOutTime() == null) {
 										LocalDateTime modifiedDateTime = mmsiEntity.getStartTime().plusMinutes(1)
@@ -1025,9 +944,8 @@ public class GlobalEntityManager {
 //	        String formattedNumber = decimalFormat.format(seconds);
 //	        System.out.println("메서드 실행 시간: "+formattedNumber+" 초");
 			return -1;
-		} catch (Exception e) {
-			// TODO: handle exception
-			e.printStackTrace();
+		} catch (NumberFormatException e) {
+            log.error("Exception [Err_Location] : {}", e.getStackTrace()[0]);
 		}
 		return -1;
 
@@ -1051,7 +969,7 @@ public class GlobalEntityManager {
 		newTargetSlotEntity.setSlotNumber(slotNumber);
 
 		String ssSSSS = mmsiEntity.getStartTime().format(SystemConstMessage.formatterForStartIndex);
-		double currentSecond = Double.valueOf(ssSSSS);
+		double currentSecond = Double.parseDouble(ssSSSS);
 		newTargetSlotEntity.setSsSSSS(currentSecond);
 		mmsiEntity.addTargetSlotEntity(newTargetSlotEntity);
 //		log.info("aaaaaaaaaaa");
@@ -1076,25 +994,29 @@ public class GlobalEntityManager {
 
 		if (mmsiEntity.getAsmEntity().getChannel() == 'A') {
 			//
-			if (mmsiEntity.getAsmEntity().getSlotCount() == 1) {
-				//
-				strValue = "NSONESOFTNSONESOFTNSONESOFT1";
-				renderer.setCellInfosAsmForA(targetCellInfoEntitys.get(0).getRow(),
-						targetCellInfoEntitys.get(0).getCol(), mmsiEntity);
-			} else if (mmsiEntity.getAsmEntity().getSlotCount() == 2) {
-				strValue = "NSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFT2";
-				renderer.setCellInfosAsmForA(targetCellInfoEntitys.get(0).getRow(),
-						targetCellInfoEntitys.get(0).getCol(), mmsiEntity);
-				renderer.setCellInfosAsmForA(targetCellInfoEntitys.get(1).getRow(),
-						targetCellInfoEntitys.get(1).getCol(), mmsiEntity);
-			} else if (mmsiEntity.getAsmEntity().getSlotCount() == 3) {
-				strValue = "NSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFT3";
-				renderer.setCellInfosAsmForA(targetCellInfoEntitys.get(0).getRow(),
-						targetCellInfoEntitys.get(0).getCol(), mmsiEntity);
-				renderer.setCellInfosAsmForA(targetCellInfoEntitys.get(1).getRow(),
-						targetCellInfoEntitys.get(1).getCol(), mmsiEntity);
-				renderer.setCellInfosAsmForA(targetCellInfoEntitys.get(2).getRow(),
-						targetCellInfoEntitys.get(2).getCol(), mmsiEntity);
+			switch (mmsiEntity.getAsmEntity().getSlotCount()) {
+				case 1 -> {
+					strValue = "NSONESOFTNSONESOFTNSONESOFT1";
+					renderer.setCellInfosAsmForA(targetCellInfoEntitys.get(0).getRow(),
+							targetCellInfoEntitys.get(0).getCol(), mmsiEntity);
+                        }
+				case 2 -> {
+					strValue = "NSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFT2";
+					renderer.setCellInfosAsmForA(targetCellInfoEntitys.get(0).getRow(),
+							targetCellInfoEntitys.get(0).getCol(), mmsiEntity);
+					renderer.setCellInfosAsmForA(targetCellInfoEntitys.get(1).getRow(),
+							targetCellInfoEntitys.get(1).getCol(), mmsiEntity);
+                        }
+				case 3 -> {
+					strValue = "NSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFT3";
+					renderer.setCellInfosAsmForA(targetCellInfoEntitys.get(0).getRow(),
+							targetCellInfoEntitys.get(0).getCol(), mmsiEntity);
+					renderer.setCellInfosAsmForA(targetCellInfoEntitys.get(1).getRow(),
+							targetCellInfoEntitys.get(1).getCol(), mmsiEntity);
+					renderer.setCellInfosAsmForA(targetCellInfoEntitys.get(2).getRow(),
+							targetCellInfoEntitys.get(2).getCol(), mmsiEntity);
+                        }
+				default -> {}
 			}
 
 			List<String> message = this.aSMMessageUtil.getMessage(strValue, mmsiEntity);
@@ -1102,24 +1024,30 @@ public class GlobalEntityManager {
 			mmsiEntity.getAsmEntity().setChannel('B');
 			mmsiEntity.setAsmMessageSequence(mmsiEntity.getAsmMessageSequence() + 1);
 		} else {
-			if (mmsiEntity.getAsmEntity().getSlotCount() == 1) {
-				strValue = "NSONESOFTNSONESOFTNSONESOFT1";
-				renderer.setCellInfosAsmForB(targetCellInfoEntitys.get(0).getRow(),
-						targetCellInfoEntitys.get(0).getCol(), mmsiEntity);
-			} else if (mmsiEntity.getAsmEntity().getSlotCount() == 2) {
-				strValue = "NSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFT2";
-				renderer.setCellInfosAsmForB(targetCellInfoEntitys.get(0).getRow(),
-						targetCellInfoEntitys.get(0).getCol(), mmsiEntity);
-				renderer.setCellInfosAsmForB(targetCellInfoEntitys.get(1).getRow(),
-						targetCellInfoEntitys.get(1).getCol(), mmsiEntity);
-			} else if (mmsiEntity.getAsmEntity().getSlotCount() == 3) {
-				strValue = "NSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFT3";
-				renderer.setCellInfosAsmForB(targetCellInfoEntitys.get(0).getRow(),
-						targetCellInfoEntitys.get(0).getCol(), mmsiEntity);
-				renderer.setCellInfosAsmForB(targetCellInfoEntitys.get(1).getRow(),
-						targetCellInfoEntitys.get(1).getCol(), mmsiEntity);
-				renderer.setCellInfosAsmForB(targetCellInfoEntitys.get(2).getRow(),
-						targetCellInfoEntitys.get(2).getCol(), mmsiEntity);
+			switch (mmsiEntity.getAsmEntity().getSlotCount()) {
+				case 1 -> {
+					strValue = "NSONESOFTNSONESOFTNSONESOFT1";
+					renderer.setCellInfosAsmForB(targetCellInfoEntitys.get(0).getRow(),
+							targetCellInfoEntitys.get(0).getCol(), mmsiEntity);
+                        }
+				case 2 -> {
+					strValue = "NSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFT2";
+					renderer.setCellInfosAsmForB(targetCellInfoEntitys.get(0).getRow(),
+							targetCellInfoEntitys.get(0).getCol(), mmsiEntity);
+					renderer.setCellInfosAsmForB(targetCellInfoEntitys.get(1).getRow(),
+							targetCellInfoEntitys.get(1).getCol(), mmsiEntity);
+                        }
+				case 3 -> {
+					strValue = "NSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFT3";
+					renderer.setCellInfosAsmForB(targetCellInfoEntitys.get(0).getRow(),
+							targetCellInfoEntitys.get(0).getCol(), mmsiEntity);
+					renderer.setCellInfosAsmForB(targetCellInfoEntitys.get(1).getRow(),
+							targetCellInfoEntitys.get(1).getCol(), mmsiEntity);
+					renderer.setCellInfosAsmForB(targetCellInfoEntitys.get(2).getRow(),
+							targetCellInfoEntitys.get(2).getCol(), mmsiEntity);
+                        }
+				default -> {
+                        }
 			}
 			List<String> message = this.aSMMessageUtil.getMessage(strValue, mmsiEntity);
 			mmsiEntity.setAsmMessageList(message, targetCellInfoEntitys.get(0).getSlotNumber());
@@ -1150,7 +1078,7 @@ public class GlobalEntityManager {
 					// 범위 체크
 					if (i + j < 90 && isValidCell(i + j, col)) {
 						//
-						int cellText = Integer.valueOf(renderer.getCellSlotNumber(i + j, col));
+						int cellText = Integer.parseInt(renderer.getCellSlotNumber(i + j, col));
 						if (startIndex <= cellText && cellText <= startIndex + 235
 								&& !renderer.verifyAisAllChannelIsEmpty(i + j, col) // ais 가 안쓰고
 								&& !renderer.verifyASMChannelAIsEmpty(i + j, col) // asm A 채널이 안쓰고
@@ -1216,7 +1144,7 @@ public class GlobalEntityManager {
 					// 범위 체크
 					if (i + j < 90 && isValidCell(i + j, col)) {
 						//
-						int cellText = Integer.valueOf(renderer.getCellSlotNumber(i + j, col));
+						int cellText = Integer.parseInt(renderer.getCellSlotNumber(i + j, col));
 						if (startIndex <= cellText && cellText <= startIndex + 235
 								&& !renderer.verifyAisAllChannelIsEmpty(i + j, col) // ais 가 안쓰고
 								&& !renderer.verifyASMChannelAIsEmpty(i + j, col) // asm A 채널이 안쓰고
@@ -1279,7 +1207,7 @@ public class GlobalEntityManager {
 					// 범위 체크
 					if (i + j < 90 && isValidCell(i + j, col)) {
 						//
-						int cellText = Integer.valueOf(renderer.getCellSlotNumber(i + j, col));
+						int cellText = Integer.parseInt(renderer.getCellSlotNumber(i + j, col));
 						if (startIndex <= cellText && cellText <= startIndex + 235
 								&& !renderer.verifyAisAllChannelIsEmpty(i + j, col)) { // AIS 가 비어있고
 							if (mmsiEntity.getAsmEntity().getChannel() == 'A') { // 들어갈 채널이 A 일때

@@ -45,7 +45,6 @@ import com.all4land.generator.ui.tab.ais.editor.MmsiTableCellEditor;
 import com.all4land.generator.ui.tab.ais.editor.MmsiTableCheckBoxEditor;
 import com.all4land.generator.ui.tab.ais.entity.GlobalEntityManager;
 import com.all4land.generator.ui.tab.ais.entity.GlobalSlotNumber;
-import com.all4land.generator.ui.tab.ais.entity.TcpTargetClientInfoEntity;
 import com.all4land.generator.ui.tab.ais.model.MmsiTableModel;
 import com.all4land.generator.ui.tab.ais.model.TcpServerTableModel;
 import com.all4land.generator.ui.tab.ais.model.TcpTargetClientTableModel;
