@@ -33,13 +33,13 @@ public class GeneratorApplication {
     private static void displayMainFrame(ConfigurableApplicationContext context) {
     	//
         SwingUtilities.invokeLater(() -> {
-        	//
+            //
             MainController mainMenuController = context.getBean(MainController.class);
             try {
-				mainMenuController.prepareAndOpenFrame();
-			} catch (Exception e) {
-				log.error(e.getMessage());
-			}
+                mainMenuController.prepareAndOpenFrame();
+            } catch (Exception e) {
+                log.error(e.getMessage());
+            }
         });
     }
 }

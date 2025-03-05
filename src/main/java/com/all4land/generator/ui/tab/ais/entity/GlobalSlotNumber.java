@@ -5,6 +5,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import javax.swing.JLabel;
+import javax.swing.SwingUtilities;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationEventPublisher;
@@ -42,15 +43,18 @@ public class GlobalSlotNumber {
         return String.valueOf(this.slotNumber);
     }
 
-    public int getSlotNumber() {
+    public synchronized int getSlotNumber() {
         return this.slotNumber;
     }
 
-    public void setSlotNumber(int slotNumber) {
+    public synchronized void setSlotNumber(int slotNumber) {
         if (this.slotNumber != slotNumber) {
             this.slotNumber = slotNumber;
-            this.jLabelSlotNumber.setText(String.valueOf(slotNumber));
-//            log.info("슬롯 번호 변경됨: {}", slotNumber);
+
+            // 스윙 UI 업데이트는 별도의 스레드에서 실행 시 오류가 생길 가능성이 매우 높아짐
+            // 따라서 스윙 UI 스레드(Event Dispacther Thread)에서 처리할 수 있도록 변경
+            SwingUtilities.invokeLater(()-> this.jLabelSlotNumber.setText(String.valueOf(slotNumber)));
+            // log.info("슬롯 번호 변경됨: {}", slotNumber);
             eventPublisher.publishEvent(new ToggleSlotNumberEvent(this, this));
         }
     }
@@ -86,6 +90,7 @@ public class GlobalSlotNumber {
         LocalDateTime now = LocalDateTime.now();
         String formatNow = now.format(SystemConstMessage.formatterForStartIndex);
 
+        // 현재 시간의 초(ss.SSSS)를 기준으로 몇번 슬롯에 들어가면 될지 검색 
         int newSlotNumber = timeMapRangeCompnents.findStartSlotNumber(formatNow);
         if (newSlotNumber != -1 && this.slotNumber != newSlotNumber) {
         	//

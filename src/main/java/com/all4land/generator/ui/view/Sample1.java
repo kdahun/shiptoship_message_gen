@@ -577,14 +577,32 @@ public class Sample1 extends javax.swing.JFrame {
 
 		btn_add_2.setText("Add 2");
 		btn_add_2.addActionListener(e -> {
-			//
+			// 버튼 리스너 이벤트에서 thread.sleep 사용 시 JavaSwing Event Dispatcher를 블로킹하는 문제 발생 가능성 있음.
+            // UI가 멈추거나 응답하지않는 현상 발생
+            // SwingWorker<Void, Void> worker = new SwingWorker<>() {
+            //     @Override
+            //     protected Void doInBackground() throws Exception {
+            //         // addMmsiEntity2 호출로 mmsi 객체 생성
+            //         for (int i = 0; i < 5; i++)
+            //         {
+            //             globalEntityManager.addMmsiEntity2(scheduler, quartzCoreService, aisTabjTextAreaName);
+            //         }
+            //         return null;
+            //     }
+
+            //     @Override
+            //     protected void done() {
+            //         // addMmsiEntity ui 업데이트
+            //     }
+            // };
+            // worker.execute();
 			for (int i = 0; i < 5; i++) {
 				this.globalEntityManager.addMmsiEntity2(this.scheduler, this.quartzCoreService, this.aisTabjTextAreaName);
-				// try {
-					// Thread.sleep(200);
-				// } catch (InterruptedException e1) {
-				// 	log.error("Exception [Err_Location] : {}", e1.getStackTrace()[0]);
-				// }
+				try {
+					Thread.sleep(200);
+				} catch (InterruptedException e1) {
+					log.error("Exception [Err_Location] : {}", e1.getStackTrace()[0]);
+				}
 			}
 			
 		});

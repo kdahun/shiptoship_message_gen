@@ -1,8 +1,6 @@
 package com.all4land.generator.ui.tab.ais.renderer;
 
-import java.awt.Color;
 import java.awt.Component;
-import java.util.Random;
 
 import javax.swing.JButton;
 import javax.swing.JTable;

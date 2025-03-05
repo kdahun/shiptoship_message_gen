@@ -14,7 +14,12 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class AisMessage1Util {
-	//
+	/**
+	 * 랜덤 메시지 생성 함수
+	 * @param mmsiEntity
+	 * @param slotNumber
+	 * @return Vdm 객체 : AIS메시지 디코딩 및 실제 데이터 추출
+	 */
 	public static Vdm create(MmsiEntity mmsiEntity, int slotNumber) {
 		//
 		AisMessage1 msg1 = new AisMessage1();

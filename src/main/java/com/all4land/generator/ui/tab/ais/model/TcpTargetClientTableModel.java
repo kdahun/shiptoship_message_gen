@@ -7,10 +7,7 @@ import javax.swing.table.DefaultTableModel;
 
 import org.springframework.stereotype.Component;
 
-import com.all4land.generator.ui.tab.ais.entity.TcpServerTableEntity;
-import com.all4land.generator.ui.tab.ais.entity.UdpServerTableEntity;
 import com.all4land.generator.ui.tab.ais.entity.TcpTargetClientInfoEntity;
-import com.all4land.generator.ui.tab.ais.entity.UdpTargetClientTableEntity;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -50,20 +47,26 @@ public class TcpTargetClientTableModel extends DefaultTableModel {
 	
 	@Override
 	public void setValueAt(Object value, int row, int column) {
-		//
-		if (column == 3) {
-			//
-			this.tcpTargetClientInfoEntitys.get(row).setAis((boolean) value);
-			super.setValueAt(value, row, column);
-		} else if (column == 4) {
-			//
-			this.tcpTargetClientInfoEntitys.get(row).setAsm((boolean) value);
-			super.setValueAt(value, row, column);
-		} else if (column == 5) {
-			//
-			this.tcpTargetClientInfoEntitys.get(row).setTsq((boolean) value);
-			super.setValueAt(value, row, column);
-		}
+            //
+            switch (column) {
+                case 3 -> {
+                    //
+                    this.tcpTargetClientInfoEntitys.get(row).setAis((boolean) value);
+                    super.setValueAt(value, row, column);
+                }
+                case 4 -> {
+                    //
+                    this.tcpTargetClientInfoEntitys.get(row).setAsm((boolean) value);
+                    super.setValueAt(value, row, column);
+                }
+                case 5 -> {
+                    //
+                    this.tcpTargetClientInfoEntitys.get(row).setTsq((boolean) value);
+                    super.setValueAt(value, row, column);
+                }
+                default -> {
+                }
+            }
 	}
 	
 }

@@ -300,6 +300,7 @@ public class GlobalEntityManager {
 		
 		this.mmsiEntityLists.add(mmsi);
 		
+		// mmsi 리스트 갱신 및 table UI 업데이트
 		this.mmsiTableModel2.setData();
 		mmsi.setChk(true);
 	}
@@ -334,7 +335,8 @@ public class GlobalEntityManager {
 
 			// MmsiEntity mmsi = new MmsiEntity(this.eventPublisher, scheduler,
 			// quartzCoreService);
-
+			
+			// 
 			mmsi.setCurrentFrameJTableNameUpper(this.currentFrameJTableNameUpper);
 			mmsi.setCurrentFrame1JTableNameUpper(this.currentFrame1JTableNameUpper);
 			mmsi.setCurrentFrame2JTableNameUpper(this.currentFrame2JTableNameUpper);

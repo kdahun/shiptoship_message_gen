@@ -7,7 +7,6 @@ import java.util.List;
 import org.springframework.context.ApplicationEventPublisher;
 
 import com.all4land.generator.system.netty.send.config.NettyServerTCPConfiguration;
-import com.all4land.generator.system.netty.send.config.NettyServerUDPConfiguration;
 import com.all4land.generator.ui.tab.ais.entity.event.change.TcpTargetClientAddRowEvent;
 import com.all4land.generator.ui.tab.ais.entity.event.change.TcpTargetClientRemoveRowEvent;
 

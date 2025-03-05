@@ -46,7 +46,7 @@ public class TimeMapRangeCompnents {
 		// 시간 측정 시작
 //	    long startTime = System.nanoTime();  // 나노초 단위로 시작 시간 기록
 		
-	    double value = Double.valueOf(ssSSSS);
+	    double value = Double.parseDouble(ssSSSS);
 	    int low = 0;
 	    int high = range.size() - 1;
 

@@ -55,6 +55,8 @@ public class MmsiEntityChangeStartDate implements Job {
 	private void mainPprocess() {
 		//
 //		log.info("2");
+		// mmsiEntity.Chk ? 1. MMSI 생성되면 True로 초기화 (GlobalEntityManager.addMmsiEntity)
+		// 2. MmsiTableModel.setValueAt 에서 input parameter value(Object)에 따라 변경
 		if (this.mmsiEntity.isChk()) {
 			//
 			// 1 기존에 쏜 히스토리확인
@@ -121,11 +123,11 @@ public class MmsiEntityChangeStartDate implements Job {
 		//
 		LocalDateTime startTime = this.mmsiEntity.getStartTime();
 		String startTime_ssSSSS = startTime.format(SystemConstMessage.formatterForStartIndex);
-		double startTime_currentSecond = Double.valueOf(startTime_ssSSSS) - 0.300;
+		double startTime_currentSecond = Double.parseDouble(startTime_ssSSSS) - 0.300;
 
 		LocalDateTime endTime = this.mmsiEntity.getStartTime();
 		String endTime_ssSSSS = endTime.format(SystemConstMessage.formatterForStartIndex);
-		double endTime_currentSecond = Double.valueOf(endTime_ssSSSS) + 0.300;
+		double endTime_currentSecond = Double.parseDouble(endTime_ssSSSS) + 0.300;
 
 		for (TargetSlotEntity entity : this.mmsiEntity.getTargetSlotEntity()) {
 			//

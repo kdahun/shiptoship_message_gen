@@ -745,12 +745,14 @@ public class MmsiComponent {
 		jTable.setFocusable(false);
 		jTable.getTableHeader().setFocusable(false);
 
-		jTable.addMouseListener(new MouseAdapter() {
+		MouseListener mouseListener = new MouseAdapter() {
 		    private long lastClickTime = 0;
 		    private final long doubleClickDelay = 300; // 더블 클릭 간격 (밀리초)
 
-		    @Override
-		    public void mouseClicked(MouseEvent e) {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				// 클릭 및 더블클릭 이벤트 처리
+				// 이 부분을 비워두면 해당 이벤트를 무시하게 됩니다.
 		        long clickTime = System.currentTimeMillis();
 		        if (clickTime - lastClickTime <= doubleClickDelay) {
 		            // 더블 클릭 이벤트 처리
@@ -764,8 +766,33 @@ public class MmsiComponent {
 		            resourceService.resourceStart(row, column, slotNumber);
 		        }
 		        lastClickTime = clickTime;
-		    }
-		});
+			}
+		};
+
+		// jTable.addMouseListener(new MouseAdapter() {
+		//     private long lastClickTime = 0;
+		//     private final long doubleClickDelay = 300; // 더블 클릭 간격 (밀리초)
+
+		//     @Override
+		//     public void mouseClicked(MouseEvent e) {
+		//         long clickTime = System.currentTimeMillis();
+		//         if (clickTime - lastClickTime <= doubleClickDelay) {
+		//             // 더블 클릭 이벤트 처리
+		//             int row = jTable.getSelectedRow();
+		//             int column = jTable.getSelectedColumn();
+		            
+		// 			CustomTableCellRenderer renderer = (CustomTableCellRenderer) jTable.getDefaultRenderer(Object.class);
+		// 			String slotNumber = renderer.getCellSlotNumber(row, column);
+		//             // 이제 여기서 더블 클릭된 셀에 대한 작업을 수행할 수 있습니다.
+		//             System.out.println("더블 클릭됨: (" + row + ", " + column + ")");
+		//             resourceService.resourceStart(row, column, slotNumber);
+		//         }
+		//         lastClickTime = clickTime;
+		//     }
+		// });
+		
+		
+		jTable.addMouseListener(mouseListener);
 		
 		// 툴팁 딜레이 조절
 		ToolTipManager.sharedInstance().setInitialDelay(1); // 초기 지연 시간 1000 밀리초 (1초)
