@@ -50,26 +50,26 @@ public class MmsiEntity {
 	private final TcpServerTableModel sendTableModel;
 	private final UdpServerTableModel udpServerTableModel;
 
-	private boolean chk;
-	private long mmsi;
-	private boolean asm;
+	private boolean chk;		// setChk(true) 호출 시 AIS메시지 생성 프로세스 시작
+	private long mmsi;			// MMSI 고유값
+	private boolean asm;		// 
 	private boolean vde;
 
-	private int nIndex = 0; // n 의 시작점
+	private int nIndex = 0;		// n 의 시작점
 	private Boolean targetChannel = true; // true : A channel, false : B Channel
 
 	private int shootCount = -1;
 
-	private int speed; // RI 보고간격
-	private double RR; // 보고율
-	private int[] nArray; // n value
-	private int NI; // NI
-	private int NSS; // NSSA
+	private int speed;			// RI 보고간격
+	private double RR;			// 보고율
+	private int[] nArray;		// n value
+	private int NI;				// NI
+	private int NSS;			// NSSA
 	private int NS;
 	private int[] SI;
 	
 	private int positionsCnt = 0;
-	private Map<Integer, double[]> positions = new HashMap<>();
+	private Map<Integer, double[]> positions = new HashMap<>();		// 슬롯번호, 해당 슬롯의 할당 시간대
 	
 	private int format450_AIS = 0;
 	private int format450_ASM = 0;
@@ -454,6 +454,10 @@ public class MmsiEntity {
 		return slotTimeOut;
 	}
 
+	/**
+	 * [MMSI_AIS_FLOW]-2-1
+	 * 분석 필요 
+	 */
 	public void setSlotTimeOut(int slotTimeOut) {
 		//
 		this.slotTimeOut = slotTimeOut;
@@ -481,6 +485,11 @@ public class MmsiEntity {
 		return this.chk;
 	}
 
+	/**
+	 * [MMSI_AIS_FLOW]-2-2
+	 * QuartzCoreService Scheduler에 Job등록을 위한 함수, 시작 시간 설정 후 RR, NI 초기화
+	 * To [MMSI_AIS_FLOW]-3 MmsiEntity.setStartTime
+	 */
 	public void setChk(boolean chk) {
 		this.chk = chk;
 		if (!this.chk) {
@@ -574,6 +583,11 @@ public class MmsiEntity {
 		return this.startTime;
 	}
 
+	/**
+	 * [MMSI_AIS_FLOW]-3
+	 * 시작 시간 변경 이벤트 생성 및 발행
+	 * To [MMSI_AIS_FLOW]-4 MmsiEntityChangeStartTimeListener.onMyPojoChange(@EventListener)
+	 */
 	public void setStartTime(LocalDateTime startTime) {
 		//
 		this.startTime = startTime;

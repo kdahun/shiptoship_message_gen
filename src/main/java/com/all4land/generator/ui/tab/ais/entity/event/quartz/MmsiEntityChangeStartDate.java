@@ -29,16 +29,23 @@ public class MmsiEntityChangeStartDate implements Job {
 		this.globalEntityManager = globalEntityManager;
 	}
 
+	/**
+	 * [MMSI_AIS_FLOW]-6
+	 * Trigger에 등록된 시작시간이 되면 해당 execute 호출로 mainProcess에서 ais메시지 생성 등 처리
+	 * 프로세스가 끝난 뒤 addFuture에서 다음 MmsiEntity 처리를 위한 setStartTime 지정
+	 * To [MMSI_AIS_FLOW]-6-1 MmsiEntityChangeStartDate.mainProcess
+	 * To [MMSI_AIS_FLOW]-6-2 MmsiEntityChangeStartDate.addFuture
+	 */
 	@Override
 	public void execute(JobExecutionContext context) throws JobExecutionException {
 		// TODO Auto-generated method stub
-		// log.info("{} , {}", LocalDateTime.now(), "시작");
+		log.info("{} , {}", LocalDateTime.now(), "시작");
 		JobDataMap jobDataMap = context.getMergedJobDataMap();
 		this.mmsiEntity = (MmsiEntity) jobDataMap.get("mmsiEntity");
-//		 log.info("{} , {}", LocalDateTime.now(), this.mmsiEntity.getStartTime());
+		 log.info("{} , {}", LocalDateTime.now(), this.mmsiEntity.getStartTime());
 		try {
 //			log.info("1");
-			this.mainPprocess();
+			this.mainProcess();
 //			log.info("10");
 		}catch (Exception e) {
 			// TODO: handle exception
@@ -52,7 +59,11 @@ public class MmsiEntityChangeStartDate implements Job {
 		// log.info("");
 	}
 
-	private void mainPprocess() {
+	/**
+	 * [MMSI_AIS_FLOW]-6-1
+	 * AIS 메시지 생성 및 처리. 추가 분석 필요
+	 */
+	private void mainProcess() {
 		//
 //		log.info("2");
 		// mmsiEntity.Chk ? 1. MMSI 생성되면 True로 초기화 (GlobalEntityManager.addMmsiEntity)
@@ -97,6 +108,10 @@ public class MmsiEntityChangeStartDate implements Job {
 		}
 	}
 
+	/**
+	 * [MMSI_AIS_FLOW]-6-2
+	 * 분석 필요
+	 */
 	private void addFuture() {
 		//
 //		log.info("변경전 : "+this.mmsiEntity.getStartTime().toString());

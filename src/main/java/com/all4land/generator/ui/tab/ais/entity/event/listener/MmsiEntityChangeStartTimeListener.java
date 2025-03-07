@@ -30,6 +30,11 @@ public class MmsiEntityChangeStartTimeListener {
 		this.scheduler = scheduler;
 	}
 
+	/**
+	 * [MMSI_AIS_FLOW]-4
+	 * Scheduler에 Job 등록을 위한 Trigger 생성
+	 * To [MMSI_AIS_FLOW]-5 QuartzCoreService.addSchedulerJob
+	 */
 	@EventListener
 	public void onMyPojoChange(MmsiEntityChangeStartTimeEvent event) {
 		//

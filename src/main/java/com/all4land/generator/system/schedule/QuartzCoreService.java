@@ -29,6 +29,12 @@ public class QuartzCoreService {
 		this.scheduler = scheduler;
 	}
 	
+	/**
+	 * [MMSI_AIS_FLOW]-5
+	 * MmsiEntity에 Job이 없을 경우 Job 생성(MmsiEntityChangeStartDate.class implements Job)
+	 * Job이 있을 경우 트리거만 추가
+	 * To [MMSI_AIS_FLOW]-6 MmsiEntityChangeStartDate.execute @Override (트리거 활성화 시 자동으로 호출)
+	 */
 	public void addScheduleJob(Trigger trigger, MmsiEntity mmsiEntity) throws SchedulerException, ParseException {
 		//
         // Quartz JobDetail 생성

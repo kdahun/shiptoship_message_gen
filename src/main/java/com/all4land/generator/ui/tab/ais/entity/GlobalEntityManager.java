@@ -256,6 +256,11 @@ public class GlobalEntityManager {
 		mmsi.setChk(true);
 	}
 	
+	/**
+	 * [MMSI_AIS_FLOW]-2
+	 * MmsiEntity 객체 생성 Bean등록, 환경 설정 후 SlotTimeOut 이벤트 발행 및 생성완료 신호-setChk(true)호출
+	 * To [MMSI_AIS_FLOW]-2-1 MmsiEntity.setSlotTimeOut , [MMSI_AIS_FLOW]-2-2 MmsiEntity.setChk
+	 */
 	public void addMmsiEntity2(Scheduler scheduler, QuartzCoreService quartzCoreService,
 			JTextArea aisTabjTextAreaName) {
 		//

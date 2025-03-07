@@ -35,15 +35,15 @@ public class CustomTableCellRenderer extends DefaultTableCellRenderer {
 	private int fontSize = 9; // 기본 폰트 사이즈
 	private boolean legType;
 	private int tdmaChannelSumValue = 0;
-	private Map<Point, CellInfos> cellInfos = new LinkedHashMap<>();
+	private Map<Point, CellInfos> cellInfos = new LinkedHashMap<>();			// 각 슬롯의 테이블에서의 x-y 좌표, 셀정보
 	
 	// 셀의 기본 정보가 담긴 맵 을 클리어하기위한 기본 맵
-	private Map<Point, CellInfos> cellInfosDefault = new LinkedHashMap<>();
+	private Map<Point, CellInfos> cellInfosDefault = new LinkedHashMap<>();		//
 	
-	private Map<Integer, Point> cellInfosBySlotNumber = new LinkedHashMap<>();
+	private Map<Integer, Point> cellInfosBySlotNumber = new LinkedHashMap<>();	// 슬롯 번호와 테이블에서의 x-y 좌표
 	
-	private Map<Integer, Integer> tdmaFrameIndexMap = new TreeMap<>();
-	private Map<TdmaInfoEntity, Integer[]> tdmaInfos = new LinkedHashMap<>();
+	private Map<Integer, Integer> tdmaFrameIndexMap = new TreeMap<>();			// ?
+	private Map<TdmaInfoEntity, Integer[]> tdmaInfos = new LinkedHashMap<>();	// ?
 	
 	private boolean aisMsgDisplay = true;
 	private boolean asmMsgDisplay = true;
@@ -255,9 +255,11 @@ public class CustomTableCellRenderer extends DefaultTableCellRenderer {
     			TdmaInfoEntity tdma = new TdmaInfoEntity();
     			tdma.setTdmaFrame(i);
     			tdma.setTdmaChannel(ii);
-    			Integer[] slotNumbers = {((i*90)+ii), ((i*90)+ii)+6, ((i*90)+ii)+12, ((i*90)+ii)+18, ((i*90)+ii)+24, ((i*90)+ii)+30, ((i*90)+ii)+36, ((i*90)+ii)+42, 
+    			Integer[] slotNumbers = {
+					((i*90)+ii)   , ((i*90)+ii)+ 6, ((i*90)+ii)+12, ((i*90)+ii)+18, ((i*90)+ii)+24, ((i*90)+ii)+30, ((i*90)+ii)+36,
+					((i*90)+ii)+42, ((i*90)+ii)+48, ((i*90)+ii)+54, ((i*90)+ii)+60, ((i*90)+ii)+66, ((i*90)+ii)+72, ((i*90)+ii)+78
 //    					((i*90)+ii)+48, ((i*90)+ii)+54, ((i*90)+ii)+60, ((i*90)+ii)+66, ((i*90)+ii)+72, ((i*90)+ii)+78, ((i*90)+ii)+84 };
-    					((i*90)+ii)+48, ((i*90)+ii)+54, ((i*90)+ii)+60, ((i*90)+ii)+66, ((i*90)+ii)+72, ((i*90)+ii)+78 };
+				};
     			//System.out.println("tdmaFrame : "+i + ", tdmaChannel : " + ii+", slots : "+ Arrays.toString(slotNumbers));
     			this.tdmaInfos.put(tdma, slotNumbers);
     		}
@@ -494,11 +496,12 @@ public class CustomTableCellRenderer extends DefaultTableCellRenderer {
     	//
     	for(Entry<Point, CellInfos> cellInfo : this.cellInfos.entrySet()) {
     		//
-    		if(this.cellInfos.get(cellInfo.getKey()).getAisCellInfos() != null) {
+			AisCellInfos aisCellInfos = this.cellInfos.get(cellInfo.getKey()).getAisCellInfos();
+    		if(aisCellInfos != null) {
     			//
-    			if(this.cellInfos.get(cellInfo.getKey()).getAisCellInfos().getMmsi() == mmsiEntity.getMmsi()) {
+    			if(aisCellInfos.getMmsi() == mmsiEntity.getMmsi()) {
     				//
-    				this.cellInfos.get(cellInfo.getKey()).getAisCellInfos().setSlotTimeOut(mmsiEntity.getSlotTimeOut());
+    				aisCellInfos.setSlotTimeOut(mmsiEntity.getSlotTimeOut());
     			}
     		}
     	}
