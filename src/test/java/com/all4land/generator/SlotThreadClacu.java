@@ -21,7 +21,7 @@
 //			LocalDateTime now = LocalDateTime.now();
 //			String formatNow = now.format(SystemConstMessage.formatterForStartIndex);
 //			
-//			int findSlotNumber = this.timeMapRangeCompnents.findStartSlotNumber(formatNow);
+//			int findSlotNumber = this.timeMapRangeCompnents.findSlotNumber(formatNow);
 //			
 //			System.out.println("OS 시간 : "+ formatNow);
 //			

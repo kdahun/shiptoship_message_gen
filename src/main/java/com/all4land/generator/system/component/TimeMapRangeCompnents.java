@@ -15,53 +15,48 @@ public class TimeMapRangeCompnents {
 	List<Range> range = new ArrayList<>();
 	Map<Integer, Range> rangeMap = new HashMap<>();
 	
+	/**
+	 * 각 MmsiEntity마다 이 컴포넌트를 갖고 있다.
+	 * range, rangeMap 초기화
+	 * range : 2249개 슬롯의 각 시작시간, 종료시간, 슬롯번호를 담은 리스트
+	 * rangeMap : 슬롯번호를 key로 하고 Range를 value로 하는 맵
+	 */
 	public TimeMapRangeCompnents() {
 		// TODO Auto-generated constructor stub
 		double divisor = 0.0266666666666667; 
 		double currentSecond = 59.999999999999;
-		//double epsilon = 0.0001; // 최소한의 작은값
 		
     	int tmp = (int) (currentSecond / divisor);
     	for(int i = 0 ; i <= tmp ; i++) {
     		//
     		double from = i * divisor;
-            double to = (i == tmp) ? currentSecond : (i + 1) * divisor;// - epsilon;
+            double to = (i == tmp) ? currentSecond : (i + 1) * divisor;
             range.add(new Range(from, to, i));
     	}
-    	
-//    	range.forEach(System.out::println);
     	
     	for (Range range : this.range) {
             this.rangeMap.put(range.getSlotNumber(), range);
         }
-    	
-//    	int a = findStartSlotNumber("14.9600");
-////    	int aa = findStartSlotNumber("24.8260");
-//    	System.out.println(a);
 	}
 	
-	// 이진 검색
-	public int findStartSlotNumber(String ssSSSS) {
-		//
-		// 시간 측정 시작
-//	    long startTime = System.nanoTime();  // 나노초 단위로 시작 시간 기록
-		
+	/**
+	 * 이진검색 알고리즘으로 해당 ssSSSS가 속한 슬롯번호를 찾는다.
+	 * @param ssSSSS 시간
+	 * @return 슬롯번호
+	 */
+	public int findSlotNumber(String ssSSSS) {
+		//		
 	    double value = Double.parseDouble(ssSSSS);
 	    int low = 0;
 	    int high = range.size() - 1;
 
+		// 0 ~ 2249
 	    while (low <= high) {
 	        int mid = low + (high - low) / 2;
 	        Range r = range.get(mid);
 
 	        if (value >= r.getFrom() && value <= r.getTo()) {
 	        	//
-	        	// 시간 측정 종료
-//	            long endTime = System.nanoTime();  // 나노초 단위로 종료 시간 기록
-//	            long duration = endTime - startTime;  // 소요 시간 계산
-
-//	            System.out.println("메서드 실행 시간: " + duration + " 나노초 (" + (duration / 1_000_000.0) + " 밀리초)");
-	        	
 	            return mid;
 	        } else if (value < r.getFrom()) {
 	            high = mid - 1;
@@ -70,28 +65,19 @@ public class TimeMapRangeCompnents {
 	        }
 	    }
 
-	    return -1; // 찾지 못한 경우
+	    return -1;
 	}
 	
+	/**
+	 * 해당 ssSSSS가 속한 슬롯의 다음 슬롯의 시작시간을 찾는다.
+	 * @param ssSSSS 시간
+	 * @return 다음 슬롯의 시작시간
+	 */
 	public double findNextssSSSS(String ssSSSS) {
-	    double value = Double.valueOf(ssSSSS);
-	    int low = 0;
-	    int high = range.size() - 1;
-
-	    while (low <= high) {
-	        int mid = low + (high - low) / 2;
-	        Range r = range.get(mid);
-
-	        if (value >= r.getFrom() && value <= r.getTo()) {
-	            return range.get(mid+1).getFrom();//r.getTo();
-	        } else if (value < r.getFrom()) {
-	            high = mid - 1;
-	        } else {
-	            low = mid + 1;
-	        }
-	    }
-
-	    return -1; // 찾지 못한 경우
+		//
+		int slotNumber = findSlotNumber(ssSSSS);
+		return slotNumber == -1 ? 
+			-1 : range.get(slotNumber+1).getFrom();
 	}
 	
 	public List<Double> getFromArray(double cut) {

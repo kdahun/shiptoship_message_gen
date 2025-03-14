@@ -836,104 +836,144 @@ public class GlobalEntityManager {
 	}
 
 	/**
-	 * 슬롯 검색 및 
+	 * 슬롯 검색 및 점유(슬롯 마킹), AIS 메시지 생성-송신 함수
 	 * @param mmsiEntity
 	 * @return
 	 */
 	public int findSlotAndMarking(MmsiEntity mmsiEntity) {
 		//
 		try {
+			/**
+			 * 테이블 행, 열 정보를 가져오기 위해 model 객체 가져오기.
+			 * 슬롯 넘버로 해당 셀의 정보를 가져오기 위해 renderer 객체 가져오기.
+			 */
 			TableModel model = this.currentFrameJTableNameUpper.getModel();
 			CustomTableCellRenderer renderer = (CustomTableCellRenderer) this.currentFrameJTableNameUpper
 					.getDefaultRenderer(Object.class);
 
+			/**
+			 * 해당 AIS의 SI(Selection Interval : 선택할 슬롯의 최소[0], 최대[1]값)를 통해 셀의 정보를 가져온다.
+			 */
 			Point cellInfoPoint = renderer.getCellInfosBySlotNumber(mmsiEntity.getSI()[0]);
+
+			/**
+			 * 테이블 순회를 위한 변수 초기화
+			 * x0 : 셀의 위치 Row(최소0 ~ 최대90)
+			 * x1 : 셀의 위치를 7로 나눈 몫(테이블에서의 TDMA 한 덩이 행 개수가 7개)
+			 * x2 : 셀의 위치를 7로 나눈 나머지
+			 * y0 : 셀의 위치 Column(최소0 ~ 최대31)
+			 */
 			int x0 = (int) cellInfoPoint.getX();
 			int x1 = x0 / 7;
 			int x2 = x0 % 7;
 			int y0 = (int) cellInfoPoint.getY();
-			// DecimalFormat decimalFormat = new DecimalFormat("#.####");
 
-//			log.info("SI:{}, x0: {}, x1: {}, x2: {}, y0: {}", mmsiEntity.getSI()[0], x0, x1, x2, y0);
-
+			/**
+			 * 연속으로 비어있는 셀의 개수를 체크하기 위한 변수
+			 * targetInfoList : 연속으로 비어있는 셀의 정보를 담기 위한 리스트
+			 */
 			int consecutiveCount = 0;
 			List<TargetCellInfoEntity> targetInfoList = new ArrayList<>();
 
+			/**
+			 * 테이블 모델에서 실제 Row, Column 정보를 가져온다.
+			 * rowCount : 90
+			 * columnCount : 32
+			 */
 			int rowCount = model.getRowCount();
 			int columnCount = model.getColumnCount();
+			/**
+			 * 테이블에서의 TDMA(0~5) 한 덩이를 Page로 표현 : 7Rows
+			 */
 			int rowsPerPage = 7;
-			// long startTime = System.nanoTime(); // 시작 시간 기록
 
-//			for (int i = 0; i < rowCount; i += rowsPerPage) {
-//				for (int col = 0; col < columnCount; col++) {
-//					for (int j = 0; j < rowsPerPage; j++) {
-
+			/**
+			 * 테이블을 순회하면서 AIS의 SI(Selection Interval)에 해당하는 슬롯을 찾는다.
+			 * AIS의 SI(Selection Interval)에 해당하는 슬롯을 찾으면 해당 셀에 AIS 정보를 마킹, AIS 메시지를 생성한다.
+			 */
 			for (int i = (x1 * rowsPerPage); i < rowCount; i += rowsPerPage) {
 				for (int col = y0; col < columnCount; col++) {
 					for (int j = x2; j < rowsPerPage; j++) {
 						//
-						// 범위 체크
-//						log.info("SI:{}, x0: {}, x1: {}, x2: {}, y0: {}, i: {}, j: {}, col: {}", mmsiEntity.getSI()[0], x0, x1, x2, y0, i, j, col);
+						/**
+						 * 셀의 X 위치가 90보다 작고 유효한 셀일 경우에만 로직 수행
+						 * 유효한 셀은 TDMA셀, 빈 셀을 제외한 나머지 셀
+						 */
 						if (i + j < 90 && isValidCell(i + j, col)) {
 							//
+							/**
+							 * cellSlotNumber : 테이블 x,y 포인트의 셀 슬롯 넘버
+							 */
 							int cellSlotNumber = Integer.parseInt(renderer.getCellSlotNumber(i + j, col));
-//							log.info("cellSlotNumber: {}", cellSlotNumber);
+							/**
+							 * 미사용중이고 해당 MmsiEntity의 SI(Selection Interval)에 해당하는 슬롯인 경우에만 로직 수행
+							 */
 							if (!renderer.verifyAisAllChannelIsEmpty(i + j, col)
 									&& mmsiEntity.getSI()[0] <= cellSlotNumber
 									&& mmsiEntity.getSI()[1] >= cellSlotNumber) {
 								//
-								// 비어있으면
+								/**
+								 * 유효 슬롯 검색으로 인한 연속으로 비어있는 셀의 개수를 체크하기 위한 변수
+								 */
 								consecutiveCount++;
+
+								/**
+								 * 타겟 셀 정보를 담기 위한 Entity
+								 * List에 타겟 셀 Entity를 담아둔다.
+								 */
 								TargetCellInfoEntity targetCellInfoEntity = new TargetCellInfoEntity();
 								targetCellInfoEntity.setRow(i + j);
 								targetCellInfoEntity.setCol(col);
 								targetInfoList.add(targetCellInfoEntity);
 
+								/**
+								 * 연속으로 비어있는 셀의 개수가 4개인 경우에만 로직 수행
+								 */
 								if (consecutiveCount == 4) {
-									// 연속으로 비어있는곳 발견
+									//
+									/**
+									 * 검색된 4개 셀 중 랜덤으로 선택하여 해당 셀의 슬롯 넘버를 가져온다.
+									 */
 									TargetCellInfoEntity s = RandomGenerator.generateRandomAisTarget(targetInfoList);
 									int slotNumber = Integer.parseInt(renderer.getCellSlotNumber(s.getRow(), s.getCol()));
 
+									/**
+									 * 슬롯의 TimeOutTime이 설정되어 있지 않은 경우에만 설정한다.
+									 */
 									if (mmsiEntity.getSlotTimeOutTime() == null) {
 										LocalDateTime modifiedDateTime = mmsiEntity.getStartTime().plusMinutes(1)
 												.minus((mmsiEntity.getSpeed() * 1000) - 100, ChronoUnit.MILLIS);
 										mmsiEntity.setSlotTimeOutTime(modifiedDateTime);
 									}
-									// 마킹
+									
+									/**
+									 * 슬롯 마킹 메서드를 비동기로 실행한다.
+									 * AIS 타겟 슬롯 Entity를 추가하는 메서드를 비동기로 실행한다.
+									 * AIS 메시지를 생성하는 메서드를 비동기로 실행한다.
+									 */
 									CompletableFuture<Void> future1 = CompletableFuture
 											.runAsync(() -> this.setSlotMarking(mmsiEntity, s));
-
-									//
 									CompletableFuture<Void> future2 = CompletableFuture
 											.runAsync(() -> this.addAISTargetSlotEntity(mmsiEntity, slotNumber, s));
-//									TargetSlotEntity newTargetSlotEntity = new TargetSlotEntity();
-//									newTargetSlotEntity.setRow(s.getRow());
-//									newTargetSlotEntity.setColumn(s.getCol());
-//									
-//									newTargetSlotEntity.setChannel(mmsiEntity.getTargetChannel());
-//									newTargetSlotEntity.setSlotNumber(slotNumber);
-									//
-//									String ssSSSS = mmsiEntity.getStartTime()
-//											.format(SystemConstMessage.formatterForStartIndex);
-//									double currentSecond = Double.valueOf(ssSSSS);
-//									newTargetSlotEntity.setSsSSSS(currentSecond);
-//									mmsiEntity.addTargetSlotEntity(newTargetSlotEntity);
-
 									CompletableFuture<Void> future3 = CompletableFuture
 											.runAsync(() -> this.setAISMessage(mmsiEntity, slotNumber));
+									
+									/**
+									 * 3개의 비동기 메서드가 모두 종료될 때까지 대기한다.
+									 */
 									CompletableFuture<Void> combinedFuture = CompletableFuture.allOf(future1, future2,
 											future3);
 									combinedFuture.join();
-//									long endTime = System.nanoTime(); // 종료 시간 기록
-//							        long duration = endTime - startTime; // 실행 시간 계산
-//							        double seconds = duration / 1_000_000_000.0;
-//							        String formattedNumber = decimalFormat.format(seconds);
-//							        System.out.println("메서드 실행 시간: "+formattedNumber+" 초");
 
 									return slotNumber;
 								}
 
-							} else {
+							} 
+							/**
+							 * 연속으로 비어있는 셀의 개수가 4개 미만인 경우 초기화
+							 * 다음 루프로 이동
+							 */
+							else {
 								//
 								targetInfoList.clear();
 								consecutiveCount = 0;
@@ -944,15 +984,9 @@ public class GlobalEntityManager {
 				}
 				y0 = 0;
 			}
-
-//			long endTime = System.nanoTime(); // 종료 시간 기록
-//	        long duration = endTime - startTime; // 실행 시간 계산
-//	        double seconds = duration / 1_000_000_000.0;
-//	        String formattedNumber = decimalFormat.format(seconds);
-//	        System.out.println("메서드 실행 시간: "+formattedNumber+" 초");
 			return -1;
-		} catch (NumberFormatException e) {
-            log.error("Exception [Err_Location] : {}", e.getStackTrace()[0]);
+		} catch (ArrayIndexOutOfBoundsException | NumberFormatException e) {
+			log.error("Exception [Err_Location] : {}", e.getStackTrace()[0]);
 		}
 		return -1;
 
@@ -979,9 +1013,13 @@ public class GlobalEntityManager {
 		double currentSecond = Double.parseDouble(ssSSSS);
 		newTargetSlotEntity.setSsSSSS(currentSecond);
 		mmsiEntity.addTargetSlotEntity(newTargetSlotEntity);
-//		log.info("aaaaaaaaaaa");
 	}
 
+	/**
+	 * 테이블 셀 마킹
+	 * @param mmsiEntity MmsiEntity
+	 * @param s 타겟 셀 정보
+	 */
 	private void setSlotMarking(MmsiEntity mmsiEntity, TargetCellInfoEntity s) {
 		//
 		if (mmsiEntity.getTargetChannel()) {

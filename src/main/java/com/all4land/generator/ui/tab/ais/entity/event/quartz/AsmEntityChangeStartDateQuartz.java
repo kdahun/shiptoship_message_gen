@@ -8,7 +8,6 @@ import org.quartz.Job;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import com.all4land.generator.system.component.TimeMapRangeCompnents;
@@ -42,7 +41,7 @@ public class AsmEntityChangeStartDateQuartz implements Job {
 		JobDataMap jobDataMap = context.getMergedJobDataMap();
 		this.mmsiEntity = (MmsiEntity) jobDataMap.get("mmsiEntity");
 
-		int startIndex = this.timeMapRangeCompnents.findStartSlotNumber(this.mmsiEntity.getAsmEntity().getStartTime().format(SystemConstMessage.formatterForStartIndex));
+		int startIndex = this.timeMapRangeCompnents.findSlotNumber(this.mmsiEntity.getAsmEntity().getStartTime().format(SystemConstMessage.formatterForStartIndex));
 		
 		CompletableFuture<List<TargetCellInfoEntity>> rule1 = CompletableFuture.supplyAsync(() -> {
 		    return this.findAsmRule1(startIndex); });

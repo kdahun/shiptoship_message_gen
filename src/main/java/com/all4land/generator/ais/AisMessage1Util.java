@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AisMessage1Util {
 	/**
+	 * [MMSI_AIS_FLOW]-6-1-1
 	 * 랜덤 메시지 생성 함수
 	 * @param mmsiEntity
 	 * @param slotNumber

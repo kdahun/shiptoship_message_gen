@@ -28,6 +28,13 @@ public class MmsiEntitySlotTimeChangeQuartz implements Job {
 	}
 	
 //	@Async
+
+	/**
+	 * [SLOT_FLOW]-4
+	 * 트리거 발동 시 스케쥴된 Job 실행
+	 * @param context
+	 * @throws JobExecutionException
+	 */
 	@Override
 	public void execute(JobExecutionContext context) throws JobExecutionException {
 		// TODO Auto-generated method stub

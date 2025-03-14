@@ -31,7 +31,7 @@ public class MmsiEntityChangeStartDate implements Job {
 
 	/**
 	 * [MMSI_AIS_FLOW]-6
-	 * Trigger에 등록된 시작시간이 되면 해당 execute 호출로 mainProcess에서 ais메시지 생성 등 처리
+	 * QuarztCoreService ScheduleJob의 Trigger에 등록된 시작시간이 되면 해당 execute 호출로 mainProcess에서 ais메시지 생성 등 처리
 	 * 프로세스가 끝난 뒤 addFuture에서 다음 MmsiEntity 처리를 위한 setStartTime 지정
 	 * To [MMSI_AIS_FLOW]-6-1 MmsiEntityChangeStartDate.mainProcess
 	 * To [MMSI_AIS_FLOW]-6-2 MmsiEntityChangeStartDate.addFuture
@@ -44,53 +44,52 @@ public class MmsiEntityChangeStartDate implements Job {
 		this.mmsiEntity = (MmsiEntity) jobDataMap.get("mmsiEntity");
 		 log.info("{} , {}", LocalDateTime.now(), this.mmsiEntity.getStartTime());
 		try {
-//			log.info("1");
 			this.mainProcess();
-//			log.info("10");
 		}catch (Exception e) {
 			// TODO: handle exception
 			e.printStackTrace();
 		}
-		
-		// log.info("{} , {}", LocalDateTime.now(), this.mmsiEntity.getStartTime());
-//		log.info("11");
+		//[Before addFuture]2025-03-14T10:15:22.767879500 , 2025-03-14T10:15:22.765089300
+		log.info("[Before addFuture]{} , {}", LocalDateTime.now(), this.mmsiEntity.getStartTime());
 		this.addFuture();
-		// log.info("{} , {}", LocalDateTime.now(), this.mmsiEntity.getStartTime());
-		// log.info("");
+		log.info("[After addFuture]{} , {}", LocalDateTime.now(), this.mmsiEntity.getStartTime());
+		//[After addFuture]2025-03-14T10:15:22.767879500 , 2025-03-14T10:15:24.765089300
 	}
 
 	/**
 	 * [MMSI_AIS_FLOW]-6-1
-	 * AIS 메시지 생성 및 처리. 추가 분석 필요
+	 * AIS 메시지 생성 및 처리.
+	 * 1. mmsiEntity가 활성화되어 있는지 확인
+	 * 2. 이전에 전송된 슬롯 확인
+	 * 3. 슬롯이 없으면 SI 계산
+	 * 4. 마킹, 전송
 	 */
 	private void mainProcess() {
 		//
-//		log.info("2");
-		// mmsiEntity.Chk ? 1. MMSI 생성되면 True로 초기화 (GlobalEntityManager.addMmsiEntity)
-		// 2. MmsiTableModel.setValueAt 에서 input parameter value(Object)에 따라 변경
+		/**
+		 * mmsiEntity가 활성화되어 있는지 확인
+		 * 화면상에서의 CheckBox
+		 */
 		if (this.mmsiEntity.isChk()) {
 			//
-			// 1 기존에 쏜 히스토리확인
-//			log.info("3");
+			/** 
+			 * 이전에 전송된 슬롯 확인
+			 */ 
 			TargetSlotEntity rtnValue = this.checkHistorySlot();
-//			log.info("4");
 			if (rtnValue != null) {
-				// 있으면 바로 쏜다
-//				log.info("55");
+				// 
 				Vdm vdm = AisMessage1Util.create(this.mmsiEntity, rtnValue.getSlotNumber());
 				this.mmsiEntity.setMessage1(vdm, rtnValue.getSlotNumber());
 				this.mmsiEntity.setAisMessageSequence(mmsiEntity.getAisMessageSequence()+1);
 				
-				
 			} else {
 				//
 				// SI 계산
-//				log.info("5");
 				this.mmsiEntity.setSelectionInterval();
-//				log.info("6");
-				// 마킹하고 쏜다
-				int successSlotNumber = this.globalEntityManager.findSlotAndMarking(mmsiEntity);
-//				log.info("8");
+				// 마킹 및 전송
+				// int successSlotNumber = 
+				this.globalEntityManager.findSlotAndMarking(mmsiEntity);
+				/**
 //				if(successSlotNumber <= -1) {
 //					log.info("점유 못함1. MMSI : {}, NS : {} , {}", this.mmsiEntity.getMmsi(), this.mmsiEntity.getNS(),
 //							this.mmsiEntity);
@@ -102,38 +101,47 @@ public class MmsiEntityChangeStartDate implements Job {
 //				log.info("MMSI : {}, NS : {} , {}", this.mmsiEntity.getMmsi(), this.mmsiEntity.getNS(),
 //						this.mmsiEntity);
 //				log.info("SI : {}", this.mmsiEntity.getSI());
-
+				 */
 			}
-//			log.info("");
 		}
 	}
 
 	/**
 	 * [MMSI_AIS_FLOW]-6-2
-	 * 분석 필요
+	 * 1. startTime 설정(startTime + speed) -> 다음 시작시간 설정을 위한 QuartzCoreService.addScheduleJob이 호출됨
+	 * 2. 전송 카운트 업
+	 * 3. 슬롯 최대값 2249를 넘어가면 초기화
+	 * 	- NS, NI의 의미 분석 필요
+	 *	- NSS = 시작시간(startTime)에 해당하는 SlotNumber로 초기화
 	 */
 	private void addFuture() {
 		//
-//		log.info("변경전 : "+this.mmsiEntity.getStartTime().toString());
-		LocalDateTime newLocalDateTime = this.mmsiEntity.getStartTime().plusSeconds(this.mmsiEntity.getSpeed());
-//		log.info("bbbbbbbbbb");
-		this.mmsiEntity.setStartTime(newLocalDateTime);
-//		log.info("변경후 : "+this.mmsiEntity.getStartTime().toString());
-		// 카운트하고
-//		log.info("1");
+		/**
+		 * startTime 설정(startTime + speed)
+		 */
+		LocalDateTime nextStartTime = this.mmsiEntity.getStartTime().plusSeconds(this.mmsiEntity.getSpeed());
+		this.mmsiEntity.setStartTime(nextStartTime);
+
+		/**
+		 * 전송 카운트 업
+		 */
 		this.mmsiEntity.setShootCount(this.mmsiEntity.getShootCount() + 1);
-//		log.info("2");
+
+		/**
+		 * (NS + NI)가 슬롯 최대값 2249를 넘어가면 초기화
+		 */
 		if ((this.mmsiEntity.getNS() + this.mmsiEntity.getNI()) > 2249) {
 			//
-//			log.info("처음부터 다시해야한다.");
 			this.mmsiEntity.setnIndex(0);
-//			this.mmsiEntity.setNSS(-1);
 			this.mmsiEntity.setNSS(this.mmsiEntity.getStartSlotNumber());
 			this.mmsiEntity.clearShootCount(-1);
 		}
-		
 	}
 
+	/**
+	 * 이전에 전송된 슬롯을 확인해, 동일한 슬롯을 다시 사용할 수 있는지 확인 및 해당 SlotEntity 반환
+	 * @return TargetSlotEntity 이 전에 전송된 슬롯이 있으면 해당 SlotEntity 반환, 없으면 null 반환
+	 */
 	private TargetSlotEntity checkHistorySlot() {
 		//
 		LocalDateTime startTime = this.mmsiEntity.getStartTime();
@@ -144,6 +152,11 @@ public class MmsiEntityChangeStartDate implements Job {
 		String endTime_ssSSSS = endTime.format(SystemConstMessage.formatterForStartIndex);
 		double endTime_currentSecond = Double.parseDouble(endTime_ssSSSS) + 0.300;
 
+		// -------------------------- targetslotentity 분석
+		/**
+		 * addTargetSlotEntity : GlobalEntityManager.findSlotAndMarking -> addAISTargetSlotEntity에서 호출.
+		 * clearTargetSlotEntity : MmsiEntitySlotTimeChangeQuartz Job에서 호출(슬롯 초기화 Job)
+		 */
 		for (TargetSlotEntity entity : this.mmsiEntity.getTargetSlotEntity()) {
 			//
 			if (entity != null) {

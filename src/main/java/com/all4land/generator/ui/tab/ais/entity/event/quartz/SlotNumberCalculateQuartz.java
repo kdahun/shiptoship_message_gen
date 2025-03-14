@@ -47,10 +47,10 @@
 //		//
 //		System.out.println("스케쥴 시작2 : " + LocalDateTime.now());
 //		
-//		this.timeMapRangeCompnents.findStartSlotNumber(LocalDateTime.now().format(SystemConstMessage.formatterForStartIndex));
+//		this.timeMapRangeCompnents.findSlotNumber(LocalDateTime.now().format(SystemConstMessage.formatterForStartIndex));
 //		
 //		
-//		this.globalSlotNumber.setSlotNumber(this.timeMapRangeCompnents.findStartSlotNumber(LocalDateTime.now().format(SystemConstMessage.formatterForStartIndex)));
+//		this.globalSlotNumber.setSlotNumber(this.timeMapRangeCompnents.findSlotNumber(LocalDateTime.now().format(SystemConstMessage.formatterForStartIndex)));
 //		
 //		int slotNumber = this.globalSlotNumber.getSlotNumber();
 //		

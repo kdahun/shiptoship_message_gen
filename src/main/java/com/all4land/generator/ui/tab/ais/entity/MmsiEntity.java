@@ -52,21 +52,21 @@ public class MmsiEntity {
 
 	private boolean chk;		// setChk(true) 호출 시 AIS메시지 생성 프로세스 시작
 	private long mmsi;			// MMSI 고유값
-	private boolean asm;		// 
-	private boolean vde;
+	private boolean asm;		// ASM 메시지 생성 여부
+	private boolean vde;		// VDE 메시지 생성 여부
 
 	private int nIndex = 0;		// n 의 시작점
 	private Boolean targetChannel = true; // true : A channel, false : B Channel
 
-	private int shootCount = -1;
+	private int shootCount = -1;// shootCount가 1이 되면 nIndex 증가 및 targetChannel 변경
 
 	private int speed;			// RI 보고간격
-	private double RR;			// 보고율
-	private int[] nArray;		// n value
-	private int NI;				// NI
-	private int NSS;			// NSSA
-	private int NS;
-	private int[] SI;
+	private double RR;			// AIS 메시지가 전송되는 빈도(Report Rate) calculateReportRate
+	private int[] nArray;		// RR을 기반으로 생성되는 배열, NS 계산에 사용 nArray(double RR)
+	private int NI;				// AIS 메시지가 전송되는 빈도(Report Rate)에 따른 슬롯 번호의 증가량(Nominal Increment) calculateNominalIncrement
+	private int NS;				// AIS 메시지가 전송될 슬롯 번호(Nominal Slot) calculatedNominalSlot
+	private int NSS;			// AIS 메시지가 전송될 초기 슬롯 번호(Nominal Slot Start) getStartSlotNumber
+	private int[] SI;			// AIS 메시지가 전송될 슬롯 번호의 범위(Selection Interval) calculateSelectionInterval
 	
 	private int positionsCnt = 0;
 	private Map<Integer, double[]> positions = new HashMap<>();		// 슬롯번호, 해당 슬롯의 할당 시간대
@@ -439,6 +439,11 @@ public class MmsiEntity {
 		return slotTimeOutTime;
 	}
 
+	/**
+	 * [SLOT_FLOW]-1
+	 * SlotTimeOut의 시간이 변경되면 이벤트 발행
+	 * @param slotTimeOutTime 슬롯 타임아웃 시간
+	 */
 	public void setSlotTimeOutTime(LocalDateTime slotTimeOutTime) {
 		//
 		this.slotTimeOutTime = slotTimeOutTime;
@@ -456,7 +461,10 @@ public class MmsiEntity {
 
 	/**
 	 * [MMSI_AIS_FLOW]-2-1
-	 * 분석 필요 
+	 * MmsiEntity생성 이벤트에서 add_180은 3, 나머지는 7로 초기화 후 
+	 * 해당 SlotTimeOutChangeEvent 이벤트 발행
+	//  * 추측] 한 플로우가 끝나면 -1이 되는걸로 봐서 몇 프레임까지 진행할 것인지에 대한 변수가 아닐까
+	 * MmsiEntitySlotTimeChangeQuartz Job이 실행되면 slotTimeOut 값에 따라 0이하일땐 0~7랜덤 0보다 클경우 slotTimeOut - 1로 변경. 다시 이 이벤트 발행
 	 */
 	public void setSlotTimeOut(int slotTimeOut) {
 		//
@@ -519,10 +527,14 @@ public class MmsiEntity {
 		}
 	}
 
+	/**
+	 * MmsiEntity의 시작시간 슬롯 번호 검색
+	 * @return startTime에 해당하는 슬롯번호
+	 */
 	public int getStartSlotNumber() {
 		//
 		return this.timeMapRangeCompnents
-				.findStartSlotNumber(this.getStartTime().format(SystemConstMessage.formatterForStartIndex));
+				.findSlotNumber(this.getStartTime().format(SystemConstMessage.formatterForStartIndex));
 	}
 
 	public long getMmsi() {
@@ -599,17 +611,12 @@ public class MmsiEntity {
 
 	public void setSelectionInterval() {
 		//
-//		log.info("A");
 		if (this.getSpeed() <= 30) {
 			//
-//			log.info("B");
 			this.setNS(this.calculateNominalSlotDualChannel());
-//			log.info("C");
 			this.setSI(calculateSelectionInterval(this.getNS(), this.getNI()));
-//			log.info("D");
 		} else {
 			//
-//			log.info("E");
 			this.setSI(calculateSelectionInterval(this.getStartSlotNumber(), 40));
 		}
 	}
@@ -628,6 +635,12 @@ public class MmsiEntity {
 		return message1;
 	}
 
+	/**
+	 * [MMSI_AIS_FLOW]-6-1-2
+	 * AIS 메시지 생성 및 UDP 전송
+	 * @param message1 AIS 메시지
+	 * @param slotNumber 슬롯 번호
+	 */
 	public void setMessage1(Vdm message1, int slotNumber) {
 		this.message1 = message1;
 		if (this.message1 != null) {
@@ -677,6 +690,7 @@ public class MmsiEntity {
 			
 			CompletableFuture.runAsync(() -> this.printConsoleLog(sbTime.toString()));
 
+			// TCP로 전송하는 메시지... 확인 필요
 			CompletableFuture.runAsync(() -> this.sendTableModel.sendAISMessage(
 					Formatter_61162_message+aisMessage, Formatter_61162_VSI_message+vsiMessage));
 			
@@ -964,6 +978,8 @@ public class MmsiEntity {
 		// 선택 간격(SI) 계산
 		int lowerBound = NS - (int) (0.1 * NI); // 하한선 계산
 		int upperBound = NS + (int) (0.1 * NI); // 상한선 계산
+
+		// int[] { 최소값, 최대값 } 반환
 		return new int[] { Math.max(lowerBound, 0), Math.min(upperBound, 2249) }; // 계산된 값들을 배열로 반환
 	}
 

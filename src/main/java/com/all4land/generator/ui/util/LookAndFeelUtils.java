@@ -14,11 +14,11 @@ public class LookAndFeelUtils {
 		try {
 			//
 			UIManager.setLookAndFeel(new FlatMacDarkLaf());
-//			UIManager.setLookAndFeel(new FlatDarculaLaf());
-//			UIManager.setLookAndFeel(new FlatIntelliJLaf());
-//			UIManager.setLookAndFeel(new FlatDarkLaf());
+			// UIManager.setLookAndFeel(new FlatDarculaLaf());
+			// UIManager.setLookAndFeel(new FlatIntelliJLaf());
+			// UIManager.setLookAndFeel(new FlatDarkLaf());
 //			UIManager.setLookAndFeel(new FlatLightLaf());
-//			UIManager.setLookAndFeel(new FlatMacLightLaf());
+			// UIManager.setLookAndFeel(new FlatMacLightLaf());
 		} catch (Exception e) {
 			//
 			log.error(e.getMessage());

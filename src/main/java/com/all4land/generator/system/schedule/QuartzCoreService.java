@@ -1,6 +1,10 @@
 package com.all4land.generator.system.schedule;
 
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
 import java.util.List;
 
 import org.quartz.JobBuilder;
@@ -51,17 +55,34 @@ public class QuartzCoreService {
 	                .storeDurably(true)
 	                .setJobData(jobDataMap)
 	                .build();
-			this.scheduler.scheduleJob(job, trigger);
+			Date dt = this.scheduler.scheduleJob(job, trigger);
+			// 현재시간 및 스케쥴된 시간 확인용 콘솔로그
+			LocalTime now = LocalTime.now();
+			SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss.SSS");
+			DateTimeFormatter fmt = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
+			String time = sdf.format(dt);
+			String curTime = now.format(fmt);
+			System.out.println("[Current   Time]" + curTime);
+			System.out.println("[Scheduled Time]" + time);
+			// 현재시간 및 스케쥴된 시간 확인용 콘솔로그
 			mmsiEntity.setJob(job);
 		}else {
 			//
 			//트리거가 이미 존재하는지 확인
 			if (!this.scheduler.checkExists(trigger.getKey())) {
 				// 존재하지 않는 경우 스케줄에 트리거 추가
-				this.scheduler.scheduleJob(trigger);
+				Date dt = this.scheduler.scheduleJob(trigger);
+				// 현재시간 및 스케쥴된 시간 확인용 콘솔로그
+				LocalTime now = LocalTime.now();
+				SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss.SSS");
+				DateTimeFormatter fmt = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
+				String time = sdf.format(dt);
+				String curTime = now.format(fmt);
+				System.out.println("[Current   Time]" + curTime);
+				System.out.println("[Scheduled Time]" + time);
+				// 현재시간 및 스케쥴된 시간 확인용 콘솔로그
 			}
 		}
-		
     }
 	
 	public void removeStartTimeTrigger(MmsiEntity mmsiEntity) throws SchedulerException, ParseException {
@@ -98,6 +119,15 @@ public class QuartzCoreService {
 		}
     }
 	
+	/**
+	 * [SLOT_FLOW]-3
+	 * MmsiEntitySlotTimeChangeQuartz Job 생성 및 트리거와 함께 스케쥴 등록
+	 * 추후 트리거가 발동되면 MmsiEntitySlotTimeChangeQuartz.execute 실행
+	 * @param trigger slotTimeOutTime 변경 시 발행되는 이벤트에서 생성한 트리거
+	 * @param mmsiEntity 해당 스케쥴이 등록될 mmsiEntity 객체
+	 * @throws SchedulerException 예외
+	 * @throws ParseException 예외
+	 */
 	public void addScheduleJobForSlotTimeOut(Trigger trigger, MmsiEntity mmsiEntity) throws SchedulerException, ParseException {
 		//
         // Quartz JobDetail 생성

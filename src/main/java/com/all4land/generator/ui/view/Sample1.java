@@ -504,6 +504,7 @@ public class Sample1 extends javax.swing.JFrame {
         jPanel3.setBorder(javax.swing.BorderFactory.createTitledBorder(javax.swing.BorderFactory.createTitledBorder("MMSI"), "MMSI"));
 
         /**
+         * AIS 메시지 생성, 슬롯 점유 플로우 첫번째 이벤트
          * [MMSI_AIS_FLOW]-1
          * Add Mmsi(_2, _6, _10, _180) 버튼 클릭 이벤트로 MmsiEntity객체 생성을 위한 메소드 호출
          * To [MMSI_AIS_FLOW]-2 GlobalEntityManager.addMmsiEntity2, 6, 10, 180
@@ -601,7 +602,7 @@ public class Sample1 extends javax.swing.JFrame {
             //     }
             // };
             // worker.execute();
-			for (int i = 0; i < 5; i++) {
+			for (int i = 0; i < 1; i++) {
 				this.globalEntityManager.addMmsiEntity2(this.scheduler, this.quartzCoreService, this.aisTabjTextAreaName);
 				try {
 					Thread.sleep(200);

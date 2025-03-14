@@ -204,6 +204,7 @@ public class CustomTableCellRenderer extends DefaultTableCellRenderer {
     int[] tdma24_4 = generateArray(2164);
     int[] tdma24_5 = generateArray(2165);
 	
+	// VDE 슬롯
     int[][] tdmaArrays = {
 		    tdma0_1, tdma0_2, tdma0_3, tdma0_4, tdma0_5,
 		    tdma1_1, tdma1_2, tdma1_3, tdma1_4, tdma1_5,
@@ -246,26 +247,35 @@ public class CustomTableCellRenderer extends DefaultTableCellRenderer {
     	this.initTdmaInfos();
     }
 
+	// 소스코드 복잡도 낮추고 공통 로직 재사용을 위해 method 분리
     private void initTdmaInfos() {
     	//
     	for(int i = 0; i <= 24; i++) {
     		//
     		for(int ii = 0; ii <= 5; ii++ ) {
-    			//
-    			TdmaInfoEntity tdma = new TdmaInfoEntity();
-    			tdma.setTdmaFrame(i);
-    			tdma.setTdmaChannel(ii);
-    			Integer[] slotNumbers = {
-					((i*90)+ii)   , ((i*90)+ii)+ 6, ((i*90)+ii)+12, ((i*90)+ii)+18, ((i*90)+ii)+24, ((i*90)+ii)+30, ((i*90)+ii)+36,
-					((i*90)+ii)+42, ((i*90)+ii)+48, ((i*90)+ii)+54, ((i*90)+ii)+60, ((i*90)+ii)+66, ((i*90)+ii)+72, ((i*90)+ii)+78
-//    					((i*90)+ii)+48, ((i*90)+ii)+54, ((i*90)+ii)+60, ((i*90)+ii)+66, ((i*90)+ii)+72, ((i*90)+ii)+78, ((i*90)+ii)+84 };
-				};
-    			//System.out.println("tdmaFrame : "+i + ", tdmaChannel : " + ii+", slots : "+ Arrays.toString(slotNumbers));
-    			this.tdmaInfos.put(tdma, slotNumbers);
+				//
+				TdmaInfoEntity tdma = createTdmaInfoEntity(i, ii);
+				Integer[] slotNumbers = generateSlotNumbers(i, ii);
+				this.tdmaInfos.put(tdma, slotNumbers);
     		}
     	}
     }
-    
+	
+	private TdmaInfoEntity createTdmaInfoEntity(int frame, int channel) {
+		TdmaInfoEntity tdma = new TdmaInfoEntity();
+		tdma.setTdmaFrame(frame);
+		tdma.setTdmaChannel(channel);
+		return tdma;
+	}
+	
+	private Integer[] generateSlotNumbers(int frame, int channel) {
+		Integer[] slotNumbers = new Integer[14];
+		for (int i = 0; i < 14; i++) {
+			slotNumbers[i] = (frame * 90) + channel + (i * 6);
+		}
+		return slotNumbers;
+	}
+	
     public void paintResources(int tdmaFrame, int tdmaChannel) {
     	//
     	System.out.println(tdmaFrame+","+tdmaChannel);
@@ -285,81 +295,100 @@ public class CustomTableCellRenderer extends DefaultTableCellRenderer {
     	return this.tdmaFrameIndexMap.get(slotNumber);
     }
     
+
+	/**
+	 * JTable.repaint가 호출되면 호출되는 함수
+	 * SlotTimeOutchangeEvent가 발행되면 SlotTimeOutChangeListener에서 changeCellSlotTimeOutText를 호출하고
+	 * changeCellSlotTimeOutText에서 CustomTableCellRenderer.setSlotTimeOut을 호출한 뒤 JTable.repaint를 호출.
+	 * 코드 가독성 및 재사용성을 위해 mothod 분리.
+	 * setCellBackgroundAndForeground
+	 * setAisCellBackgroundAndForeground
+	 * setAsmCellBackgroundAndForeground
+	 * setVdeCellBackgroundAndForeground
+	 * setToolTip
+	 */
     @Override
     public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
     	//
-        Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+		Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 
-        Point cellKey = new Point(row, column);
-        CellInfos cellInfos = this.cellInfos.get(cellKey);
-        
-        if(this.cellInfos.containsKey(cellKey)) {
-        	if(SystemConstMessage.AIS_Color.equals(cellInfos.getColor())) {
-            	//
-            	if(this.aisMsgDisplay) {
-            		c.setBackground(cellInfos.getColor());
-            		this.setForeground(this.getContrastColor(cellInfos.getColor()));
-            	}else {
-            		c.setBackground(cellInfos.getDefaultColor());
-            		this.setForeground(this.getContrastColor(cellInfos.getDefaultColor()));
-            	}
-            }else if(SystemConstMessage.ASM_Color.equals(cellInfos.getColor())) {
-            	//
-            	if(this.asmMsgDisplay) {
-            		c.setBackground(cellInfos.getColor());
-            		this.setForeground(this.getContrastColor(cellInfos.getColor()));
-            	}else {
-            		c.setBackground(cellInfos.getDefaultColor());
-            		this.setForeground(this.getContrastColor(cellInfos.getDefaultColor()));
-            	}
-            }else if(SystemConstMessage.VDE_Color.equals(cellInfos.getColor()) || SystemConstMessage.ACK_Color.equals(cellInfos.getColor())) {
-            	//
-            	if(this.vdeMsgDisplay) {
-            		c.setBackground(cellInfos.getColor());
-            		this.setForeground(this.getContrastColor(cellInfos.getColor()));
-            	}else {
-            		c.setBackground(cellInfos.getDefaultColor());
-            		this.setForeground(this.getContrastColor(cellInfos.getDefaultColor()));
-            	}
-            }else {
-            	c.setBackground(cellInfos.getColor());
-            	this.setForeground(this.getContrastColor(cellInfos.getColor()));
-            }
-        }else {
-        	c.setBackground(SystemConstMessage.defaultCellColor);
-        }
-        
-        
-        // 툴팁 설정
-        if(this.cellInfos.containsKey(cellKey)) {
-        	//
-        	if (cellInfos.getSlotNumber() >= 0 && cellInfos.getSlotNumber() <= 2249) {
-                setToolTipText(StringMessageMaker.tooltipMessage(cellInfos));
-            }else {
-            	setToolTipText(null);
-            }
-        }else {
-        	setToolTipText(null);
-        }
-        
-        // Set font size
-        c.setFont(new Font(c.getFont().getFontName(), c.getFont().getStyle(), fontSize));
-        
-        // 테두리 제거
-        setBorder(null);
-        
-        // 텍스트 가운데 정렬
-        setHorizontalAlignment(JLabel.CENTER);
-        
-        return c;
+		Point cellKey = new Point(row, column);
+		CellInfos cellInfos = this.cellInfos.get(cellKey);
+	
+		if (cellInfos != null) {
+			setCellBackgroundAndForeground(c, cellInfos);
+			setToolTip(c, cellInfos);
+		} else {
+			c.setBackground(SystemConstMessage.defaultCellColor);
+			setToolTipText(null);
+		}
+	
+		c.setFont(new Font(c.getFont().getFontName(), c.getFont().getStyle(), fontSize));
+		setBorder(null);
+		setHorizontalAlignment(JLabel.CENTER);
+	
+		return c;
     }
+
+	private void setCellBackgroundAndForeground(Component c, CellInfos cellInfos) {
+		Color color = cellInfos.getColor();
+		if (SystemConstMessage.AIS_Color.equals(color)) {
+			setAisCellBackgroundAndForeground(c, cellInfos);
+		} else if (SystemConstMessage.ASM_Color.equals(color)) {
+			setAsmCellBackgroundAndForeground(c, cellInfos);
+		} else if (SystemConstMessage.VDE_Color.equals(color) || SystemConstMessage.ACK_Color.equals(color)) {
+			setVdeCellBackgroundAndForeground(c, cellInfos);
+		} else {
+			c.setBackground(color);
+			this.setForeground(getContrastColor(color));
+		}
+	}
+	
+	private void setAisCellBackgroundAndForeground(Component c, CellInfos cellInfos) {
+		if (this.aisMsgDisplay) {
+			c.setBackground(cellInfos.getColor());
+			this.setForeground(getContrastColor(cellInfos.getColor()));
+		} else {
+			c.setBackground(cellInfos.getDefaultColor());
+			this.setForeground(getContrastColor(cellInfos.getDefaultColor()));
+		}
+	}
+	
+	private void setAsmCellBackgroundAndForeground(Component c, CellInfos cellInfos) {
+		if (this.asmMsgDisplay) {
+			c.setBackground(cellInfos.getColor());
+			this.setForeground(getContrastColor(cellInfos.getColor()));
+		} else {
+			c.setBackground(cellInfos.getDefaultColor());
+			this.setForeground(getContrastColor(cellInfos.getDefaultColor()));
+		}
+	}
+	
+	private void setVdeCellBackgroundAndForeground(Component c, CellInfos cellInfos) {
+		if (this.vdeMsgDisplay) {
+			c.setBackground(cellInfos.getColor());
+			this.setForeground(getContrastColor(cellInfos.getColor()));
+		} else {
+			c.setBackground(cellInfos.getDefaultColor());
+			this.setForeground(getContrastColor(cellInfos.getDefaultColor()));
+		}
+	}
+	
+	private void setToolTip(Component c, CellInfos cellInfos) {
+		if (cellInfos.getSlotNumber() >= 0 && cellInfos.getSlotNumber() <= 2249) {
+			setToolTipText(StringMessageMaker.tooltipMessage(cellInfos));
+		} else {
+			setToolTipText(null);
+		}
+	}
 
     public void clearAllCellInfos() {
     	//
     	MapUtil.copy(this.cellInfos, this.cellInfosDefault);
     }
     
-    public void initTdmaFrameMap() {
+	// 각 TDMA의 슬롯 번호 메기는 함수
+    private void initTdmaFrameMap() {
     	//
     	int start = 0;
     	int end = 89;
@@ -379,6 +408,7 @@ public class CustomTableCellRenderer extends DefaultTableCellRenderer {
     }
     
     // AIS used slot check
+	// 사용 중이면 true, 사용 중이 아니면 false
     public synchronized boolean verifyAisAllChannelIsEmpty(int row, int column) {
     	//
     	Point cellKey = new Point(row, column);
@@ -492,6 +522,11 @@ public class CustomTableCellRenderer extends DefaultTableCellRenderer {
         this.fontSize = fontSize;
     }
     
+	/**
+	 * [MMSI_AIS_FLOW]-2-1-1-1
+	 * mmsiEntity.slotTimeOut : 3(add_180) or 7(나머지)로 초기화
+	 * AisCellInfos에 slotTimeOut을 set해주는게 무슨 의미인지 분석
+	 */
     public synchronized void setSlotTimeOut(MmsiEntity mmsiEntity) {
     	//
     	for(Entry<Point, CellInfos> cellInfo : this.cellInfos.entrySet()) {
@@ -756,92 +791,11 @@ public class CustomTableCellRenderer extends DefaultTableCellRenderer {
     	this.vdeMsgDisplay = v;
     }
     
-    public synchronized void setInit(boolean legType) {
-    	//
-    	int term = 0;
-		for(int aa = 0 ; aa < 13; aa++) {
-    		//
-    		for (int a = 0; a < 6; a++) {
-                //
-                for (int i = 0; i < 32; i++) {
-                	//
-                    if (i == 0) {
-                    	//
-                    	int row = a+(aa*6)+term;
-                    	this.setInit(row, i, "9999", SystemConstMessage.defaultCellColor);
-                    } else if (i == 16){
-                    	//
-                    	if(aa < 12) {
-                    		int row = a+(aa*6)+term;
-                    		this.setInit(row, i, "9999", SystemConstMessage.defaultCellColor);
-                    	}
-                    	
-                    } else if (i >= 1 && i <= 15){
-                    	//
-                    	int slotNumber = a + ((i-1)*6)+(aa*180);
-                    	int row = a+(aa*6)+term;
-                        this.setInit(row, i, String.valueOf(slotNumber), SystemConstMessage.defaultCellColor);
-                        if(a == 0 && (i == 1 || i == 2 || i == 3 )) {
-                        	//
-                        	this.setInit(row, i, String.valueOf(slotNumber), SystemConstMessage.BBSC_Color);
-                        }
-                        if(a != 0 && i == 15) {
-                        	//
-                        	this.setInit(row, i, String.valueOf(slotNumber), SystemConstMessage.DSCH_Color);
-                        }
-                        if(a == 0 && i > 3) {
-                        	//
-                        	if(legType) {
-                        		if (i % 2 == 0) {
-                            		//짝수
-                        			this.setInit(row, i, String.valueOf(slotNumber), SystemConstMessage.RAC_Color);
-                                }else {
-                                	//홀수
-                                	this.setInit(row, i, String.valueOf(slotNumber), SystemConstMessage.ASC_Color);
-                                }
-                        	}else {
-                        		//
-                        		this.setInit(row, i, String.valueOf(slotNumber), SystemConstMessage.RAC_Color);
-                        	}
-                        }
-                    } else if (i >= 17){
-                    	//
-                    	int cut = a + ((i-2)*6)+(aa*180);
-                    	int row = a+(aa*6)+term;
-                        if(cut < 2250) {
-                        	//
-                        	this.setInit(row, i, String.valueOf(cut), SystemConstMessage.defaultCellColor);
-                        	if(a == 0 && (i == 17 || i == 18 || i == 19 )) {
-                            	//
-                        		this.setInit(row, i, String.valueOf(cut), SystemConstMessage.BBSC_Color);
-                            }
-                        	if(a != 0 && i == 31) {
-                            	//
-                        		this.setInit(row, i, String.valueOf(cut), SystemConstMessage.DSCH_Color);
-                            }
-                        	if(a == 0 && i > 19) {
-                            	//
-                        		if(legType) {
-                            		if (i % 2 == 0) {
-                                		//짝수
-                            			this.setInit(row, i, String.valueOf(cut), SystemConstMessage.RAC_Color);
-                                    }else {
-                                    	//홀수
-                                    	this.setInit(row, i, String.valueOf(cut), SystemConstMessage.ASC_Color);
-                                    }
-                            	}else {
-                            		//
-                            		this.setInit(row, i, String.valueOf(cut), SystemConstMessage.RAC_Color);
-                            	}
-                            }
-                        }
-                    }
-                }
-            }
-    		term =  term +1;
-    	}
-    }
+	// Init() 함수 사용으로 setInit함수 제거
+    // public synchronized void setInit(boolean legType) 
     
+	// 각 Cell 객체 초기화
+	// Cell 색상 및 각 셀에 대한 SlotNumber 부여
     private void init(DefaultTableModel tableModel, boolean legType) {
     	//
     	int term = 0;
@@ -851,13 +805,13 @@ public class CustomTableCellRenderer extends DefaultTableCellRenderer {
     		max = 3;
     	}
     	
-		for(int aa = 0 ; aa < max; aa++) {
+		for(int aa = 0 ; aa < max; aa++) {				// TDMA 13세트
     		//
-    		for (int a = 0; a < 6; a++) {
-                Object[] rowData = new Object[32];
-                for (int col = 0; col < 32; col++) {
+    		for (int a = 0; a < 6; a++) {				// 각 TDMA0~5
+                Object[] rowData = new Object[32];		// 각 Cell 데이터(TDMA셀 : TDMA0~5, 셀 : slotNumber 0~2249)
+                for (int col = 0; col < 32; col++) {	// TDMA넘버를 포함한 각 슬롯 컬럼(TDMA0, 0, 6, 12, 18, 24, 30, 36, ..... TDMA0, 90, 96, 102, ..... 174)
                 	//
-                    if (col == 0) {
+                    if (col == 0) {						// TDMA0
                     	//
                     	int row = a+(aa*6)+term;
                     	rowData[col] = "TDMA" + a;

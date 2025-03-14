@@ -30,6 +30,13 @@ public class MmsiEntitySlotTimeChangeListener {
 		this.scheduler = scheduler;
 	}
 
+	/**
+	 * [SLOT_FLOW]-2
+	 * MmsiEntity slotTimeOutTime 변경 시 발행되는 이벤트
+	 * 트리거 생성 및 QuartzCoreService 스케쥴을 위한 Job 생성 함수 호출
+	 * 트리거 발동 시간 = (MmsiEntity에서 변경된 LocalDateTime slotTimeOutTime : Object newValue)
+	 * @param event Object source, String propertyName, Object oldValue, Object newValue, Object clazz, GlobalEntityManager globalEntityManager
+	*/
 	@EventListener
 	public void onChange(MmsiEntitySlotTimeChangeEvent event) {
 		//

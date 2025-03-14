@@ -27,51 +27,18 @@ public class SlotTimeOutChangeListener {
 	private JTable currentFrame6JTableNameUpper;
 	private JTable currentFrame7JTableNameUpper;
 
+	/**
+	 * [MMSI_AIS_FLOW]-2-1-1
+	 * mmsiEntity.slotTimeOut = 3(add_180) or 7(나머지)
+	 * 왜 함수명이 ChangeCellSlotTimeOut"Text" 인지는 모르겠으나,
+	 * Custom Renderer를 통해 프레임 별 테이블의 슬롯 변경이 이루어지는 것으로 추측
+	 */
 	@EventListener
 	public void onEventListener(SlotTimeOutChangeEvent event) {
 		//
 		MmsiEntity mmsiEntity = event.getMmsiEntity();
 
 		this.updateCurrentFrameTableNames(event);
-
-		/**
-		 * 비동기 Thread에서 UI변경 시 어떤 문제가 발생할지 모르기 때문에 SwingWorker로 각각 처리 후 UI변경은 EDT에서 처리
-		 * UI thread : AWT-EventQueue-0
-		 */
-		// for (int i = 0; i < 8; i++){
-		// 	final int taskIdx = i;
-		// 	SwingWorker<Void, Void> worker = new SwingWorker<>() {
-		// 		@Override
-		// 		protected Void doInBackground() throws Exception {
-		// 			switch(taskIdx){
-		// 				case 0 -> changeCellSlotTimeOutText(currentFrame7JTableNameUpper, mmsiEntity);
-		// 				case 1 -> changeCellSlotTimeOutText(currentFrame6JTableNameUpper, mmsiEntity);
-		// 				case 2 -> changeCellSlotTimeOutText(currentFrame5JTableNameUpper, mmsiEntity);
-		// 				case 3 -> changeCellSlotTimeOutText(currentFrame4JTableNameUpper, mmsiEntity);
-		// 				case 4 -> changeCellSlotTimeOutText(currentFrame3JTableNameUpper, mmsiEntity);
-		// 				case 5 -> changeCellSlotTimeOutText(currentFrame2JTableNameUpper, mmsiEntity);
-		// 				case 6 -> changeCellSlotTimeOutText(currentFrame1JTableNameUpper, mmsiEntity);
-		// 				case 7 -> changeCellSlotTimeOutText(currentFrameJTableNameUpper, mmsiEntity);
-		// 			}
-		// 			return null;
-		// 		}
-		// 		@Override
-		// 		protected void done() {
-		// 			System.out.println("TASK : " + taskIdx + " / SwingWorker 내부 : " + Thread.currentThread().getName());
-		// 			switch (taskIdx){
-		// 				case 0 -> currentFrame7JTableNameUpper.repaint();
-		// 				case 1 -> currentFrame6JTableNameUpper.repaint();
-		// 				case 2 -> currentFrame5JTableNameUpper.repaint();
-		// 				case 3 -> currentFrame4JTableNameUpper.repaint();
-		// 				case 4 -> currentFrame3JTableNameUpper.repaint();
-		// 				case 5 -> currentFrame2JTableNameUpper.repaint();
-		// 				case 6 -> currentFrame1JTableNameUpper.repaint();
-		// 				case 7 -> currentFrameJTableNameUpper.repaint();
-		// 			}
-		// 		}
-		// 	};
-		// 	worker.execute();
-		// }
 
 		CompletableFuture.runAsync(() -> this.changeCellSlotTimeOutText(this.currentFrame7JTableNameUpper, mmsiEntity));
 		CompletableFuture.runAsync(() -> this.changeCellSlotTimeOutText(this.currentFrame6JTableNameUpper, mmsiEntity));

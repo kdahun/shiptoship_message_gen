@@ -91,7 +91,7 @@ public class GlobalSlotNumber {
         String formatNow = now.format(SystemConstMessage.formatterForStartIndex);
 
         // 현재 시간의 초(ss.SSSS)를 기준으로 몇번 슬롯에 들어가면 될지 검색 
-        int newSlotNumber = timeMapRangeCompnents.findStartSlotNumber(formatNow);
+        int newSlotNumber = timeMapRangeCompnents.findSlotNumber(formatNow);
         if (newSlotNumber != -1 && this.slotNumber != newSlotNumber) {
         	//
             setSlotNumber(newSlotNumber);  // 슬롯 번호 변경 및 이벤트 발생
@@ -157,7 +157,7 @@ public class GlobalSlotNumber {
 //			LocalDateTime now = LocalDateTime.now();
 //			String formatNow = now.format(SystemConstMessage.formatterForStartIndex);
 //			
-//			int findSlotNumber = this.timeMapRangeCompnents.findStartSlotNumber(formatNow);
+//			int findSlotNumber = this.timeMapRangeCompnents.findSlotNumber(formatNow);
 //			
 //			if(this.slotNumber != findSlotNumber && findSlotNumber != -1) {
 //				// 슬롯이 변화가 생겼다
