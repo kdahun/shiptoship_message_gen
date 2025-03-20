@@ -120,7 +120,7 @@ public class QuartzCoreService {
     }
 	
 	/**
-	 * [SLOT_FLOW]-3
+	 * [SLOT_TIME_FLOW]-3
 	 * MmsiEntitySlotTimeChangeQuartz Job 생성 및 트리거와 함께 스케쥴 등록
 	 * 추후 트리거가 발동되면 MmsiEntitySlotTimeChangeQuartz.execute 실행
 	 * @param trigger slotTimeOutTime 변경 시 발행되는 이벤트에서 생성한 트리거

@@ -49,11 +49,7 @@ public class MmsiEntityChangeStartDate implements Job {
 			// TODO: handle exception
 			e.printStackTrace();
 		}
-		//[Before addFuture]2025-03-14T10:15:22.767879500 , 2025-03-14T10:15:22.765089300
-		log.info("[Before addFuture]{} , {}", LocalDateTime.now(), this.mmsiEntity.getStartTime());
 		this.addFuture();
-		log.info("[After addFuture]{} , {}", LocalDateTime.now(), this.mmsiEntity.getStartTime());
-		//[After addFuture]2025-03-14T10:15:22.767879500 , 2025-03-14T10:15:24.765089300
 	}
 
 	/**

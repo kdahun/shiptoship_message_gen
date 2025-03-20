@@ -869,7 +869,7 @@ public class GlobalEntityManager {
 			int y0 = (int) cellInfoPoint.getY();
 
 			/**
-			 * 연속으로 비어있는 셀의 개수를 체크하기 위한 변수
+			 * consecutiveCount : 연속으로 비어있는 셀의 개수를 체크하기 위한 변수
 			 * targetInfoList : 연속으로 비어있는 셀의 정보를 담기 위한 리스트
 			 */
 			int consecutiveCount = 0;
@@ -943,6 +943,11 @@ public class GlobalEntityManager {
 									if (mmsiEntity.getSlotTimeOutTime() == null) {
 										LocalDateTime modifiedDateTime = mmsiEntity.getStartTime().plusMinutes(1)
 												.minus((mmsiEntity.getSpeed() * 1000) - 100, ChronoUnit.MILLIS);
+										
+										/**
+										 * [SLOT_TIME_FLOW]-0
+										 * AIS 타겟의 슬롯 TimeOutTime을 설정한다.
+										 */
 										mmsiEntity.setSlotTimeOutTime(modifiedDateTime);
 									}
 									

@@ -17,8 +17,8 @@ public class AisMessage1Util {
 	/**
 	 * [MMSI_AIS_FLOW]-6-1-1
 	 * 랜덤 메시지 생성 함수
-	 * @param mmsiEntity
-	 * @param slotNumber
+	 * @param mmsiEntity MmsiEntity : MMSI 정보
+	 * @param slotNumber int : 슬롯 번호
 	 * @return Vdm 객체 : AIS메시지 디코딩 및 실제 데이터 추출
 	 */
 	public static Vdm create(MmsiEntity mmsiEntity, int slotNumber) {

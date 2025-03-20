@@ -30,7 +30,7 @@ public class MmsiEntitySlotTimeChangeQuartz implements Job {
 //	@Async
 
 	/**
-	 * [SLOT_FLOW]-4
+	 * [SLOT_TIME_FLOW]-4
 	 * 트리거 발동 시 스케쥴된 Job 실행
 	 * @param context
 	 * @throws JobExecutionException
@@ -44,11 +44,17 @@ public class MmsiEntitySlotTimeChangeQuartz implements Job {
 		this.process();
 	}
 
+	/**
+	 * SlotTimeChangeQuartz Job 실행 처리
+	 */
 	private void process() {
 		//
 		if((this.mmsiEntity.getSlotTimeOut() - 1) <= -1) {
 			//
-			
+			/**
+			 * 트리거 제거
+			 * 
+			 */
 			try {
 				this.quartzCoreService.removeStartTimeTrigger(this.mmsiEntity);
 			} catch (SchedulerException e) {
@@ -58,55 +64,41 @@ public class MmsiEntitySlotTimeChangeQuartz implements Job {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+			/**
+			 * 다음 스케쥴을 위한 초기화
+			 * GlobalEntityManager의 findSlotAndMarking에서 다음 스케쥴을 위한 setSlotTimeOutTime 설정
+			 */
 			this.mmsiEntity.setSlotTimeOutTime(null);
 			
 			if(this.mmsiEntity.getSpeed() != 180) {
-//				this.mmsiEntity.setSlotTimeOut(this.mmsiEntity.getSlotTimeOut_default());
 				this.mmsiEntity.setSlotTimeOut(RandomGenerator.generateRandomIntFromTo(0, 7));
-//				this.mmsiEntity.setSlotTimeOut(7); // ===== 테스트용도
 			}else {
 				this.mmsiEntity.setSlotTimeOut(3);
 			}
+
+			/**
+			 * 새로운 슬롯을 할당받기 전에 기존의 타겟 슬롯 정보 초기화
+			 * 타겟 슬롯 초기화, 인덱스 초기화, NSS 초기화, 슛카운트 초기화
+			 */
 			this.mmsiEntity.clearTargetSlotEntity();
-//			this.mmsiEntity.setCalculateBasic();
-//			this.mmsiEntity.setNSSA(-1);
 			this.mmsiEntity.setnIndex(0);
 			this.mmsiEntity.setNSS(this.mmsiEntity.getStartSlotNumber());
 			this.mmsiEntity.clearShootCount(-1);
-//			this.mmsiEntity.setStartTime(this.mmsiEntity.getStartTime().plusMinutes(1));
 			
+			/**
+			 * 특정 시간에 모든 mmsi엔티티가 동시에 슬롯을 재할당 받는것을 방지하기 위해 랜덤 딜레이 부여(*추측)
+			 * 
+			 */
 			int randomDelay = RandomGenerator.generateRandomIntFromTo(3, 10);
-			this.mmsiEntity.setStartTime(this.mmsiEntity.getStartTime().plusSeconds(randomDelay)); //====== 10초후 다시 진행
-			this.mmsiEntity.setPositionsCnt(0); //============================================
+			this.mmsiEntity.setStartTime(this.mmsiEntity.getStartTime().plusSeconds(randomDelay));
+			this.mmsiEntity.setPositionsCnt(0);
 			this.mmsiEntity.setTargetChannel(true);
-//			System.out.println("끝 setSlotTimeOutTime : "+LocalDateTime.now());
-//			if(this.mmsiEntity.getSpeed() != 180) {
-//				this.mmsiEntity.setnIndex(0);
-//				
-//				this.mmsiEntity.clearTargetSlotEntity();
-//				this.mmsiEntity.setStartTime(this.mmsiEntity.getStartTime().plusMinutes(1)); 
-//				this.mmsiEntity.setSlotTimeOut(RandomGenerator.generateRandomIntFromTo(0, 7));
-//				this.mmsiEntity.setSlotTimeOutTime(null);
-//				this.mmsiEntity.setTargetChannel(true);
-//				log.info("완전종료 mmsi : {}", this.mmsiEntity);
-//			}else {
-//				this.mmsiEntity.setSlotTimeOut(3);
-//			}
-			
-			
-//			System.out.println("끝 새로시작할시간 : "+this.mmsiEntity.getStartTime());
 		}else {
 			//
 			if(this.mmsiEntity.getSpeed() != 180) {
 				this.mmsiEntity.setSlotTimeOut(this.mmsiEntity.getSlotTimeOut()-1);
 				this.mmsiEntity.setSlotTimeOutTime(this.mmsiEntity.getSlotTimeOutTime().plusMinutes(1));
 			}
-			//else {
-//				
-//			}
-			
-//			System.out.println("변경 setSlotTimeOutTime : "+this.mmsiEntity.getSlotTimeOutTime());
 		}
 	}
-	
 }

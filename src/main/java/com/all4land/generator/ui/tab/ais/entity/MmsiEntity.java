@@ -39,6 +39,8 @@ import com.all4land.generator.util.RandomGenerator;
 
 import dk.dma.ais.sentence.Vdm;
 import jakarta.annotation.PreDestroy;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -51,7 +53,10 @@ public class MmsiEntity {
 	private final UdpServerTableModel udpServerTableModel;
 
 	private boolean chk;		// setChk(true) 호출 시 AIS메시지 생성 프로세스 시작
+
+	@Getter	@Setter
 	private long mmsi;			// MMSI 고유값
+
 	private boolean asm;		// ASM 메시지 생성 여부
 	private boolean vde;		// VDE 메시지 생성 여부
 
@@ -68,26 +73,26 @@ public class MmsiEntity {
 	private int NSS;			// AIS 메시지가 전송될 초기 슬롯 번호(Nominal Slot Start) getStartSlotNumber
 	private int[] SI;			// AIS 메시지가 전송될 슬롯 번호의 범위(Selection Interval) calculateSelectionInterval
 	
-	private int positionsCnt = 0;
+	private int positionsCnt = 0;	// this MmsiEntity의 할당 슬롯 수
 	private Map<Integer, double[]> positions = new HashMap<>();		// 슬롯번호, 해당 슬롯의 할당 시간대
 	
-	private int format450_AIS = 0;
-	private int format450_ASM = 0;
-	private int aisMessageSequence = 0;
-	private int asmMessageSequence = 0;
+	private int format450_AIS = 0;	// 450 포맷 AIS메시지 시퀀스
+	private int format450_ASM = 0;	// 450 포맷 ASM메시지 시퀀스
+	private int aisMessageSequence = 0;	// AIS 메시지 시퀀스
+	private int asmMessageSequence = 0;	// ASM 메시지 시퀀스
 
 	private LocalDateTime startTime; // AIS 시작시간
-	private Vdm message1;
+	private Vdm message1;	// AIS 메시지
 	
-	private List<String> asmMessageList;
+	private List<String> asmMessageList;	// ASM 메시지 리스트
 
-	private int slotTimeOut_default;
-	private int slotTimeOut = RandomGenerator.generateRandomIntFromTo(0, 7);
+	private int slotTimeOut_default;		// 테스트용 slotTimeOut testInit에서 초기화
+	private int slotTimeOut = RandomGenerator.generateRandomIntFromTo(0, 7);	// AIS 메시지 타임아웃 시작 시간
 
-	private AsmEntity asmEntity;
-	private VdeEntity vdeEntity;
+	private AsmEntity asmEntity;	// ASM 메시지 관리 Entity
+	private VdeEntity vdeEntity;	// VDE 메시지 관리 Entity
 
-	// AIS 점유 슬롯 히스토리
+	// AIS 점유 슬롯 리스트
 	private List<TargetSlotEntity> targetSlotEntity = new ArrayList<>();
 
 	// slot time out 시작 시간
@@ -138,20 +143,10 @@ public class MmsiEntity {
 		this.quartzCoreService = quartzCoreService;
 		this.timeMapRangeCompnents = timeMapRangeCompnents;
 
-//		this.speed = RandomGenerator.generateRandomInt();
-//		if (this.speed == 180) {
-//			//
-//			this.slotTimeOut = 3;
-//		} else {
-//			//
-//			this.slotTimeOut = RandomGenerator.generateRandomIntFromTo(0, 7);
-//		}
-
 		this.NSS = -1;
 		
 		AsmEntity asmEntity = new AsmEntity(eventPublisher);
 		setAsmEntity(asmEntity);
-		//asmEntity.setStartTime(LocalDateTime.now().plusSeconds(2), this);
 	}
 
 	public void plusPositionCnt() {
@@ -336,8 +331,6 @@ public class MmsiEntity {
 		this.SI = SI;
 	}
 
-	
-	
 	public List<String> getAsmMessageList() {
 		return asmMessageList;
 	}
@@ -440,7 +433,7 @@ public class MmsiEntity {
 	}
 
 	/**
-	 * [SLOT_FLOW]-1
+	 * [SLOT_TIME_FLOW]-1
 	 * SlotTimeOut의 시간이 변경되면 이벤트 발행
 	 * @param slotTimeOutTime 슬롯 타임아웃 시간
 	 */
@@ -537,13 +530,13 @@ public class MmsiEntity {
 				.findSlotNumber(this.getStartTime().format(SystemConstMessage.formatterForStartIndex));
 	}
 
-	public long getMmsi() {
-		return this.mmsi;
-	}
+	// public long getMmsi() {
+	// 	return this.mmsi;
+	// }
 
-	public void setMmsi(long mmsi) {
-		this.mmsi = mmsi;
-	}
+	// public void setMmsi(long mmsi) {
+	// 	this.mmsi = mmsi;
+	// }
 
 	public int getSpeed() {
 		return speed;
