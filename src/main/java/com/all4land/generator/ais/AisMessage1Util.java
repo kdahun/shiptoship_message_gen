@@ -16,9 +16,9 @@ import lombok.extern.slf4j.Slf4j;
 public class AisMessage1Util {
 	/**
 	 * [MMSI_AIS_FLOW]-6-1-1
-	 * 랜덤 메시지 생성 함수
+	 * 메시지 생성 함수(메시지에 들어갈 값들은 모두 랜덤으로 생성)
 	 * @param mmsiEntity MmsiEntity : MMSI 정보
-	 * @param slotNumber int : 슬롯 번호
+	 * @param slotNumber 슬롯 번호
 	 * @return Vdm 객체 : AIS메시지 디코딩 및 실제 데이터 추출
 	 */
 	public static Vdm create(MmsiEntity mmsiEntity, int slotNumber) {
@@ -28,63 +28,28 @@ public class AisMessage1Util {
 
 		String strMmsi = String.valueOf(mmsiEntity.getMmsi());
 		msg1.setUserId(Integer.parseInt(strMmsi));
-//		msg1.setNavStatus(0);
-//		msg1.setRot(0);
-		// 랜덤한 속도와 방향 값 생성
-		msg1.setSog(RandomGenerator.generateRandomIntFromTo(6, 7)*10);
-//		msg1.setCog(RandomGenerator.generateRandomIntFromTo(0, 359));
 
-		// latitude > 90 || latitude < -90
-		// longitude > 180 || longitude < -180
-		double latitude = RandomGenerator.generateRandomDouble(-90, 90, 0); // 위도
-		double longitude = RandomGenerator.generateRandomDouble(-180, 180, 0); // 경도
+		msg1.setSog(RandomGenerator.generateRandomIntFromTo(6, 7)*10);
+
+		double latitude = RandomGenerator.generateRandomDouble(-90, 90, 0);
+		double longitude = RandomGenerator.generateRandomDouble(-180, 180, 0);
 		
 		if(mmsiEntity.getSpeed() == 180) {
 			//
-			// Map<Integer, double[]> position = mmsiEntity.getPositions();
-//			AisPosition pos = new AisPosition(Position.create(position.get(0)[0], position.get(0)[1]));
-			
 			AisPosition pos = new AisPosition(Position.create(latitude, longitude));
 			
 			msg1.setPos(pos);
 			msg1.setCog(RandomGenerator.generateRandomIntFromTo(0, 359)*10);
 			msg1.setSog(0);
-			//System.out.println(mmsiEntity.getMmsi()+" " + position.get(0)[0] + " "+ position.get(0)[1]);
 		}else {
 			//
-			// Map<Integer, double[]> position = mmsiEntity.getPositions();
-			AisPosition pos = new AisPosition(Position.create(latitude, longitude));//new AisPosition(Position.create(position.get(mmsiEntity.getPositionsCnt())[0], position.get(mmsiEntity.getPositionsCnt())[1]));
-			
-//			try {
-//				pos = new AisPosition(Position.create(position.get(mmsiEntity.getPositionsCnt())[0], position.get(mmsiEntity.getPositionsCnt())[1]));
-//			}catch (Exception e) {
-				// log.error("Exception [Err_Location] : {}", e.getStackTrace()[0]);
-//			}
-			
+			AisPosition pos = new AisPosition(Position.create(latitude, longitude));
 			msg1.setPos(pos);
-//			msg1.setSog((int)(position.get(mmsiEntity.getPositionsCnt())[2]*10));
-//			msg1.setCog((int)(position.get(mmsiEntity.getPositionsCnt())[2]*10));
 			
 			
 			msg1.setCog(RandomGenerator.generateRandomIntFromTo(0, 359)*10);
-//			try {
-//				msg1.setCog((int)(position.get(mmsiEntity.getPositionsCnt())[2]*10));
-//			}catch (Exception e) {
-//				System.out.println(">>>>>>>>>>>>>>>>"+mmsiEntity.getMmsi());
-				// log.error("Exception [Err_Location] : {}", e.getStackTrace()[0]);
-//			}
-			
-//			System.out.println("COG " +position.get(mmsiEntity.getPositionsCnt())[2]+", "+ (int)(position.get(mmsiEntity.getPositionsCnt())[2]*10));
 			mmsiEntity.plusPositionCnt();
-			
-//			System.out.println(mmsiEntity.getMmsi()+" " + position.get(mmsiEntity.getPositionsCnt())[0] 
-//					+ " "+ position.get(mmsiEntity.getPositionsCnt())[1] + " "+ (int)position.get(mmsiEntity.getPositionsCnt())[2]);
 		}
-		
-		
-		
-//		AisPosition pos = new AisPosition(Position.create(latitude, longitude));
-//		msg1.setPos(pos);
 		
 		msg1.setTrueHeading(76);
 		msg1.setUtcSec(42);
@@ -103,8 +68,6 @@ public class AisMessage1Util {
 		}
         msg1.setSubMessage(slotNumber);
 		
-//		msg1.setSubMessage(createCommState(0, slotTimeout, slotNumber));
-
 		Vdm vdm = new Vdm();
 		vdm.setTalker("AB");
 		vdm.setFormatter("VDM");
@@ -124,7 +87,6 @@ public class AisMessage1Util {
 		}
 		
 		return vdm;
-		// String encoded = vdm.getEncoded();
 	}
 
 	// CommState 값을 생성하는 메서드

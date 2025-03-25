@@ -61,6 +61,5 @@ public class VdeEntityChangeStartTimeListener {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
 	}
 }

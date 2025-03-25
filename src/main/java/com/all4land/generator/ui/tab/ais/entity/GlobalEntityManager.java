@@ -1042,6 +1042,10 @@ public class GlobalEntityManager {
 		// 마킹
 		String strValue = "";
 
+		System.out.println("=================================");
+		System.out.println("[ASM Slot Count] : " + mmsiEntity.getAsmEntity().getSlotCount());
+		System.out.println("[ASM    Channel] : " + mmsiEntity.getAsmEntity().getChannel());
+		System.out.println("=================================");
 		if (mmsiEntity.getAsmEntity().getChannel() == 'A') {
 			//
 			switch (mmsiEntity.getAsmEntity().getSlotCount()) {
@@ -1142,7 +1146,10 @@ public class GlobalEntityManager {
 							targetCellInfoEntity.setCol(col);
 							targetCellInfoEntity.setSlotNumber(String.valueOf(cellText));
 							targetInfoList.add(targetCellInfoEntity);
-
+							
+							/**
+							 * 연속으로 비어있는 셀의 개수가 8개인 경우에만 로직 수행
+							 */
 							if (consecutiveCount == 8) {
 								// 연속으로 비어있는곳 발견
 								// 마킹

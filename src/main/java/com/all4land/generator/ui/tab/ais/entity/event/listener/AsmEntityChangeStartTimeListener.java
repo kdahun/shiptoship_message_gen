@@ -6,7 +6,6 @@ import java.time.ZoneId;
 import java.util.Date;
 
 import org.quartz.JobDataMap;
-import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.Trigger;
 import org.quartz.TriggerBuilder;
@@ -17,7 +16,6 @@ import com.all4land.generator.system.schedule.QuartzCoreService;
 import com.all4land.generator.ui.tab.ais.entity.AsmEntity;
 import com.all4land.generator.ui.tab.ais.entity.MmsiEntity;
 import com.all4land.generator.ui.tab.ais.entity.event.change.AsmEntityChangeStartTimeEvent;
-import com.all4land.generator.ui.tab.ais.entity.event.change.MmsiEntityChangeStartTimeEvent;
 
 @Component
 public class AsmEntityChangeStartTimeListener {
@@ -63,6 +61,5 @@ public class AsmEntityChangeStartTimeListener {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
 	}
 }

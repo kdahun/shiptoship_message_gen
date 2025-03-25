@@ -58,47 +58,27 @@ public class AsmEntityChangeStartDateQuartz implements Job {
 
 		allOfRule.join(); // 모든 작업이 완료될 때까지 대기
 		
+		// 타겟 cell이 8개 이상인 경우에만 displayAsm 호출
 		if(rule1Value.size() >= 8) {
-//			log.info("Rule 1 find");
 			CompletableFuture.runAsync(() -> this.globalEntityManager.displayAsm(rule1Value, this.mmsiEntity));
-//			this.globalEntityManager.displayAsm(rule1Value, this.mmsiEntity);
 		}else {
 			if(rule2Value.size() >= 8) {
 				//
-//				log.info("Rule 2 find");
 				CompletableFuture.runAsync(() -> this.globalEntityManager.displayAsm(rule2Value, this.mmsiEntity));
-//				this.globalEntityManager.displayAsm(rule2Value, this.mmsiEntity);
 			}else {
 				if(rule3Value.size() >= 8) {
 					//
-//					log.info("Rule 3 find");
 					CompletableFuture.runAsync(() -> this.globalEntityManager.displayAsm(rule3Value, this.mmsiEntity));
-//					this.globalEntityManager.displayAsm(rule3Value, this.mmsiEntity);
 				}else {
-//					log.info("MMSI : {}. 전체 룰 적용 된것 못찾음.", this.mmsiEntity.getMmsi());
+					
 				}
 			}
 		}
-		
-//		if(rule1Value.size() >= 8) {
-//			//
-//			this.globalEntityManager.displayAsm(rule1Value, this.mmsiEntity);
-//		}else if(rule2Value.size() >= 8) {
-//			//
-//			log.info("Rule 2 find");
-//			this.globalEntityManager.displayAsm(rule2Value, this.mmsiEntity);
-//		}else if(rule3Value.size() >= 8) {
-//			//
-//			log.info("Rule 3 find");
-//			this.globalEntityManager.displayAsm(rule3Value, this.mmsiEntity);
-//		}
-		
 		
 		this.addFuture();
 		if(this.mmsiEntity.getMmsi() == 336992171) {
 			//
 			log.info("mmsi : {} , {}", this.mmsiEntity.getMmsi(), LocalDateTime.now());
-//			System.out.println("mmsi : "+this.mmsiEntity.getMmsi());
 		}
 	}
 	
@@ -107,7 +87,6 @@ public class AsmEntityChangeStartDateQuartz implements Job {
 		int randomDelay = RandomGenerator.generateRandomIntFromTo(30, 58);
 		LocalDateTime newLocalDateTime = this.mmsiEntity.getAsmEntity().getStartTime().plusSeconds(randomDelay);
 		this.mmsiEntity.getAsmEntity().setStartTime(newLocalDateTime, this.mmsiEntity);
-
 	}
 	
 	private List<TargetCellInfoEntity> findAsmRule1(int startIndex) {
@@ -124,5 +103,4 @@ public class AsmEntityChangeStartDateQuartz implements Job {
 		//
 		return this.globalEntityManager.findAsmRule3(startIndex, mmsiEntity);
 	}
-	
 }

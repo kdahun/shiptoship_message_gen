@@ -56,7 +56,7 @@ public class MmsiEntitySlotTimeChangeListener {
 			String localDateTimeString = localDateTime.toString();
 			Date date = Date.from(localDateTime.atZone(ZoneId.systemDefault()).toInstant());
 			
-			Trigger trigger = null;
+			Trigger trigger;
 			if(mmsiEntity.getSlotTimeOutJob() == null) {
 				// Quartz Trigger 생성
 				trigger = TriggerBuilder.newTrigger().withIdentity(localDateTimeString, mmsi)
@@ -74,7 +74,6 @@ public class MmsiEntitySlotTimeChangeListener {
 			try {
 				this.quartzCoreService.addScheduleJobForSlotTimeOut(trigger, mmsiEntity);
 			} catch (SchedulerException | ParseException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
