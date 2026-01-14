@@ -2,7 +2,7 @@ package com.all4land.generator.ais;
 
 import java.time.LocalDateTime;
 
-import com.all4land.generator.ui.tab.ais.entity.MmsiEntity;
+import com.all4land.generator.entity.MmsiEntity;
 import com.all4land.generator.util.RandomGenerator;
 
 import dk.dma.ais.binary.SixbitException;
@@ -23,6 +23,77 @@ public class AisMessage1Util {
 	 */
 	public static Vdm create(MmsiEntity mmsiEntity, int slotNumber) {
 		//
+		AisMessage1 msg1 = new AisMessage1();
+		msg1.setRepeat(0);
+
+		String strMmsi = String.valueOf(mmsiEntity.getMmsi());
+		msg1.setUserId(Integer.parseInt(strMmsi));
+
+		msg1.setSog(RandomGenerator.generateRandomIntFromTo(6, 7)*10);
+
+		double latitude = RandomGenerator.generateRandomDouble(-90, 90, 0);
+		double longitude = RandomGenerator.generateRandomDouble(-180, 180, 0);
+		
+		if(mmsiEntity.getSpeed() == 180) {
+			//
+			AisPosition pos = new AisPosition(Position.create(latitude, longitude));
+			
+			msg1.setPos(pos);
+			msg1.setCog(RandomGenerator.generateRandomIntFromTo(0, 359)*10);
+			msg1.setSog(0);
+		}else {
+			//
+			AisPosition pos = new AisPosition(Position.create(latitude, longitude));
+			msg1.setPos(pos);
+			
+			
+			msg1.setCog(RandomGenerator.generateRandomIntFromTo(0, 359)*10);
+			mmsiEntity.plusPositionCnt();
+		}
+		
+		msg1.setTrueHeading(76);
+		msg1.setUtcSec(42);
+		msg1.setSpecialManIndicator(0);
+		msg1.setSpare(0);
+		msg1.setRaim(0);
+		
+		msg1.setNavStatus(RandomGenerator.generateRandomIntFromTo(0, 15));
+		msg1.setRot(RandomGenerator.generateRandomIntFromTo(-128, 127));
+		msg1.setPosAcc(RandomGenerator.generateRandomIntFromTo(0, 1));
+		
+		msg1.setSyncState(1);
+		
+		if(mmsiEntity.getSpeed() != 180) {
+			msg1.setSlotTimeout(mmsiEntity.getSlotTimeOut());
+		}
+        msg1.setSubMessage(slotNumber);
+		
+		Vdm vdm = new Vdm();
+		vdm.setTalker("AB");
+		vdm.setFormatter("VDM");
+		vdm.setTotal(1);
+		vdm.setNum(1);
+		vdm.setSequence(mmsiEntity.getAisMessageSequence());
+		try {
+			vdm.setMessageData(msg1);
+		} catch (SixbitException e) {
+			log.error("Exception [Err_Location] : {}", e.getStackTrace()[0]);
+		}
+		
+		if(mmsiEntity.getTargetChannel()){
+			vdm.setChannel('A');
+		}else {
+			vdm.setChannel('B');
+		}
+		
+		return vdm;
+	}
+
+	/**
+	 * UI MmsiEntity를 받는 오버로드 메서드
+	 */
+	public static Vdm create(com.all4land.generator.ui.tab.ais.entity.MmsiEntity mmsiEntity, int slotNumber) {
+		// UI MmsiEntity도 동일한 메서드를 가지고 있으므로 동일한 로직 사용
 		AisMessage1 msg1 = new AisMessage1();
 		msg1.setRepeat(0);
 

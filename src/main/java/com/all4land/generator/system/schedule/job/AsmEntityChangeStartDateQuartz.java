@@ -1,4 +1,4 @@
-package com.all4land.generator.ui.tab.ais.entity.event.quartz;
+package com.all4land.generator.system.schedule.job;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -10,17 +10,17 @@ import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.stereotype.Component;
 
+import com.all4land.generator.entity.GlobalEntityManager;
+import com.all4land.generator.entity.MmsiEntity;
+import com.all4land.generator.entity.TargetCellInfoEntity;
 import com.all4land.generator.system.component.TimeMapRangeCompnents;
 import com.all4land.generator.system.constant.SystemConstMessage;
-import com.all4land.generator.entity.TargetCellInfoEntity;
-import com.all4land.generator.ui.tab.ais.entity.GlobalEntityManager;
-import com.all4land.generator.ui.tab.ais.entity.MmsiEntity;
 import com.all4land.generator.util.RandomGenerator;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@Component("uiAsmEntityChangeStartDateQuartz")
+@Component
 public class AsmEntityChangeStartDateQuartz implements Job {
 	//
 	private final GlobalEntityManager globalEntityManager;
@@ -34,7 +34,6 @@ public class AsmEntityChangeStartDateQuartz implements Job {
 		this.timeMapRangeCompnents = timeMapRangeCompnents;
 	}
 	
-//	@Async
 	@Override
 	public void execute(JobExecutionContext context) throws JobExecutionException {
 		// TODO Auto-generated method stub
@@ -104,3 +103,7 @@ public class AsmEntityChangeStartDateQuartz implements Job {
 		return this.globalEntityManager.findAsmRule3(startIndex, mmsiEntity);
 	}
 }
+
+
+
+

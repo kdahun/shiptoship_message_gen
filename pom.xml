@@ -40,13 +40,6 @@
 		</dependency>
 
 		
-		<!--look and feel-->
-		<dependency>
-		  <groupId>com.formdev</groupId>
-		  <artifactId>flatlaf</artifactId>
-		  <version>3.2.5</version>
-		</dependency>
-		
 		<!--socket 라이브러리 start-->
 		<dependency>
 			<groupId>io.netty</groupId>

@@ -1,14 +1,16 @@
-package com.all4land.generator.ui.tab.ais.entity;
+package com.all4land.generator.entity;
 
 import java.time.LocalDateTime;
 
 import org.quartz.JobDetail;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Component;
 
-import com.all4land.generator.ui.tab.ais.entity.event.change.AsmEntityChangeStartTimeEvent;
-import com.all4land.generator.ui.tab.ais.enums.AsmTdmaType;
+import com.all4land.generator.entity.enums.AsmTdmaType;
+import com.all4land.generator.entity.event.AsmEntityChangeStartTimeEvent;
 import com.all4land.generator.util.RandomGenerator;
 
+@Component
 public class AsmEntity {
 	//
 	private final ApplicationEventPublisher eventPublisher;
@@ -65,3 +67,7 @@ public class AsmEntity {
 	}
 	
 }
+
+
+
+

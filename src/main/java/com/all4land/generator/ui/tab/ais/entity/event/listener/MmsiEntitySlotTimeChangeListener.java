@@ -14,7 +14,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import com.all4land.generator.system.schedule.QuartzCoreService;
-import com.all4land.generator.ui.tab.ais.entity.MmsiEntity;
+import com.all4land.generator.entity.MmsiEntity;
 import com.all4land.generator.ui.tab.ais.entity.event.change.MmsiEntitySlotTimeChangeEvent;
 
 @Component

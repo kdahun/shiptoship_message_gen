@@ -15,7 +15,9 @@ import javax.swing.SwingUtilities;
 import org.quartz.Scheduler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import com.all4land.generator.system.schedule.QuartzCoreService;
@@ -32,7 +34,9 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@Component
+// @Component - UI 제거로 인해 주석 처리 (headless 모드에서 실행 시 오류 방지)
+// @Lazy
+// @ConditionalOnProperty(name = "java.awt.headless", havingValue = "false", matchIfMissing = false)
 @Getter
 public class Sample1 extends javax.swing.JFrame {
 

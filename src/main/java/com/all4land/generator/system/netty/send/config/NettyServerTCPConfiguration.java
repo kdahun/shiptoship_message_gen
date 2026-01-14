@@ -57,6 +57,29 @@ public class NettyServerTCPConfiguration implements AutoCloseable {
 		return this.serverBootstrap;
 	}
 
+	/**
+	 * UI 의존성 없는 간단한 TCP 서버 Bootstrap 생성
+	 */
+	public ServerBootstrap tcpServerBootstrapSimple() {
+		//
+		this.serverBootstrap = new ServerBootstrap();
+		this.serverBootstrap.group(this.tcpServerBossGroup(), this.tcpServerWorkerGroup()).channel(NioServerSocketChannel.class)
+				.childHandler(new ChannelInitializer<SocketChannel>() {
+					@Override
+					public void initChannel(SocketChannel ch) throws Exception {
+						//
+						ch.pipeline().addLast(new SimpleTcpServerHandler());
+					}
+				});
+
+		this.serverBootstrap.option(ChannelOption.SO_BACKLOG, 1);
+		this.serverBootstrap.childOption(ChannelOption.TCP_NODELAY, true);
+		this.serverBootstrap.childOption(ChannelOption.SO_KEEPALIVE, true);
+		this.serverBootstrap.childOption(ChannelOption.SO_REUSEADDR, true);
+
+		return this.serverBootstrap;
+	}
+
 	public boolean startTcp(int port) {
 		//
 		try {
@@ -76,8 +99,13 @@ public class NettyServerTCPConfiguration implements AutoCloseable {
 		//
 		if (clientChannel != null && clientChannel.isActive()) {
 			//
+			log.info("[DEBUG] NettyServerTCPConfiguration.sendToClient - 전송 시작: {}:{}", clientIP, clientPort);
+			log.info("[DEBUG] 메시지 내용 (처음 100자): {}", message.length() > 100 ? message.substring(0, 100) + "..." : message);
 			clientChannel.writeAndFlush(Unpooled.copiedBuffer(message, CharsetUtil.UTF_8));
+			log.info("[DEBUG] ✅ NettyServerTCPConfiguration.sendToClient - 전송 완료: {}:{}", clientIP, clientPort);
 		} else {
+			log.warn("[DEBUG] ❌ NettyServerTCPConfiguration.sendToClient - 채널이 null이거나 비활성: {}:{} (channel: {}, isActive: {})", 
+					clientIP, clientPort, clientChannel != null, clientChannel != null ? clientChannel.isActive() : false);
 			System.out.println("Failed to send message to client " + clientIP + ":" + clientPort);
 		}
 	}

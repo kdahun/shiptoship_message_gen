@@ -16,7 +16,7 @@ import com.all4land.generator.ui.view.Sample1;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@Component
+// @Component // UI 의존성으로 인해 주석 처리 (headless 모드에서는 사용하지 않음)
 public class ToggleSlotNumberListener {
 	//
 	private final Sample1 mainFrame;

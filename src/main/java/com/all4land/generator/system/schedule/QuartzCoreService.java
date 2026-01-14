@@ -16,12 +16,14 @@ import org.quartz.SchedulerException;
 import org.quartz.Trigger;
 import org.springframework.stereotype.Service;
 
-import com.all4land.generator.ui.tab.ais.entity.MmsiEntity;
-import com.all4land.generator.ui.tab.ais.entity.event.quartz.AsmEntityChangeStartDateQuartz;
-import com.all4land.generator.ui.tab.ais.entity.event.quartz.MmsiEntityChangeStartDate;
-import com.all4land.generator.ui.tab.ais.entity.event.quartz.MmsiEntitySlotTimeChangeQuartz;
-import com.all4land.generator.ui.tab.ais.entity.event.quartz.VdeEntityChangeStartDateQuartz;
+import com.all4land.generator.entity.MmsiEntity;
+import com.all4land.generator.system.schedule.job.AsmEntityChangeStartDateQuartz;
+import com.all4land.generator.system.schedule.job.MmsiEntityChangeStartDate;
+import com.all4land.generator.system.schedule.job.MmsiEntitySlotTimeChangeQuartz;
+import com.all4land.generator.system.schedule.job.VdeEntityChangeStartDateQuartz;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 public class QuartzCoreService {
 	//
@@ -41,6 +43,8 @@ public class QuartzCoreService {
 	 */
 	public void addScheduleJob(Trigger trigger, MmsiEntity mmsiEntity) throws SchedulerException, ParseException {
 		//
+		System.out.println("[DEBUG] QuartzCoreService.addScheduleJob() 호출 - MMSI: " + mmsiEntity.getMmsi() + 
+				", StartTime: " + mmsiEntity.getStartTime());
         // Quartz JobDetail 생성
 		JobDataMap jobDataMap = new JobDataMap();
 		jobDataMap.put("mmsiEntity", mmsiEntity);
@@ -50,6 +54,7 @@ public class QuartzCoreService {
 			String mmsi = String.valueOf(mmsiEntity.getMmsi());
 			String startDate = mmsiEntity.getStartTime().toString();
 			
+			System.out.println("[DEBUG] 새 Quartz Job 생성 - MMSI: " + mmsi + ", StartDate: " + startDate);
 			JobDetail job = JobBuilder.newJob(MmsiEntityChangeStartDate.class)
 	                .withIdentity(startDate, mmsi) //"myJob", "group1"
 	                .storeDurably(true)
@@ -62,6 +67,7 @@ public class QuartzCoreService {
 			DateTimeFormatter fmt = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
 			String time = sdf.format(dt);
 			String curTime = now.format(fmt);
+			System.out.println("[DEBUG] Quartz Job 스케줄 등록 완료 - MMSI: " + mmsiEntity.getMmsi());
 			System.out.println("[Current   Time]" + curTime);
 			System.out.println("[Scheduled Time]" + time);
 			// 현재시간 및 스케쥴된 시간 확인용 콘솔로그
@@ -198,6 +204,174 @@ public class QuartzCoreService {
 			String startDate = mmsiEntity.getVdeEntity().getStartTime().toString();
 			
 			JobDetail job = JobBuilder.newJob(VdeEntityChangeStartDateQuartz.class)
+	                .withIdentity(startDate, mmsi) //"myJob", "group1"
+	                .storeDurably(true)
+	                .setJobData(jobDataMap)
+	                .build();
+			this.scheduler.scheduleJob(job, trigger);
+			mmsiEntity.getVdeEntity().setVdeStartTimeJob(job);
+		}else {
+			//
+			//트리거가 이미 존재하는지 확인
+			if (!this.scheduler.checkExists(trigger.getKey())) {
+				// 존재하지 않는 경우 스케줄에 트리거 추가
+				this.scheduler.scheduleJob(trigger);
+			}
+		}
+		
+    }
+
+	// UI MmsiEntity를 받는 오버로드 메서드들
+	public void addScheduleJob(Trigger trigger, com.all4land.generator.ui.tab.ais.entity.MmsiEntity mmsiEntity) throws SchedulerException, ParseException {
+		//
+        // Quartz JobDetail 생성
+		JobDataMap jobDataMap = new JobDataMap();
+		jobDataMap.put("mmsiEntity", mmsiEntity);
+		
+		if(mmsiEntity.getJob() == null) {
+			//
+			String mmsi = String.valueOf(mmsiEntity.getMmsi());
+			String startDate = mmsiEntity.getStartTime().toString();
+			
+			JobDetail job = JobBuilder.newJob(com.all4land.generator.ui.tab.ais.entity.event.quartz.MmsiEntityChangeStartDate.class)
+	                .withIdentity(startDate, mmsi) //"myJob", "group1"
+	                .storeDurably(true)
+	                .setJobData(jobDataMap)
+	                .build();
+			Date dt = this.scheduler.scheduleJob(job, trigger);
+			// 현재시간 및 스케쥴된 시간 확인용 콘솔로그
+			LocalTime now = LocalTime.now();
+			SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss.SSS");
+			DateTimeFormatter fmt = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
+			String time = sdf.format(dt);
+			String curTime = now.format(fmt);
+			System.out.println("[Current   Time]" + curTime);
+			System.out.println("[Scheduled Time]" + time);
+			// 현재시간 및 스케쥴된 시간 확인용 콘솔로그
+			mmsiEntity.setJob(job);
+		}else {
+			//
+			//트리거가 이미 존재하는지 확인
+			if (!this.scheduler.checkExists(trigger.getKey())) {
+				// 존재하지 않는 경우 스케줄에 트리거 추가
+				Date dt = this.scheduler.scheduleJob(trigger);
+				// 현재시간 및 스케쥴된 시간 확인용 콘솔로그
+				LocalTime now = LocalTime.now();
+				SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss.SSS");
+				DateTimeFormatter fmt = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
+				String time = sdf.format(dt);
+				String curTime = now.format(fmt);
+				System.out.println("[Current   Time]" + curTime);
+				System.out.println("[Scheduled Time]" + time);
+				// 현재시간 및 스케쥴된 시간 확인용 콘솔로그
+			}
+		}
+    }
+	
+	public void removeStartTimeTrigger(com.all4land.generator.ui.tab.ais.entity.MmsiEntity mmsiEntity) throws SchedulerException, ParseException {
+		//
+		if(mmsiEntity.getJob() != null) {
+			// 작업(Job)을 삭제하기 위해 해당 작업(Job)의 키를 얻어온다.
+			JobKey jobKey = mmsiEntity.getJob().getKey();
+
+			// 작업(Job)과 연결된 모든 트리거를 얻어온다.
+			List<? extends Trigger> triggersOfJob = scheduler.getTriggersOfJob(jobKey);
+
+			// 작업(Job)과 연결된 모든 트리거를 삭제한다.
+			for (Trigger trigger : triggersOfJob) {
+				scheduler.unscheduleJob(trigger.getKey());
+//				System.out.println(rtn+", "+trigger.getKey().getName());
+			}
+		}
+    }
+	
+	public void removeSlotTimeOutTimeTrigger(com.all4land.generator.ui.tab.ais.entity.MmsiEntity mmsiEntity) throws SchedulerException, ParseException {
+		//
+		if(mmsiEntity.getSlotTimeOutJob() != null) {
+			// 작업(Job)을 삭제하기 위해 해당 작업(Job)의 키를 얻어온다.
+			JobKey jobKey = mmsiEntity.getSlotTimeOutJob().getKey();
+
+			// 작업(Job)과 연결된 모든 트리거를 얻어온다.
+			List<? extends Trigger> triggersOfJob = scheduler.getTriggersOfJob(jobKey);
+
+			// 작업(Job)과 연결된 모든 트리거를 삭제한다.
+			for (Trigger trigger : triggersOfJob) {
+				scheduler.unscheduleJob(trigger.getKey());
+//				System.out.println(rtn+", "+trigger.getKey().getName());
+			}
+		}
+    }
+	
+	public void addScheduleJobForSlotTimeOut(Trigger trigger, com.all4land.generator.ui.tab.ais.entity.MmsiEntity mmsiEntity) throws SchedulerException, ParseException {
+		//
+        // Quartz JobDetail 생성
+		JobDataMap jobDataMap = new JobDataMap();
+		jobDataMap.put("mmsiEntity", mmsiEntity);
+		
+		if(mmsiEntity.getSlotTimeOutJob() == null) {
+			//
+			String mmsi = String.valueOf(mmsiEntity.getMmsi());
+			String startDate = mmsiEntity.getSlotTimeOutTime().toString();
+			
+			JobDetail job = JobBuilder.newJob(com.all4land.generator.ui.tab.ais.entity.event.quartz.MmsiEntitySlotTimeChangeQuartz.class)
+	                .withIdentity(startDate, mmsi)
+	                .storeDurably(true)
+	                .setJobData(jobDataMap)
+	                .build();
+			this.scheduler.scheduleJob(job, trigger);
+			mmsiEntity.setSlotTimeOutJob(job);
+		}else {
+			//
+			//트리거가 이미 존재하는지 확인
+			if (!this.scheduler.checkExists(trigger.getKey())) {
+				// 존재하지 않는 경우 스케줄에 트리거 추가
+				this.scheduler.scheduleJob(trigger);
+			}
+		}
+		
+    }
+	
+	public void addScheduleJobforAsm(Trigger trigger, com.all4land.generator.ui.tab.ais.entity.MmsiEntity mmsiEntity) throws SchedulerException, ParseException {
+		//
+        // Quartz JobDetail 생성
+		JobDataMap jobDataMap = new JobDataMap();
+		jobDataMap.put("mmsiEntity", mmsiEntity);
+		
+		if(mmsiEntity.getAsmEntity().getAsmStartTimeJob() == null) {
+			//
+			String mmsi = String.valueOf(mmsiEntity.getMmsi());
+			String startDate = mmsiEntity.getAsmEntity().getStartTime().toString();
+			
+			JobDetail job = JobBuilder.newJob(com.all4land.generator.ui.tab.ais.entity.event.quartz.AsmEntityChangeStartDateQuartz.class)
+	                .withIdentity(startDate, mmsi) //"myJob", "group1"
+	                .storeDurably(true)
+	                .setJobData(jobDataMap)
+	                .build();
+			this.scheduler.scheduleJob(job, trigger);
+			mmsiEntity.getAsmEntity().setAsmStartTimeJob(job);
+		}else {
+			//
+			//트리거가 이미 존재하는지 확인
+			if (!this.scheduler.checkExists(trigger.getKey())) {
+				// 존재하지 않는 경우 스케줄에 트리거 추가
+				this.scheduler.scheduleJob(trigger);
+			}
+		}
+		
+    }
+	
+	public void addScheduleJobforVde(Trigger trigger, com.all4land.generator.ui.tab.ais.entity.MmsiEntity mmsiEntity) throws SchedulerException, ParseException {
+		//
+        // Quartz JobDetail 생성
+		JobDataMap jobDataMap = new JobDataMap();
+		jobDataMap.put("mmsiEntity", mmsiEntity);
+		
+		if(mmsiEntity.getVdeEntity().getVdeStartTimeJob() == null) {
+			//
+			String mmsi = String.valueOf(mmsiEntity.getMmsi());
+			String startDate = mmsiEntity.getVdeEntity().getStartTime().toString();
+			
+			JobDetail job = JobBuilder.newJob(com.all4land.generator.ui.tab.ais.entity.event.quartz.VdeEntityChangeStartDateQuartz.class)
 	                .withIdentity(startDate, mmsi) //"myJob", "group1"
 	                .storeDurably(true)
 	                .setJobData(jobDataMap)

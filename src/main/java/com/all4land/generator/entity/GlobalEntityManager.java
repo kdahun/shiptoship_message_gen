@@ -1,0 +1,997 @@
+package com.all4land.generator.entity;
+
+// UI 제거로 인해 주석 처리
+// import java.awt.Point;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+
+// UI 제거로 인해 주석 처리
+// import javax.swing.JTable;
+// import javax.swing.JTextArea;
+// import javax.swing.JTextField;
+// import javax.swing.table.TableModel;
+
+import org.quartz.Scheduler;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Component;
+
+import com.all4land.generator.ais.ASMMessageUtil;
+import com.all4land.generator.ais.AisMessage1Util;
+import com.all4land.generator.system.constant.SystemConstMessage;
+import com.all4land.generator.system.constant.SystemConstTestData180;
+import com.all4land.generator.system.schedule.QuartzCoreService;
+import com.all4land.generator.system.util.BeanUtils;
+import com.all4land.generator.entity.TargetCellInfoEntity;
+// UI 제거로 인해 주석 처리
+// import com.all4land.generator.ui.tab.ais.entity.event.change.ColorEntityChangeEvent;
+// UI 제거로 인해 주석 처리
+// import com.all4land.generator.ui.tab.ais.entity.event.change.ToggleDisplayAis;
+// import com.all4land.generator.ui.tab.ais.entity.event.change.ToggleDisplayAsm;
+// import com.all4land.generator.ui.tab.ais.entity.event.change.ToggleDisplayVde;
+// import com.all4land.generator.ui.tab.ais.model.MmsiTableModel;
+// import com.all4land.generator.ui.tab.ais.renderer.CustomTableCellRenderer;
+import com.all4land.generator.util.RandomGenerator;
+
+import dk.dma.ais.sentence.Vdm;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Component
+public class GlobalEntityManager {
+	//
+	private final String uuid = "00"+String.valueOf(RandomGenerator.generateRandomInt(7));
+	private final ASMMessageUtil aSMMessageUtil;
+	private final ApplicationEventPublisher eventPublisher;
+	Set<Long> generatedMmsiSet = new HashSet<>();
+	// UI 제거로 인해 주석 처리
+	// private JTable currentFrameJTableNameUpper;
+	// private JTable currentFrame1JTableNameUpper;
+	// private JTable currentFrame2JTableNameUpper;
+	// private JTable currentFrame3JTableNameUpper;
+	// private JTable currentFrame4JTableNameUpper;
+	// private JTable currentFrame5JTableNameUpper;
+	// private JTable currentFrame6JTableNameUpper;
+	// private JTable currentFrame7JTableNameUpper;
+	// private JTable currentFrame8JTableNameUpper;
+	// private JTable currentFrame9JTableNameUpper;
+	// private JTable currentFrame10JTableNameUpper;
+	//
+	// private JTable currentFrameJTableNameLower;
+	// private JTable currentFrame1JTableNameLower;
+	// private JTable currentFrame2JTableNameLower;
+	// private JTable currentFrame3JTableNameLower;
+	// private JTable currentFrame4JTableNameLower;
+	// private JTable currentFrame5JTableNameLower;
+	// private JTable currentFrame6JTableNameLower;
+	// private JTable currentFrame7JTableNameLower;
+	// private JTable currentFrame8JTableNameLower;
+	// private JTable currentFrame9JTableNameLower;
+	// private JTable currentFrame10JTableNameLower;
+	
+	// UI 없이 프레임 정보를 저장하기 위한 식별자 (기능 유지를 위한 대체 메커니즘)
+	private String currentFrameUpper;
+	private String currentFrame1Upper;
+	private String currentFrame2Upper;
+	private String currentFrame3Upper;
+	private String currentFrame4Upper;
+	private String currentFrame5Upper;
+	private String currentFrame6Upper;
+	private String currentFrame7Upper;
+	private String currentFrame8Upper;
+	private String currentFrame9Upper;
+	private String currentFrame10Upper;
+	
+	private String currentFrameLower;
+	private String currentFrame1Lower;
+	private String currentFrame2Lower;
+	private String currentFrame3Lower;
+	private String currentFrame4Lower;
+	private String currentFrame5Lower;
+	private String currentFrame6Lower;
+	private String currentFrame7Lower;
+	private String currentFrame8Lower;
+	private String currentFrame9Lower;
+	private String currentFrame10Lower;
+
+	private boolean aisMsgDisplay = true;
+	private boolean asmMsgDisplay = true;
+	private boolean vdeMsgDisplay = true;
+
+	private List<MmsiEntity> mmsiEntityLists;
+	// UI 제거로 인해 주석 처리
+	// private MmsiTableModel mmsiTableModel2;
+
+	// UI 제거로 인해 주석 처리
+	// private JTextField jTextFieldSFI;
+	private String sfiValue; // UI 제거 후 SFI 값을 문자열로 저장
+	
+	GlobalEntityManager(ApplicationEventPublisher eventPublisher, ASMMessageUtil aSMMessageUtil) {
+		// 생성자에서 리스트를 초기화합니다.
+		this.eventPublisher = eventPublisher;
+		this.aSMMessageUtil = aSMMessageUtil;
+		this.mmsiEntityLists = new ArrayList<>();
+	}
+
+	// UI 제거로 인해 주석 처리
+	// public void setMmsiTableModel(MmsiTableModel mmsiTableModel2) {
+	//	//
+	//	this.mmsiTableModel2 = mmsiTableModel2;
+	// }
+
+	public List<MmsiEntity> getMmsiEntityLists() {
+		//
+		return this.mmsiEntityLists;
+	}
+
+	public void setMmsiEntityLists(List<MmsiEntity> mmsiEntityLists) {
+		//
+		this.mmsiEntityLists = mmsiEntityLists;
+		// UI 제거로 인해 주석 처리
+		// this.mmsiTableModel2.setData();
+	}
+
+	public void addMmsiEntityLists(List<MmsiEntity> mmsiEntityLists) {
+		//
+		this.mmsiEntityLists.addAll(mmsiEntityLists);
+		// UI 제거로 인해 주석 처리
+		// this.mmsiTableModel2.setData();
+	}
+
+	public void addMmsiEntity180(Scheduler scheduler, QuartzCoreService quartzCoreService) {
+		// UI 제거로 인해 JTextArea 파라미터 제거
+		//
+		if (this.mmsiEntityLists == null) {
+			//
+			this.mmsiEntityLists = new ArrayList<>();
+		}
+		// 중복되지 않는 MMSI 값을 보장하기 위해 반복문 사용
+		long uniqueMmsi;
+		do {
+			uniqueMmsi = RandomGenerator.generateRandomLong(9);
+		} while (!generatedMmsiSet.add(uniqueMmsi));
+
+		BeanUtils.registerBean(uniqueMmsi + "", MmsiEntity.class);
+		MmsiEntity mmsi = (MmsiEntity) BeanUtils.getBean(uniqueMmsi + "");
+		
+		// UI 제거로 인해 주석 처리
+		// mmsi.setCurrentFrameJTableNameUpper(this.currentFrameJTableNameUpper);
+		// mmsi.setCurrentFrame1JTableNameUpper(this.currentFrame1JTableNameUpper);
+		// mmsi.setCurrentFrame2JTableNameUpper(this.currentFrame2JTableNameUpper);
+		// mmsi.setCurrentFrame3JTableNameUpper(this.currentFrame3JTableNameUpper);
+		// mmsi.setCurrentFrame4JTableNameUpper(this.currentFrame4JTableNameUpper);
+		// mmsi.setCurrentFrame5JTableNameUpper(this.currentFrame5JTableNameUpper);
+		// mmsi.setCurrentFrame6JTableNameUpper(this.currentFrame6JTableNameUpper);
+		// mmsi.setCurrentFrame7JTableNameUpper(this.currentFrame7JTableNameUpper);
+		// mmsi.setCurrentFrameJTableNameLower(this.currentFrameJTableNameLower);
+		// mmsi.setCurrentFrame1JTableNameLower(this.currentFrame1JTableNameLower);
+		// mmsi.setCurrentFrame2JTableNameLower(this.currentFrame2JTableNameLower);
+		// mmsi.setCurrentFrame3JTableNameLower(this.currentFrame3JTableNameLower);
+		// mmsi.setCurrentFrame4JTableNameLower(this.currentFrame4JTableNameLower);
+		// mmsi.setCurrentFrame5JTableNameLower(this.currentFrame5JTableNameLower);
+		// mmsi.setCurrentFrame6JTableNameLower(this.currentFrame6JTableNameLower);
+		// mmsi.setCurrentFrame7JTableNameLower(this.currentFrame7JTableNameLower);
+
+		mmsi.setSfiValue(this.sfiValue);
+
+		mmsi.setMmsi(uniqueMmsi);
+		// UI 제거로 인해 주석 처리
+		// mmsi.setAisTabjTextAreaName(aisTabjTextAreaName);
+		mmsi.setGlobalEntityManager(this);
+		
+		mmsi.setSpeed(180);
+		mmsi.setSlotTimeOut(3);
+//		mmsi.setslo
+//		this.speed = speed;
+//		this.slotTimeOut = slotTimeout;
+//		this.slotTimeOut_default = this.slotTimeOut;
+		
+		
+		this.mmsiEntityLists.add(mmsi);
+		
+		// UI 제거로 인해 주석 처리
+		// this.mmsiTableModel2.setData();
+		mmsi.setChk(true);
+	}
+	
+	public void addMmsiEntity10(Scheduler scheduler, QuartzCoreService quartzCoreService) {
+		// UI 제거로 인해 JTextArea 파라미터 제거
+		//
+		System.out.println("[DEBUG] GlobalEntityManager.addMmsiEntity10() 시작");
+		if (this.mmsiEntityLists == null) {
+			//
+			this.mmsiEntityLists = new ArrayList<>();
+		}
+		// 중복되지 않는 MMSI 값을 보장하기 위해 반복문 사용
+		long uniqueMmsi;
+		do {
+			uniqueMmsi = RandomGenerator.generateRandomLong(9);
+		} while (!generatedMmsiSet.add(uniqueMmsi));
+
+		System.out.println("[DEBUG] MMSI 생성: " + uniqueMmsi);
+		BeanUtils.registerBean(uniqueMmsi + "", MmsiEntity.class);
+		MmsiEntity mmsi = (MmsiEntity) BeanUtils.getBean(uniqueMmsi + "");
+		System.out.println("[DEBUG] MmsiEntity Bean 생성 완료 - MMSI: " + mmsi.getMmsi());
+		
+		// UI 제거로 인해 주석 처리
+		// mmsi.setCurrentFrameJTableNameUpper(this.currentFrameJTableNameUpper);
+		// mmsi.setCurrentFrame1JTableNameUpper(this.currentFrame1JTableNameUpper);
+		// mmsi.setCurrentFrame2JTableNameUpper(this.currentFrame2JTableNameUpper);
+		// mmsi.setCurrentFrame3JTableNameUpper(this.currentFrame3JTableNameUpper);
+		// mmsi.setCurrentFrame4JTableNameUpper(this.currentFrame4JTableNameUpper);
+		// mmsi.setCurrentFrame5JTableNameUpper(this.currentFrame5JTableNameUpper);
+		// mmsi.setCurrentFrame6JTableNameUpper(this.currentFrame6JTableNameUpper);
+		// mmsi.setCurrentFrame7JTableNameUpper(this.currentFrame7JTableNameUpper);
+		// mmsi.setCurrentFrameJTableNameLower(this.currentFrameJTableNameLower);
+		// mmsi.setCurrentFrame1JTableNameLower(this.currentFrame1JTableNameLower);
+		// mmsi.setCurrentFrame2JTableNameLower(this.currentFrame2JTableNameLower);
+		// mmsi.setCurrentFrame3JTableNameLower(this.currentFrame3JTableNameLower);
+		// mmsi.setCurrentFrame4JTableNameLower(this.currentFrame4JTableNameLower);
+		// mmsi.setCurrentFrame5JTableNameLower(this.currentFrame5JTableNameLower);
+		// mmsi.setCurrentFrame6JTableNameLower(this.currentFrame6JTableNameLower);
+		// mmsi.setCurrentFrame7JTableNameLower(this.currentFrame7JTableNameLower);
+
+		mmsi.setSfiValue(this.sfiValue);
+
+		mmsi.setMmsi(uniqueMmsi);
+		// UI 제거로 인해 주석 처리
+		// mmsi.setAisTabjTextAreaName(aisTabjTextAreaName);
+		mmsi.setGlobalEntityManager(this);
+		
+		mmsi.setSpeed(10);
+		mmsi.setSlotTimeOut(7);
+		
+		this.mmsiEntityLists.add(mmsi);
+		
+		// UI 제거로 인해 주석 처리
+		// this.mmsiTableModel2.setData();
+		System.out.println("[DEBUG] setChk(true) 호출 전 - MMSI: " + mmsi.getMmsi() + ", chk: " + mmsi.isChk());
+		mmsi.setChk(true);
+		System.out.println("[DEBUG] setChk(true) 호출 후 - MMSI: " + mmsi.getMmsi() + ", chk: " + mmsi.isChk());
+		System.out.println("[DEBUG] GlobalEntityManager.addMmsiEntity10() 완료");
+	}
+	
+	public void addMmsiEntity6(Scheduler scheduler, QuartzCoreService quartzCoreService) {
+		// UI 제거로 인해 JTextArea 파라미터 제거
+		//
+		if (this.mmsiEntityLists == null) {
+			//
+			this.mmsiEntityLists = new ArrayList<>();
+		}
+		// 중복되지 않는 MMSI 값을 보장하기 위해 반복문 사용
+		long uniqueMmsi;
+		do {
+			uniqueMmsi = RandomGenerator.generateRandomLong(9);
+		} while (!generatedMmsiSet.add(uniqueMmsi));
+
+		BeanUtils.registerBean(uniqueMmsi + "", MmsiEntity.class);
+		MmsiEntity mmsi = (MmsiEntity) BeanUtils.getBean(uniqueMmsi + "");
+		
+		// UI 제거로 인해 주석 처리
+		// mmsi.setCurrentFrameJTableNameUpper(this.currentFrameJTableNameUpper);
+		// mmsi.setCurrentFrame1JTableNameUpper(this.currentFrame1JTableNameUpper);
+		// mmsi.setCurrentFrame2JTableNameUpper(this.currentFrame2JTableNameUpper);
+		// mmsi.setCurrentFrame3JTableNameUpper(this.currentFrame3JTableNameUpper);
+		// mmsi.setCurrentFrame4JTableNameUpper(this.currentFrame4JTableNameUpper);
+		// mmsi.setCurrentFrame5JTableNameUpper(this.currentFrame5JTableNameUpper);
+		// mmsi.setCurrentFrame6JTableNameUpper(this.currentFrame6JTableNameUpper);
+		// mmsi.setCurrentFrame7JTableNameUpper(this.currentFrame7JTableNameUpper);
+		// mmsi.setCurrentFrameJTableNameLower(this.currentFrameJTableNameLower);
+		// mmsi.setCurrentFrame1JTableNameLower(this.currentFrame1JTableNameLower);
+		// mmsi.setCurrentFrame2JTableNameLower(this.currentFrame2JTableNameLower);
+		// mmsi.setCurrentFrame3JTableNameLower(this.currentFrame3JTableNameLower);
+		// mmsi.setCurrentFrame4JTableNameLower(this.currentFrame4JTableNameLower);
+		// mmsi.setCurrentFrame5JTableNameLower(this.currentFrame5JTableNameLower);
+		// mmsi.setCurrentFrame6JTableNameLower(this.currentFrame6JTableNameLower);
+		// mmsi.setCurrentFrame7JTableNameLower(this.currentFrame7JTableNameLower);
+
+		mmsi.setSfiValue(this.sfiValue);
+
+		mmsi.setMmsi(uniqueMmsi);
+		// UI 제거로 인해 주석 처리
+		// mmsi.setAisTabjTextAreaName(aisTabjTextAreaName);
+		mmsi.setGlobalEntityManager(this);
+		
+		mmsi.setSpeed(6);
+		mmsi.setSlotTimeOut(7);
+		
+		this.mmsiEntityLists.add(mmsi);
+		
+		// UI 제거로 인해 주석 처리
+		// this.mmsiTableModel2.setData();
+		mmsi.setChk(true);
+	}
+	
+	/**
+	 * [MMSI_AIS_FLOW]-2
+	 * MmsiEntity 객체 생성 Bean등록, 환경 설정 후 SlotTimeOut 이벤트 발행 및 생성완료 신호-setChk(true)호출
+	 * To [MMSI_AIS_FLOW]-2-1 MmsiEntity.setSlotTimeOut , [MMSI_AIS_FLOW]-2-2 MmsiEntity.setChk
+	 */
+	public void addMmsiEntity2(Scheduler scheduler, QuartzCoreService quartzCoreService) {
+		// UI 제거로 인해 JTextArea 파라미터 제거
+		//
+		if (this.mmsiEntityLists == null) {
+			//
+			this.mmsiEntityLists = new ArrayList<>();
+		}
+		// 중복되지 않는 MMSI 값을 보장하기 위해 반복문 사용
+		long uniqueMmsi;
+		do {
+			uniqueMmsi = RandomGenerator.generateRandomLong(9);
+		} while (!generatedMmsiSet.add(uniqueMmsi));
+
+		BeanUtils.registerBean(uniqueMmsi + "", MmsiEntity.class);
+		MmsiEntity mmsi = (MmsiEntity) BeanUtils.getBean(uniqueMmsi + "");
+		
+		// UI 제거로 인해 주석 처리
+		// mmsi.setCurrentFrameJTableNameUpper(this.currentFrameJTableNameUpper);
+		// mmsi.setCurrentFrame1JTableNameUpper(this.currentFrame1JTableNameUpper);
+		// mmsi.setCurrentFrame2JTableNameUpper(this.currentFrame2JTableNameUpper);
+		// mmsi.setCurrentFrame3JTableNameUpper(this.currentFrame3JTableNameUpper);
+		// mmsi.setCurrentFrame4JTableNameUpper(this.currentFrame4JTableNameUpper);
+		// mmsi.setCurrentFrame5JTableNameUpper(this.currentFrame5JTableNameUpper);
+		// mmsi.setCurrentFrame6JTableNameUpper(this.currentFrame6JTableNameUpper);
+		// mmsi.setCurrentFrame7JTableNameUpper(this.currentFrame7JTableNameUpper);
+		// mmsi.setCurrentFrameJTableNameLower(this.currentFrameJTableNameLower);
+		// mmsi.setCurrentFrame1JTableNameLower(this.currentFrame1JTableNameLower);
+		// mmsi.setCurrentFrame2JTableNameLower(this.currentFrame2JTableNameLower);
+		// mmsi.setCurrentFrame3JTableNameLower(this.currentFrame3JTableNameLower);
+		// mmsi.setCurrentFrame4JTableNameLower(this.currentFrame4JTableNameLower);
+		// mmsi.setCurrentFrame5JTableNameLower(this.currentFrame5JTableNameLower);
+		// mmsi.setCurrentFrame6JTableNameLower(this.currentFrame6JTableNameLower);
+		// mmsi.setCurrentFrame7JTableNameLower(this.currentFrame7JTableNameLower);
+
+		mmsi.setSfiValue(this.sfiValue);
+
+		mmsi.setMmsi(uniqueMmsi);
+		// UI 제거로 인해 주석 처리
+		// mmsi.setAisTabjTextAreaName(aisTabjTextAreaName);
+		mmsi.setGlobalEntityManager(this);
+		
+		mmsi.setSpeed(2);
+		mmsi.setSlotTimeOut(7);
+		
+		this.mmsiEntityLists.add(mmsi);
+		
+		// mmsi 리스트 갱신 및 table UI 업데이트
+		// UI 제거로 인해 주석 처리
+		// this.mmsiTableModel2.setData();
+		mmsi.setChk(true);
+	}
+	
+	public void addMmsiEntity(int cnt, Scheduler scheduler, QuartzCoreService quartzCoreService) {
+		// UI 제거로 인해 JTextArea 파라미터 제거
+		//
+		if (this.mmsiEntityLists == null) {
+			//
+			this.mmsiEntityLists = new ArrayList<>();
+		}
+
+		for (int i = 0; i < cnt; i++) {
+			//
+//			try {
+////				System.out.println("sleep start "+ i);
+//				Thread.sleep(300); // 1초
+////				System.out.println("sleep end");
+//			} catch (InterruptedException e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			}
+			
+			// 중복되지 않는 MMSI 값을 보장하기 위해 반복문 사용
+			long uniqueMmsi;
+			do {
+				uniqueMmsi = RandomGenerator.generateRandomLong(9);
+			} while (!generatedMmsiSet.add(uniqueMmsi));
+
+			BeanUtils.registerBean(uniqueMmsi + "", MmsiEntity.class);
+			MmsiEntity mmsi = (MmsiEntity) BeanUtils.getBean(uniqueMmsi + "");
+
+			// MmsiEntity mmsi = new MmsiEntity(this.eventPublisher, scheduler,
+			// quartzCoreService);
+			
+			// UI 제거로 인해 주석 처리
+			// mmsi.setCurrentFrameJTableNameUpper(this.currentFrameJTableNameUpper);
+			// mmsi.setCurrentFrame1JTableNameUpper(this.currentFrame1JTableNameUpper);
+			// mmsi.setCurrentFrame2JTableNameUpper(this.currentFrame2JTableNameUpper);
+			// mmsi.setCurrentFrame3JTableNameUpper(this.currentFrame3JTableNameUpper);
+			// mmsi.setCurrentFrame4JTableNameUpper(this.currentFrame4JTableNameUpper);
+			// mmsi.setCurrentFrame5JTableNameUpper(this.currentFrame5JTableNameUpper);
+			// mmsi.setCurrentFrame6JTableNameUpper(this.currentFrame6JTableNameUpper);
+			// mmsi.setCurrentFrame7JTableNameUpper(this.currentFrame7JTableNameUpper);
+			// mmsi.setCurrentFrameJTableNameLower(this.currentFrameJTableNameLower);
+			// mmsi.setCurrentFrame1JTableNameLower(this.currentFrame1JTableNameLower);
+			// mmsi.setCurrentFrame2JTableNameLower(this.currentFrame2JTableNameLower);
+			// mmsi.setCurrentFrame3JTableNameLower(this.currentFrame3JTableNameLower);
+			// mmsi.setCurrentFrame4JTableNameLower(this.currentFrame4JTableNameLower);
+			// mmsi.setCurrentFrame5JTableNameLower(this.currentFrame5JTableNameLower);
+			// mmsi.setCurrentFrame6JTableNameLower(this.currentFrame6JTableNameLower);
+			// mmsi.setCurrentFrame7JTableNameLower(this.currentFrame7JTableNameLower);
+
+			mmsi.setSfiValue(this.sfiValue);
+
+			mmsi.setMmsi(uniqueMmsi);
+			// UI 제거로 인해 주석 처리
+			// mmsi.setAisTabjTextAreaName(aisTabjTextAreaName);
+			mmsi.setGlobalEntityManager(this);
+
+			// 2, 6, 10, 180
+//			if (i >= 0 && i < 70) {
+////				System.out.println("180 ===========================");
+//				make180(mmsi, i);
+////				mmsi.setChk(true);
+//			} else if (i >= 70 && i < 80) {
+////				System.out.println("10 ===========================");
+//				make10(mmsi, i);
+//			} else if (i >= 80 && i < 90) {
+////				System.out.println("2 ===========================");
+//				make2(mmsi, i);
+//			} else if (i >= 90 && i < 95) {
+////				System.out.println("6 ===========================");
+//				make6(mmsi, i);
+//			} 
+
+			if (i >= 0 && i < 10) {
+//				System.out.println("180 ===========================");
+				make180(mmsi, i);
+//				mmsi.setChk(true);
+			} else if (i >= 10 && i < 20) {
+//				System.out.println("10 ===========================");
+				make10(mmsi, i);
+			} else if (i >= 20 && i < 30) {
+//				System.out.println("2 ===========================");
+				make2(mmsi, i);
+			} else if (i >= 30 && i < 40) {
+//				System.out.println("6 ===========================");
+				make6(mmsi, i);
+			} 
+			
+			
+//			mmsi.setSpeed(2);
+
+//			newMmsiEntityLists.add(mmsi);
+//			log.info("mmsi set {}", mmsi.toString());
+			this.mmsiEntityLists.add(mmsi);
+			// UI 제거로 인해 주석 처리
+			// this.mmsiTableModel2.setData();
+			mmsi.setChk(true);
+			
+		}
+	}
+
+	private void make10(MmsiEntity mmsi, int index) {
+            //
+            switch (index) {
+                case 10 -> mmsi.testInit(10, 1, SystemConstMessage.positions_10_0);
+                case 11 -> mmsi.testInit(10, 1, SystemConstMessage.positions_10_1);
+                case 12 -> mmsi.testInit(10, 2, SystemConstMessage.positions_10_2);
+                case 13 -> mmsi.testInit(10, 2, SystemConstMessage.positions_10_3);
+                case 14 -> mmsi.testInit(10, 3, SystemConstMessage.positions_10_4);
+                case 15 -> mmsi.testInit(10, 3, SystemConstMessage.positions_10_5);
+                case 16 -> mmsi.testInit(10, 4, SystemConstMessage.positions_10_6);
+                case 17 -> mmsi.testInit(10, 4, SystemConstMessage.positions_10_7);
+                case 18 -> mmsi.testInit(10, 5, SystemConstMessage.positions_10_8);
+                case 19 -> mmsi.testInit(10, 6, SystemConstMessage.positions_10_9);
+                default -> {
+                }
+            }
+	}
+	
+	private void make6(MmsiEntity mmsi, int index) {
+            //
+            switch (index) {
+                case 30 -> mmsi.testInit(6, 1, SystemConstMessage.positions_6_0);
+                case 31 -> mmsi.testInit(6, 2, SystemConstMessage.positions_6_1);
+                case 32 -> mmsi.testInit(6, 3, SystemConstMessage.positions_6_2);
+                case 33 -> mmsi.testInit(6, 4, SystemConstMessage.positions_6_3);
+                case 34 -> mmsi.testInit(6, 5, SystemConstMessage.positions_6_4);
+                default -> {
+                }
+            }
+	}
+	
+	
+	private void make2(MmsiEntity mmsi, int index) {
+            //
+            switch (index) {
+                case 20 -> mmsi.testInit(2, 1, SystemConstMessage.positions_2_0);
+                case 21 -> mmsi.testInit(2, 2, SystemConstMessage.positions_2_1);
+                case 22 -> mmsi.testInit(2, 3, SystemConstMessage.positions_2_2);
+                case 23 -> mmsi.testInit(2, 4, SystemConstMessage.positions_2_3);
+                case 24 -> mmsi.testInit(2, 5, SystemConstMessage.positions_2_4);
+                case 25 -> mmsi.testInit(2, 6, SystemConstMessage.positions_2_5);
+                case 26 -> mmsi.testInit(2, 7, SystemConstMessage.positions_2_6);
+                case 27 -> mmsi.testInit(2, 7, SystemConstMessage.positions_2_7);
+                case 28 -> mmsi.testInit(2, 7, SystemConstMessage.positions_2_8);
+                case 29 -> mmsi.testInit(2, 7, SystemConstMessage.positions_2_9);
+                default -> {
+                }
+            }
+	}
+	private void make180(MmsiEntity mmsi, int index) {
+            //
+            switch (index) {
+                case 0 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_0);
+                case 1 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_1);
+                case 2 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_2);
+                case 3 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_3);
+                case 4 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_4);
+                case 5 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_5);
+                case 6 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_6);
+                case 7 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_7);
+                case 8 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_8);
+                case 9 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_9);
+                case 10 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_10);
+                case 11 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_11);
+                case 12 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_12);
+                case 13 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_13);
+                case 14 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_14);
+                case 15 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_15);
+                case 16 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_16);
+                case 17 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_17);
+                case 18 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_18);
+                case 19 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_19);
+                case 20 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_20);
+                case 21 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_21);
+                case 22 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_22);
+                case 23 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_23);
+                case 24 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_24);
+                case 25 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_25);
+                case 26 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_26);
+                case 27 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_27);
+                case 28 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_28);
+                case 29 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_29);
+                case 30 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_30);
+                case 31 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_31);
+                case 32 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_32);
+                case 33 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_33);
+                case 34 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_34);
+                case 35 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_35);
+                case 36 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_36);
+                case 37 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_37);
+                case 38 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_38);
+                case 39 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_39);
+                case 40 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_40);
+                case 41 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_41);
+                case 42 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_42);
+                case 43 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_43);
+                case 44 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_44);
+                case 45 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_45);
+                case 46 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_46);
+                case 47 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_47);
+                case 48 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_48);
+                case 49 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_49);
+                case 50 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_50);
+                case 51 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_51);
+                case 52 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_52);
+                case 53 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_53);
+                case 54 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_54);
+                case 55 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_55);
+                case 56 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_56);
+                case 57 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_57);
+                case 58 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_58);
+                case 59 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_59);
+                case 60 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_60);
+                case 61 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_61);
+                case 62 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_62);
+                case 63 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_63);
+                case 64 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_64);
+                case 65 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_65);
+                case 66 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_66);
+                case 67 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_67);
+                case 68 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_68);
+                case 69 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_69);
+                default -> {
+                }
+            }
+		
+	}
+	
+	// UI 제거로 인해 주석 처리
+	// public JTable getCurrentFrameJTableNameUpper() {
+	//	return currentFrameJTableNameUpper;
+	// }
+	//
+	// public void setCurrentFrameJTableNameUpper(JTable currentFrameJTableNameUpper) {
+	//	this.currentFrameJTableNameUpper = currentFrameJTableNameUpper;
+	// }
+
+	// UI 제거로 인해 주석 처리 - 모든 JTable getter/setter
+	// public JTable getCurrentFrame1JTableNameUpper() {
+	//	return currentFrame1JTableNameUpper;
+	// }
+	//
+	// public void setCurrentFrame1JTableNameUpper(JTable currentFrame1JTableNameUpper) {
+	//	this.currentFrame1JTableNameUpper = currentFrame1JTableNameUpper;
+	// }
+	//
+	// ... (모든 JTable getter/setter 주석 처리)
+
+	// UI 제거로 인해 주석 처리
+	// public JTextField getjTextFieldSFI() {
+	//	return jTextFieldSFI;
+	// }
+	//
+	// public void setjTextFieldSFI(JTextField jTextFieldSFI) {
+	//	this.jTextFieldSFI = jTextFieldSFI;
+	// }
+	
+	public String getSfiValue() {
+		return sfiValue;
+	}
+
+	public void setSfiValue(String sfiValue) {
+		this.sfiValue = sfiValue;
+	}
+	
+	// UI 없이 프레임 정보를 관리하기 위한 getter/setter 메서드 (기능 유지를 위한 대체 메커니즘)
+	public String getCurrentFrame7Lower() {
+		return currentFrame7Lower;
+	}
+	
+	public void setCurrentFrame7Lower(String currentFrame7Lower) {
+		this.currentFrame7Lower = currentFrame7Lower;
+	}
+	
+	public String getCurrentFrame7Upper() {
+		return currentFrame7Upper;
+	}
+	
+	public void setCurrentFrame7Upper(String currentFrame7Upper) {
+		this.currentFrame7Upper = currentFrame7Upper;
+	}
+	
+	// 다른 프레임들도 필요시 추가 가능
+	public String getCurrentFrameLower() {
+		return currentFrameLower;
+	}
+	
+	public void setCurrentFrameLower(String currentFrameLower) {
+		this.currentFrameLower = currentFrameLower;
+	}
+	
+	public String getCurrentFrameUpper() {
+		return currentFrameUpper;
+	}
+	
+	public void setCurrentFrameUpper(String currentFrameUpper) {
+		this.currentFrameUpper = currentFrameUpper;
+	}
+
+	public boolean isAisMsgDisplay() {
+		return aisMsgDisplay;
+	}
+
+	public void setAisMsgDisplay(boolean aisMsgDisplay) {
+		//
+		// UI 제거로 인해 주석 처리
+		// ToggleDisplayAis event = new ToggleDisplayAis(this, aisMsgDisplay, currentFrameJTableNameUpper,
+		//		currentFrame1JTableNameUpper, currentFrame2JTableNameUpper, currentFrame3JTableNameUpper,
+		//		currentFrame4JTableNameUpper, currentFrame5JTableNameUpper, currentFrame6JTableNameUpper,
+		//		currentFrame7JTableNameUpper, currentFrame8JTableNameUpper, currentFrame9JTableNameUpper,
+		//		currentFrame10JTableNameUpper);
+		this.aisMsgDisplay = aisMsgDisplay;
+		// eventPublisher.publishEvent(event);
+	}
+
+	public boolean isAsmMsgDisplay() {
+		return asmMsgDisplay;
+	}
+
+	public void setAsmMsgDisplay(boolean asmMsgDisplay) {
+		//
+		// UI 제거로 인해 주석 처리
+		// ToggleDisplayAsm event = new ToggleDisplayAsm(this, asmMsgDisplay, currentFrameJTableNameUpper,
+		//		currentFrame1JTableNameUpper, currentFrame2JTableNameUpper, currentFrame3JTableNameUpper,
+		//		currentFrame4JTableNameUpper, currentFrame5JTableNameUpper, currentFrame6JTableNameUpper,
+		//		currentFrame7JTableNameUpper, currentFrame8JTableNameUpper, currentFrame9JTableNameUpper,
+		//		currentFrame10JTableNameUpper);
+		this.asmMsgDisplay = asmMsgDisplay;
+		// eventPublisher.publishEvent(event);
+
+	}
+
+	public boolean isVdeMsgDisplay() {
+		return vdeMsgDisplay;
+	}
+
+	public void setVdeMsgDisplay(boolean vdeMsgDisplay) {
+		//
+		// UI 제거로 인해 주석 처리
+		// ToggleDisplayVde event = new ToggleDisplayVde(this, vdeMsgDisplay, currentFrameJTableNameUpper,
+		//		currentFrame1JTableNameUpper, currentFrame2JTableNameUpper, currentFrame3JTableNameUpper,
+		//		currentFrame4JTableNameUpper, currentFrame5JTableNameUpper, currentFrame6JTableNameUpper,
+		//		currentFrame7JTableNameUpper, currentFrame8JTableNameUpper, currentFrame9JTableNameUpper,
+		//		currentFrame10JTableNameUpper, currentFrameJTableNameLower, currentFrame1JTableNameLower,
+		//		currentFrame2JTableNameLower, currentFrame3JTableNameLower, currentFrame4JTableNameLower,
+		//		currentFrame5JTableNameLower, currentFrame6JTableNameLower, currentFrame7JTableNameLower,
+		//		currentFrame8JTableNameLower, currentFrame9JTableNameLower, currentFrame10JTableNameLower);
+		this.vdeMsgDisplay = vdeMsgDisplay;
+		// eventPublisher.publishEvent(event);
+
+	}
+
+	// ====================================================================
+	// UI 제거로 인해 주석 처리
+	public void setCurrentFrameAchColor(int row, int col, MmsiEntity mmsiEntity, LocalDateTime time) {
+		//
+		// ColorEntityChangeEvent event = new ColorEntityChangeEvent(this, row, col, mmsiEntity, time, 'A',
+		//		this.currentFrameJTableNameUpper, this.currentFrame1JTableNameUpper, this.currentFrame2JTableNameUpper,
+		//		this.currentFrame3JTableNameUpper, this.currentFrame4JTableNameUpper, this.currentFrame5JTableNameUpper,
+		//		this.currentFrame6JTableNameUpper, this.currentFrame7JTableNameUpper);
+		// eventPublisher.publishEvent(event);
+	}
+
+	public void setCurrentFrameBchColor(int row, int col, MmsiEntity mmsiEntity, LocalDateTime time) {
+		//
+		// ColorEntityChangeEvent event = new ColorEntityChangeEvent(this, row, col, mmsiEntity, time, 'B',
+		//		this.currentFrameJTableNameUpper, this.currentFrame1JTableNameUpper, this.currentFrame2JTableNameUpper,
+		//		this.currentFrame3JTableNameUpper, this.currentFrame4JTableNameUpper, this.currentFrame5JTableNameUpper,
+		//		this.currentFrame6JTableNameUpper, this.currentFrame7JTableNameUpper);
+		// eventPublisher.publishEvent(event);
+	}
+
+	private static boolean isValidCell(int row, int col) {
+		//
+		List<Integer> emptyRow = Arrays.asList(6, 13, 20, 27, 34, 41, 48, 55, 62, 69, 76, 83);
+
+		if (emptyRow.contains(row)) {
+			return false;
+		}
+
+		if (col == 0 || col == 16) {
+			return false;
+		}
+
+		if (col >= 1 && col <= 3) {
+			return !Arrays.asList(0, 7, 14, 21, 28, 35, 42, 49, 56, 63, 70, 77, 84, 91).contains(row);
+		}
+
+		if (col >= 4 && col <= 15) {
+			return true;
+		}
+
+		if (col >= 17 && col <= 19) {
+			if (Arrays.asList(0, 7, 14, 21, 28, 35, 42, 49, 56, 63, 70, 77, 84, 91).contains(row)) {
+				return false;
+			} else {
+				return row < 83;
+			}
+		}
+
+		if (col >= 20 && col <= 31) {
+			return row < 83;
+		}
+
+		return false;
+	}
+
+	/**
+	 * 슬롯 검색 및 점유(슬롯 마킹), AIS 메시지 생성-송신 함수
+	 * UI 없이 SI(Selection Interval) 범위 내에서 슬롯을 찾아 메시지를 생성합니다.
+	 * @param mmsiEntity
+	 * @return 찾은 슬롯 번호, 실패 시 -1
+	 */
+	public int findSlotAndMarking(MmsiEntity mmsiEntity) {
+		//
+		System.out.println("[DEBUG] GlobalEntityManager.findSlotAndMarking() 호출됨 - MMSI: " + mmsiEntity.getMmsi());
+		try {
+			int[] si = mmsiEntity.getSI();
+			if (si == null || si.length < 2) {
+				System.out.println("[DEBUG] ❌ SI가 설정되지 않음 - MMSI: " + mmsiEntity.getMmsi());
+				return -1;
+			}
+			
+			int siMin = si[0];
+			int siMax = si[1];
+			System.out.println("[DEBUG] SI 범위 - MMSI: " + mmsiEntity.getMmsi() + ", SI: [" + siMin + ", " + siMax + "]");
+			
+			// SI 범위 내에서 유효한 슬롯 찾기 (0~2249 범위 체크)
+			if (siMin < 0 || siMax > 2249 || siMin > siMax) {
+				System.out.println("[DEBUG] ❌ 유효하지 않은 SI 범위 - MMSI: " + mmsiEntity.getMmsi() + ", SI: [" + siMin + ", " + siMax + "]");
+				return -1;
+			}
+			
+			// SI 범위 내에서 랜덤으로 슬롯 선택 (간단한 구현)
+			// 실제로는 연속으로 비어있는 슬롯 4개를 찾아야 하지만, 
+			// UI 없이 구현하기 위해 SI 범위 내에서 랜덤 선택
+			int selectedSlot = com.all4land.generator.util.RandomGenerator.generateRandomIntFromTo(siMin, siMax);
+			System.out.println("[DEBUG] 슬롯 선택 - MMSI: " + mmsiEntity.getMmsi() + ", SlotNumber: " + selectedSlot);
+			
+			// 슬롯의 TimeOutTime이 설정되어 있지 않은 경우에만 설정
+			if (mmsiEntity.getSlotTimeOutTime() == null) {
+				LocalDateTime modifiedDateTime = mmsiEntity.getStartTime().plusMinutes(1)
+						.minus((mmsiEntity.getSpeed() * 1000) - 100, ChronoUnit.MILLIS);
+				mmsiEntity.setSlotTimeOutTime(modifiedDateTime);
+				System.out.println("[DEBUG] SlotTimeOutTime 설정 - MMSI: " + mmsiEntity.getMmsi() + ", Time: " + modifiedDateTime);
+			}
+			
+			// TargetCellInfoEntity 생성 (row, col은 UI 없이 사용하지 않으므로 임의 값)
+			TargetCellInfoEntity targetCellInfo = new TargetCellInfoEntity();
+			targetCellInfo.setRow(selectedSlot / 32); // 대략적인 row 계산
+			targetCellInfo.setCol(selectedSlot % 32); // 대략적인 col 계산
+			targetCellInfo.setSlotNumber(String.valueOf(selectedSlot));
+			
+			// AIS 타겟 슬롯 Entity 추가
+			this.addAISTargetSlotEntity(mmsiEntity, selectedSlot, targetCellInfo);
+			
+			// AIS 메시지 생성
+			this.setAISMessage(mmsiEntity, selectedSlot);
+			
+			System.out.println("[DEBUG] ✅ 슬롯 찾기 및 메시지 생성 완료 - MMSI: " + mmsiEntity.getMmsi() + ", SlotNumber: " + selectedSlot);
+			return selectedSlot;
+			
+		} catch (Exception e) {
+			System.out.println("[DEBUG] ❌ findSlotAndMarking() 실행 중 오류 발생 - MMSI: " + mmsiEntity.getMmsi());
+			e.printStackTrace();
+			return -1;
+		}
+	}
+
+	private void setAISMessage(MmsiEntity mmsiEntity, int slotNumber) {
+		//
+		System.out.println("[DEBUG] ✅ setAISMessage() 호출 - MMSI: " + mmsiEntity.getMmsi() + 
+				", SlotNumber: " + slotNumber);
+		Vdm vdm = AisMessage1Util.create(mmsiEntity, slotNumber);
+		System.out.println("[DEBUG] AIS 메시지 생성 완료 - MMSI: " + mmsiEntity.getMmsi() + 
+				", SlotNumber: " + slotNumber);
+		mmsiEntity.setMessage1(vdm, slotNumber);
+		mmsiEntity.setAisMessageSequence(mmsiEntity.getAisMessageSequence() + 1);
+		System.out.println("[DEBUG] ✅ setAISMessage() 완료 - MMSI: " + mmsiEntity.getMmsi() + 
+				", Sequence: " + mmsiEntity.getAisMessageSequence());
+
+	}
+
+	private void addAISTargetSlotEntity(MmsiEntity mmsiEntity, int slotNumber, TargetCellInfoEntity s) {
+		//
+		TargetSlotEntity newTargetSlotEntity = new TargetSlotEntity();
+		newTargetSlotEntity.setRow(s.getRow());
+		newTargetSlotEntity.setColumn(s.getCol());
+
+		newTargetSlotEntity.setChannel(mmsiEntity.getTargetChannel());
+		newTargetSlotEntity.setSlotNumber(slotNumber);
+
+		String ssSSSS = mmsiEntity.getStartTime().format(SystemConstMessage.formatterForStartIndex);
+		double currentSecond = Double.parseDouble(ssSSSS);
+		newTargetSlotEntity.setSsSSSS(currentSecond);
+		mmsiEntity.addTargetSlotEntity(newTargetSlotEntity);
+	}
+
+	/**
+	 * 테이블 셀 마킹
+	 * @param mmsiEntity MmsiEntity
+	 * @param s 타겟 셀 정보
+	 */
+	private void setSlotMarking(MmsiEntity mmsiEntity, TargetCellInfoEntity s) {
+		//
+		if (mmsiEntity.getTargetChannel()) {
+			//
+			this.setCurrentFrameAchColor(s.getRow(), s.getCol(), mmsiEntity, mmsiEntity.getStartTime());
+		} else {
+			this.setCurrentFrameBchColor(s.getRow(), s.getCol(), mmsiEntity, mmsiEntity.getStartTime());
+		}
+	}
+
+	public void displayAsm(List<TargetCellInfoEntity> targetCellInfoEntitys, MmsiEntity mmsiEntity) {
+		//
+		// UI 제거로 인해 주석 처리
+		// CustomTableCellRenderer renderer = (CustomTableCellRenderer) this.currentFrameJTableNameUpper
+		//		.getDefaultRenderer(Object.class);
+		// 마킹
+		String strValue = "";
+
+		System.out.println("=================================");
+		System.out.println("[ASM Slot Count] : " + mmsiEntity.getAsmEntity().getSlotCount());
+		System.out.println("[ASM    Channel] : " + mmsiEntity.getAsmEntity().getChannel());
+		System.out.println("=================================");
+		if (mmsiEntity.getAsmEntity().getChannel() == 'A') {
+			//
+			switch (mmsiEntity.getAsmEntity().getSlotCount()) {
+				case 1 -> {
+					strValue = "NSONESOFTNSONESOFTNSONESOFT1";
+					// UI 제거로 인해 주석 처리
+					// renderer.setCellInfosAsmForA(targetCellInfoEntitys.get(0).getRow(),
+					//		targetCellInfoEntitys.get(0).getCol(), mmsiEntity);
+                        }
+				case 2 -> {
+					strValue = "NSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFT2";
+					// UI 제거로 인해 주석 처리
+					// renderer.setCellInfosAsmForA(targetCellInfoEntitys.get(0).getRow(),
+					//		targetCellInfoEntitys.get(0).getCol(), mmsiEntity);
+					// renderer.setCellInfosAsmForA(targetCellInfoEntitys.get(1).getRow(),
+					//		targetCellInfoEntitys.get(1).getCol(), mmsiEntity);
+                        }
+				case 3 -> {
+					strValue = "NSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFT3";
+					// UI 제거로 인해 주석 처리
+					// renderer.setCellInfosAsmForA(targetCellInfoEntitys.get(0).getRow(),
+					//		targetCellInfoEntitys.get(0).getCol(), mmsiEntity);
+					// renderer.setCellInfosAsmForA(targetCellInfoEntitys.get(1).getRow(),
+					//		targetCellInfoEntitys.get(1).getCol(), mmsiEntity);
+					// renderer.setCellInfosAsmForA(targetCellInfoEntitys.get(2).getRow(),
+					//		targetCellInfoEntitys.get(2).getCol(), mmsiEntity);
+                        }
+				default -> {}
+			}
+
+			List<String> message = this.aSMMessageUtil.getMessage(strValue, mmsiEntity);
+			mmsiEntity.setAsmMessageList(message, targetCellInfoEntitys.get(0).getSlotNumber());
+			mmsiEntity.getAsmEntity().setChannel('B');
+			mmsiEntity.setAsmMessageSequence(mmsiEntity.getAsmMessageSequence() + 1);
+		} else {
+			switch (mmsiEntity.getAsmEntity().getSlotCount()) {
+				case 1 -> {
+					strValue = "NSONESOFTNSONESOFTNSONESOFT1";
+					// UI 제거로 인해 주석 처리
+					// renderer.setCellInfosAsmForB(targetCellInfoEntitys.get(0).getRow(),
+					//		targetCellInfoEntitys.get(0).getCol(), mmsiEntity);
+                        }
+				case 2 -> {
+					strValue = "NSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFT2";
+					// UI 제거로 인해 주석 처리
+					// renderer.setCellInfosAsmForB(targetCellInfoEntitys.get(0).getRow(),
+					//		targetCellInfoEntitys.get(0).getCol(), mmsiEntity);
+					// renderer.setCellInfosAsmForB(targetCellInfoEntitys.get(1).getRow(),
+					//		targetCellInfoEntitys.get(1).getCol(), mmsiEntity);
+                        }
+				case 3 -> {
+					strValue = "NSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFT3";
+					// UI 제거로 인해 주석 처리
+					// renderer.setCellInfosAsmForB(targetCellInfoEntitys.get(0).getRow(),
+					//		targetCellInfoEntitys.get(0).getCol(), mmsiEntity);
+					// renderer.setCellInfosAsmForB(targetCellInfoEntitys.get(1).getRow(),
+					//		targetCellInfoEntitys.get(1).getCol(), mmsiEntity);
+					// renderer.setCellInfosAsmForB(targetCellInfoEntitys.get(2).getRow(),
+					//		targetCellInfoEntitys.get(2).getCol(), mmsiEntity);
+                        }
+				default -> {
+                        }
+			}
+			List<String> message = this.aSMMessageUtil.getMessage(strValue, mmsiEntity);
+			mmsiEntity.setAsmMessageList(message, targetCellInfoEntitys.get(0).getSlotNumber());
+			mmsiEntity.getAsmEntity().setChannel('A');
+			mmsiEntity.setAsmMessageSequence(mmsiEntity.getAsmMessageSequence() + 1);
+		}
+		// UI 제거로 인해 주석 처리
+		// this.currentFrameJTableNameUpper.repaint();
+	}
+
+	public List<TargetCellInfoEntity> findAsmRule1(int startIndex, MmsiEntity mmsiEntity) {
+		//
+		// UI 제거로 인해 주석 처리 - 이 메서드는 UI 테이블에 의존하므로 비활성화
+		// TODO: UI 없이 ASM 슬롯 검색 로직을 구현해야 함
+		return new ArrayList<>();
+	}
+
+	public List<TargetCellInfoEntity> findAsmRule2(int startIndex, MmsiEntity mmsiEntity) {
+		//
+		// UI 제거로 인해 주석 처리 - 이 메서드는 UI 테이블에 의존하므로 비활성화
+		// TODO: UI 없이 ASM 슬롯 검색 로직을 구현해야 함
+		return new ArrayList<>();
+	}
+
+	public List<TargetCellInfoEntity> findAsmRule3(int startIndex, MmsiEntity mmsiEntity) {
+		//
+		// UI 제거로 인해 주석 처리 - 이 메서드는 UI 테이블에 의존하므로 비활성화
+		// TODO: UI 없이 ASM 슬롯 검색 로직을 구현해야 함
+		return new ArrayList<>();
+	}
+
+	public void findVde(int startIndex, MmsiEntity mmsiEntity) {
+		//
+		// UI 제거로 인해 주석 처리 - 이 메서드는 UI 테이블에 의존하므로 비활성화
+		// TODO: UI 없이 VDE 슬롯 검색 로직을 구현해야 함
+		return;
+	}
+
+	public String getUuid() {
+		return uuid;
+	}
+
+	
+}

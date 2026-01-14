@@ -25,7 +25,8 @@ import com.all4land.generator.system.constant.SystemConstMessage;
 import com.all4land.generator.system.constant.SystemConstTestData180;
 import com.all4land.generator.system.schedule.QuartzCoreService;
 import com.all4land.generator.system.util.BeanUtils;
-import com.all4land.generator.ui.entity.TargetCellInfoEntity;
+import com.all4land.generator.entity.TargetCellInfoEntity;
+import com.all4land.generator.entity.MmsiEntity;
 import com.all4land.generator.ui.tab.ais.entity.event.change.ColorEntityChangeEvent;
 import com.all4land.generator.ui.tab.ais.entity.event.change.ToggleDisplayAis;
 import com.all4land.generator.ui.tab.ais.entity.event.change.ToggleDisplayAsm;
@@ -38,7 +39,7 @@ import dk.dma.ais.sentence.Vdm;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@Component
+@Component("uiGlobalEntityManager")
 public class GlobalEntityManager {
 	//
 	private final String uuid = "00"+String.valueOf(RandomGenerator.generateRandomInt(7));
@@ -73,7 +74,7 @@ public class GlobalEntityManager {
 	private boolean asmMsgDisplay = true;
 	private boolean vdeMsgDisplay = true;
 
-	private List<MmsiEntity> mmsiEntityLists;
+	private List<com.all4land.generator.ui.tab.ais.entity.MmsiEntity> mmsiEntityLists;
 	private MmsiTableModel mmsiTableModel2;
 
 	private JTextField jTextFieldSFI;
@@ -90,18 +91,18 @@ public class GlobalEntityManager {
 		this.mmsiTableModel2 = mmsiTableModel2;
 	}
 
-	public List<MmsiEntity> getMmsiEntityLists() {
+	public List<com.all4land.generator.ui.tab.ais.entity.MmsiEntity> getMmsiEntityLists() {
 		//
 		return this.mmsiEntityLists;
 	}
 
-	public void setMmsiEntityLists(List<MmsiEntity> mmsiEntityLists) {
+	public void setMmsiEntityLists(List<com.all4land.generator.ui.tab.ais.entity.MmsiEntity> mmsiEntityLists) {
 		//
 		this.mmsiEntityLists = mmsiEntityLists;
 		this.mmsiTableModel2.setData();
 	}
 
-	public void addMmsiEntityLists(List<MmsiEntity> mmsiEntityLists) {
+	public void addMmsiEntityLists(List<com.all4land.generator.ui.tab.ais.entity.MmsiEntity> mmsiEntityLists) {
 		//
 		this.mmsiEntityLists.addAll(mmsiEntityLists);
 		this.mmsiTableModel2.setData();
@@ -120,31 +121,31 @@ public class GlobalEntityManager {
 			uniqueMmsi = RandomGenerator.generateRandomLong(9);
 		} while (!generatedMmsiSet.add(uniqueMmsi));
 
-		BeanUtils.registerBean(uniqueMmsi + "", MmsiEntity.class);
-		MmsiEntity mmsi = (MmsiEntity) BeanUtils.getBean(uniqueMmsi + "");
+		BeanUtils.registerBean(uniqueMmsi + "", com.all4land.generator.ui.tab.ais.entity.MmsiEntity.class);
+		com.all4land.generator.ui.tab.ais.entity.MmsiEntity mmsi = (com.all4land.generator.ui.tab.ais.entity.MmsiEntity) BeanUtils.getBean(uniqueMmsi + "");
 		
-		mmsi.setCurrentFrameJTableNameUpper(this.currentFrameJTableNameUpper);
-		mmsi.setCurrentFrame1JTableNameUpper(this.currentFrame1JTableNameUpper);
-		mmsi.setCurrentFrame2JTableNameUpper(this.currentFrame2JTableNameUpper);
-		mmsi.setCurrentFrame3JTableNameUpper(this.currentFrame3JTableNameUpper);
-		mmsi.setCurrentFrame4JTableNameUpper(this.currentFrame4JTableNameUpper);
-		mmsi.setCurrentFrame5JTableNameUpper(this.currentFrame5JTableNameUpper);
-		mmsi.setCurrentFrame6JTableNameUpper(this.currentFrame6JTableNameUpper);
-		mmsi.setCurrentFrame7JTableNameUpper(this.currentFrame7JTableNameUpper);
-		mmsi.setCurrentFrameJTableNameLower(this.currentFrameJTableNameLower);
-		mmsi.setCurrentFrame1JTableNameLower(this.currentFrame1JTableNameLower);
-		mmsi.setCurrentFrame2JTableNameLower(this.currentFrame2JTableNameLower);
-		mmsi.setCurrentFrame3JTableNameLower(this.currentFrame3JTableNameLower);
-		mmsi.setCurrentFrame4JTableNameLower(this.currentFrame4JTableNameLower);
-		mmsi.setCurrentFrame5JTableNameLower(this.currentFrame5JTableNameLower);
-		mmsi.setCurrentFrame6JTableNameLower(this.currentFrame6JTableNameLower);
-		mmsi.setCurrentFrame7JTableNameLower(this.currentFrame7JTableNameLower);
-
-		mmsi.setjTextFieldSFI(this.jTextFieldSFI);
+		// UI 관련 메서드 호출 주석 처리 (UI 제거 작업)
+		// mmsi.setCurrentFrameJTableNameUpper(this.currentFrameJTableNameUpper);
+		// mmsi.setCurrentFrame1JTableNameUpper(this.currentFrame1JTableNameUpper);
+		// mmsi.setCurrentFrame2JTableNameUpper(this.currentFrame2JTableNameUpper);
+		// mmsi.setCurrentFrame3JTableNameUpper(this.currentFrame3JTableNameUpper);
+		// mmsi.setCurrentFrame4JTableNameUpper(this.currentFrame4JTableNameUpper);
+		// mmsi.setCurrentFrame5JTableNameUpper(this.currentFrame5JTableNameUpper);
+		// mmsi.setCurrentFrame6JTableNameUpper(this.currentFrame6JTableNameUpper);
+		// mmsi.setCurrentFrame7JTableNameUpper(this.currentFrame7JTableNameUpper);
+		// mmsi.setCurrentFrameJTableNameLower(this.currentFrameJTableNameLower);
+		// mmsi.setCurrentFrame1JTableNameLower(this.currentFrame1JTableNameLower);
+		// mmsi.setCurrentFrame2JTableNameLower(this.currentFrame2JTableNameLower);
+		// mmsi.setCurrentFrame3JTableNameLower(this.currentFrame3JTableNameLower);
+		// mmsi.setCurrentFrame4JTableNameLower(this.currentFrame4JTableNameLower);
+		// mmsi.setCurrentFrame5JTableNameLower(this.currentFrame5JTableNameLower);
+		// mmsi.setCurrentFrame6JTableNameLower(this.currentFrame6JTableNameLower);
+		// mmsi.setCurrentFrame7JTableNameLower(this.currentFrame7JTableNameLower);
+		// mmsi.setjTextFieldSFI(this.jTextFieldSFI);
+		// mmsi.setAisTabjTextAreaName(aisTabjTextAreaName);
+		// mmsi.setGlobalEntityManager(this);
 
 		mmsi.setMmsi(uniqueMmsi);
-		mmsi.setAisTabjTextAreaName(aisTabjTextAreaName);
-		mmsi.setGlobalEntityManager(this);
 		
 		mmsi.setSpeed(180);
 		mmsi.setSlotTimeOut(3);
@@ -173,31 +174,31 @@ public class GlobalEntityManager {
 			uniqueMmsi = RandomGenerator.generateRandomLong(9);
 		} while (!generatedMmsiSet.add(uniqueMmsi));
 
-		BeanUtils.registerBean(uniqueMmsi + "", MmsiEntity.class);
-		MmsiEntity mmsi = (MmsiEntity) BeanUtils.getBean(uniqueMmsi + "");
+		BeanUtils.registerBean(uniqueMmsi + "", com.all4land.generator.ui.tab.ais.entity.MmsiEntity.class);
+		com.all4land.generator.ui.tab.ais.entity.MmsiEntity mmsi = (com.all4land.generator.ui.tab.ais.entity.MmsiEntity) BeanUtils.getBean(uniqueMmsi + "");
 		
-		mmsi.setCurrentFrameJTableNameUpper(this.currentFrameJTableNameUpper);
-		mmsi.setCurrentFrame1JTableNameUpper(this.currentFrame1JTableNameUpper);
-		mmsi.setCurrentFrame2JTableNameUpper(this.currentFrame2JTableNameUpper);
-		mmsi.setCurrentFrame3JTableNameUpper(this.currentFrame3JTableNameUpper);
-		mmsi.setCurrentFrame4JTableNameUpper(this.currentFrame4JTableNameUpper);
-		mmsi.setCurrentFrame5JTableNameUpper(this.currentFrame5JTableNameUpper);
-		mmsi.setCurrentFrame6JTableNameUpper(this.currentFrame6JTableNameUpper);
-		mmsi.setCurrentFrame7JTableNameUpper(this.currentFrame7JTableNameUpper);
-		mmsi.setCurrentFrameJTableNameLower(this.currentFrameJTableNameLower);
-		mmsi.setCurrentFrame1JTableNameLower(this.currentFrame1JTableNameLower);
-		mmsi.setCurrentFrame2JTableNameLower(this.currentFrame2JTableNameLower);
-		mmsi.setCurrentFrame3JTableNameLower(this.currentFrame3JTableNameLower);
-		mmsi.setCurrentFrame4JTableNameLower(this.currentFrame4JTableNameLower);
-		mmsi.setCurrentFrame5JTableNameLower(this.currentFrame5JTableNameLower);
-		mmsi.setCurrentFrame6JTableNameLower(this.currentFrame6JTableNameLower);
-		mmsi.setCurrentFrame7JTableNameLower(this.currentFrame7JTableNameLower);
-
-		mmsi.setjTextFieldSFI(this.jTextFieldSFI);
+		// UI 관련 메서드 호출 주석 처리 (UI 제거 작업)
+		// mmsi.setCurrentFrameJTableNameUpper(this.currentFrameJTableNameUpper);
+		// mmsi.setCurrentFrame1JTableNameUpper(this.currentFrame1JTableNameUpper);
+		// mmsi.setCurrentFrame2JTableNameUpper(this.currentFrame2JTableNameUpper);
+		// mmsi.setCurrentFrame3JTableNameUpper(this.currentFrame3JTableNameUpper);
+		// mmsi.setCurrentFrame4JTableNameUpper(this.currentFrame4JTableNameUpper);
+		// mmsi.setCurrentFrame5JTableNameUpper(this.currentFrame5JTableNameUpper);
+		// mmsi.setCurrentFrame6JTableNameUpper(this.currentFrame6JTableNameUpper);
+		// mmsi.setCurrentFrame7JTableNameUpper(this.currentFrame7JTableNameUpper);
+		// mmsi.setCurrentFrameJTableNameLower(this.currentFrameJTableNameLower);
+		// mmsi.setCurrentFrame1JTableNameLower(this.currentFrame1JTableNameLower);
+		// mmsi.setCurrentFrame2JTableNameLower(this.currentFrame2JTableNameLower);
+		// mmsi.setCurrentFrame3JTableNameLower(this.currentFrame3JTableNameLower);
+		// mmsi.setCurrentFrame4JTableNameLower(this.currentFrame4JTableNameLower);
+		// mmsi.setCurrentFrame5JTableNameLower(this.currentFrame5JTableNameLower);
+		// mmsi.setCurrentFrame6JTableNameLower(this.currentFrame6JTableNameLower);
+		// mmsi.setCurrentFrame7JTableNameLower(this.currentFrame7JTableNameLower);
+		// mmsi.setjTextFieldSFI(this.jTextFieldSFI);
+		// mmsi.setAisTabjTextAreaName(aisTabjTextAreaName);
+		// mmsi.setGlobalEntityManager(this);
 
 		mmsi.setMmsi(uniqueMmsi);
-		mmsi.setAisTabjTextAreaName(aisTabjTextAreaName);
-		mmsi.setGlobalEntityManager(this);
 		
 		mmsi.setSpeed(10);
 		mmsi.setSlotTimeOut(7);
@@ -221,31 +222,31 @@ public class GlobalEntityManager {
 			uniqueMmsi = RandomGenerator.generateRandomLong(9);
 		} while (!generatedMmsiSet.add(uniqueMmsi));
 
-		BeanUtils.registerBean(uniqueMmsi + "", MmsiEntity.class);
-		MmsiEntity mmsi = (MmsiEntity) BeanUtils.getBean(uniqueMmsi + "");
+		BeanUtils.registerBean(uniqueMmsi + "", com.all4land.generator.ui.tab.ais.entity.MmsiEntity.class);
+		com.all4land.generator.ui.tab.ais.entity.MmsiEntity mmsi = (com.all4land.generator.ui.tab.ais.entity.MmsiEntity) BeanUtils.getBean(uniqueMmsi + "");
 		
-		mmsi.setCurrentFrameJTableNameUpper(this.currentFrameJTableNameUpper);
-		mmsi.setCurrentFrame1JTableNameUpper(this.currentFrame1JTableNameUpper);
-		mmsi.setCurrentFrame2JTableNameUpper(this.currentFrame2JTableNameUpper);
-		mmsi.setCurrentFrame3JTableNameUpper(this.currentFrame3JTableNameUpper);
-		mmsi.setCurrentFrame4JTableNameUpper(this.currentFrame4JTableNameUpper);
-		mmsi.setCurrentFrame5JTableNameUpper(this.currentFrame5JTableNameUpper);
-		mmsi.setCurrentFrame6JTableNameUpper(this.currentFrame6JTableNameUpper);
-		mmsi.setCurrentFrame7JTableNameUpper(this.currentFrame7JTableNameUpper);
-		mmsi.setCurrentFrameJTableNameLower(this.currentFrameJTableNameLower);
-		mmsi.setCurrentFrame1JTableNameLower(this.currentFrame1JTableNameLower);
-		mmsi.setCurrentFrame2JTableNameLower(this.currentFrame2JTableNameLower);
-		mmsi.setCurrentFrame3JTableNameLower(this.currentFrame3JTableNameLower);
-		mmsi.setCurrentFrame4JTableNameLower(this.currentFrame4JTableNameLower);
-		mmsi.setCurrentFrame5JTableNameLower(this.currentFrame5JTableNameLower);
-		mmsi.setCurrentFrame6JTableNameLower(this.currentFrame6JTableNameLower);
-		mmsi.setCurrentFrame7JTableNameLower(this.currentFrame7JTableNameLower);
-
-		mmsi.setjTextFieldSFI(this.jTextFieldSFI);
+		// UI 관련 메서드 호출 주석 처리 (UI 제거 작업)
+		// mmsi.setCurrentFrameJTableNameUpper(this.currentFrameJTableNameUpper);
+		// mmsi.setCurrentFrame1JTableNameUpper(this.currentFrame1JTableNameUpper);
+		// mmsi.setCurrentFrame2JTableNameUpper(this.currentFrame2JTableNameUpper);
+		// mmsi.setCurrentFrame3JTableNameUpper(this.currentFrame3JTableNameUpper);
+		// mmsi.setCurrentFrame4JTableNameUpper(this.currentFrame4JTableNameUpper);
+		// mmsi.setCurrentFrame5JTableNameUpper(this.currentFrame5JTableNameUpper);
+		// mmsi.setCurrentFrame6JTableNameUpper(this.currentFrame6JTableNameUpper);
+		// mmsi.setCurrentFrame7JTableNameUpper(this.currentFrame7JTableNameUpper);
+		// mmsi.setCurrentFrameJTableNameLower(this.currentFrameJTableNameLower);
+		// mmsi.setCurrentFrame1JTableNameLower(this.currentFrame1JTableNameLower);
+		// mmsi.setCurrentFrame2JTableNameLower(this.currentFrame2JTableNameLower);
+		// mmsi.setCurrentFrame3JTableNameLower(this.currentFrame3JTableNameLower);
+		// mmsi.setCurrentFrame4JTableNameLower(this.currentFrame4JTableNameLower);
+		// mmsi.setCurrentFrame5JTableNameLower(this.currentFrame5JTableNameLower);
+		// mmsi.setCurrentFrame6JTableNameLower(this.currentFrame6JTableNameLower);
+		// mmsi.setCurrentFrame7JTableNameLower(this.currentFrame7JTableNameLower);
+		// mmsi.setjTextFieldSFI(this.jTextFieldSFI);
+		// mmsi.setAisTabjTextAreaName(aisTabjTextAreaName);
+		// mmsi.setGlobalEntityManager(this);
 
 		mmsi.setMmsi(uniqueMmsi);
-		mmsi.setAisTabjTextAreaName(aisTabjTextAreaName);
-		mmsi.setGlobalEntityManager(this);
 		
 		mmsi.setSpeed(6);
 		mmsi.setSlotTimeOut(7);
@@ -274,31 +275,31 @@ public class GlobalEntityManager {
 			uniqueMmsi = RandomGenerator.generateRandomLong(9);
 		} while (!generatedMmsiSet.add(uniqueMmsi));
 
-		BeanUtils.registerBean(uniqueMmsi + "", MmsiEntity.class);
-		MmsiEntity mmsi = (MmsiEntity) BeanUtils.getBean(uniqueMmsi + "");
+		BeanUtils.registerBean(uniqueMmsi + "", com.all4land.generator.ui.tab.ais.entity.MmsiEntity.class);
+		com.all4land.generator.ui.tab.ais.entity.MmsiEntity mmsi = (com.all4land.generator.ui.tab.ais.entity.MmsiEntity) BeanUtils.getBean(uniqueMmsi + "");
 		
-		mmsi.setCurrentFrameJTableNameUpper(this.currentFrameJTableNameUpper);
-		mmsi.setCurrentFrame1JTableNameUpper(this.currentFrame1JTableNameUpper);
-		mmsi.setCurrentFrame2JTableNameUpper(this.currentFrame2JTableNameUpper);
-		mmsi.setCurrentFrame3JTableNameUpper(this.currentFrame3JTableNameUpper);
-		mmsi.setCurrentFrame4JTableNameUpper(this.currentFrame4JTableNameUpper);
-		mmsi.setCurrentFrame5JTableNameUpper(this.currentFrame5JTableNameUpper);
-		mmsi.setCurrentFrame6JTableNameUpper(this.currentFrame6JTableNameUpper);
-		mmsi.setCurrentFrame7JTableNameUpper(this.currentFrame7JTableNameUpper);
-		mmsi.setCurrentFrameJTableNameLower(this.currentFrameJTableNameLower);
-		mmsi.setCurrentFrame1JTableNameLower(this.currentFrame1JTableNameLower);
-		mmsi.setCurrentFrame2JTableNameLower(this.currentFrame2JTableNameLower);
-		mmsi.setCurrentFrame3JTableNameLower(this.currentFrame3JTableNameLower);
-		mmsi.setCurrentFrame4JTableNameLower(this.currentFrame4JTableNameLower);
-		mmsi.setCurrentFrame5JTableNameLower(this.currentFrame5JTableNameLower);
-		mmsi.setCurrentFrame6JTableNameLower(this.currentFrame6JTableNameLower);
-		mmsi.setCurrentFrame7JTableNameLower(this.currentFrame7JTableNameLower);
-
-		mmsi.setjTextFieldSFI(this.jTextFieldSFI);
+		// UI 관련 메서드 호출 주석 처리 (UI 제거 작업)
+		// mmsi.setCurrentFrameJTableNameUpper(this.currentFrameJTableNameUpper);
+		// mmsi.setCurrentFrame1JTableNameUpper(this.currentFrame1JTableNameUpper);
+		// mmsi.setCurrentFrame2JTableNameUpper(this.currentFrame2JTableNameUpper);
+		// mmsi.setCurrentFrame3JTableNameUpper(this.currentFrame3JTableNameUpper);
+		// mmsi.setCurrentFrame4JTableNameUpper(this.currentFrame4JTableNameUpper);
+		// mmsi.setCurrentFrame5JTableNameUpper(this.currentFrame5JTableNameUpper);
+		// mmsi.setCurrentFrame6JTableNameUpper(this.currentFrame6JTableNameUpper);
+		// mmsi.setCurrentFrame7JTableNameUpper(this.currentFrame7JTableNameUpper);
+		// mmsi.setCurrentFrameJTableNameLower(this.currentFrameJTableNameLower);
+		// mmsi.setCurrentFrame1JTableNameLower(this.currentFrame1JTableNameLower);
+		// mmsi.setCurrentFrame2JTableNameLower(this.currentFrame2JTableNameLower);
+		// mmsi.setCurrentFrame3JTableNameLower(this.currentFrame3JTableNameLower);
+		// mmsi.setCurrentFrame4JTableNameLower(this.currentFrame4JTableNameLower);
+		// mmsi.setCurrentFrame5JTableNameLower(this.currentFrame5JTableNameLower);
+		// mmsi.setCurrentFrame6JTableNameLower(this.currentFrame6JTableNameLower);
+		// mmsi.setCurrentFrame7JTableNameLower(this.currentFrame7JTableNameLower);
+		// mmsi.setjTextFieldSFI(this.jTextFieldSFI);
+		// mmsi.setAisTabjTextAreaName(aisTabjTextAreaName);
+		// mmsi.setGlobalEntityManager(this);
 
 		mmsi.setMmsi(uniqueMmsi);
-		mmsi.setAisTabjTextAreaName(aisTabjTextAreaName);
-		mmsi.setGlobalEntityManager(this);
 		
 		mmsi.setSpeed(2);
 		mmsi.setSlotTimeOut(7);
@@ -335,35 +336,34 @@ public class GlobalEntityManager {
 				uniqueMmsi = RandomGenerator.generateRandomLong(9);
 			} while (!generatedMmsiSet.add(uniqueMmsi));
 
-			BeanUtils.registerBean(uniqueMmsi + "", MmsiEntity.class);
-			MmsiEntity mmsi = (MmsiEntity) BeanUtils.getBean(uniqueMmsi + "");
+			BeanUtils.registerBean(uniqueMmsi + "", com.all4land.generator.ui.tab.ais.entity.MmsiEntity.class);
+			com.all4land.generator.ui.tab.ais.entity.MmsiEntity mmsi = (com.all4land.generator.ui.tab.ais.entity.MmsiEntity) BeanUtils.getBean(uniqueMmsi + "");
 
 			// MmsiEntity mmsi = new MmsiEntity(this.eventPublisher, scheduler,
 			// quartzCoreService);
 			
-			// 
-			mmsi.setCurrentFrameJTableNameUpper(this.currentFrameJTableNameUpper);
-			mmsi.setCurrentFrame1JTableNameUpper(this.currentFrame1JTableNameUpper);
-			mmsi.setCurrentFrame2JTableNameUpper(this.currentFrame2JTableNameUpper);
-			mmsi.setCurrentFrame3JTableNameUpper(this.currentFrame3JTableNameUpper);
-			mmsi.setCurrentFrame4JTableNameUpper(this.currentFrame4JTableNameUpper);
-			mmsi.setCurrentFrame5JTableNameUpper(this.currentFrame5JTableNameUpper);
-			mmsi.setCurrentFrame6JTableNameUpper(this.currentFrame6JTableNameUpper);
-			mmsi.setCurrentFrame7JTableNameUpper(this.currentFrame7JTableNameUpper);
-			mmsi.setCurrentFrameJTableNameLower(this.currentFrameJTableNameLower);
-			mmsi.setCurrentFrame1JTableNameLower(this.currentFrame1JTableNameLower);
-			mmsi.setCurrentFrame2JTableNameLower(this.currentFrame2JTableNameLower);
-			mmsi.setCurrentFrame3JTableNameLower(this.currentFrame3JTableNameLower);
-			mmsi.setCurrentFrame4JTableNameLower(this.currentFrame4JTableNameLower);
-			mmsi.setCurrentFrame5JTableNameLower(this.currentFrame5JTableNameLower);
-			mmsi.setCurrentFrame6JTableNameLower(this.currentFrame6JTableNameLower);
-			mmsi.setCurrentFrame7JTableNameLower(this.currentFrame7JTableNameLower);
-
-			mmsi.setjTextFieldSFI(this.jTextFieldSFI);
+			// UI 관련 메서드 호출 주석 처리 (UI 제거 작업)
+			// mmsi.setCurrentFrameJTableNameUpper(this.currentFrameJTableNameUpper);
+			// mmsi.setCurrentFrame1JTableNameUpper(this.currentFrame1JTableNameUpper);
+			// mmsi.setCurrentFrame2JTableNameUpper(this.currentFrame2JTableNameUpper);
+			// mmsi.setCurrentFrame3JTableNameUpper(this.currentFrame3JTableNameUpper);
+			// mmsi.setCurrentFrame4JTableNameUpper(this.currentFrame4JTableNameUpper);
+			// mmsi.setCurrentFrame5JTableNameUpper(this.currentFrame5JTableNameUpper);
+			// mmsi.setCurrentFrame6JTableNameUpper(this.currentFrame6JTableNameUpper);
+			// mmsi.setCurrentFrame7JTableNameUpper(this.currentFrame7JTableNameUpper);
+			// mmsi.setCurrentFrameJTableNameLower(this.currentFrameJTableNameLower);
+			// mmsi.setCurrentFrame1JTableNameLower(this.currentFrame1JTableNameLower);
+			// mmsi.setCurrentFrame2JTableNameLower(this.currentFrame2JTableNameLower);
+			// mmsi.setCurrentFrame3JTableNameLower(this.currentFrame3JTableNameLower);
+			// mmsi.setCurrentFrame4JTableNameLower(this.currentFrame4JTableNameLower);
+			// mmsi.setCurrentFrame5JTableNameLower(this.currentFrame5JTableNameLower);
+			// mmsi.setCurrentFrame6JTableNameLower(this.currentFrame6JTableNameLower);
+			// mmsi.setCurrentFrame7JTableNameLower(this.currentFrame7JTableNameLower);
+			// mmsi.setjTextFieldSFI(this.jTextFieldSFI);
+			// mmsi.setAisTabjTextAreaName(aisTabjTextAreaName);
+			// mmsi.setGlobalEntityManager(this);
 
 			mmsi.setMmsi(uniqueMmsi);
-			mmsi.setAisTabjTextAreaName(aisTabjTextAreaName);
-			mmsi.setGlobalEntityManager(this);
 
 			// 2, 6, 10, 180
 //			if (i >= 0 && i < 70) {
@@ -419,7 +419,7 @@ public class GlobalEntityManager {
 		}
 	}
 
-	private void make10(MmsiEntity mmsi, int index) {
+	private void make10(com.all4land.generator.ui.tab.ais.entity.MmsiEntity mmsi, int index) {
             //
             switch (index) {
                 case 10 -> mmsi.testInit(10, 1, SystemConstMessage.positions_10_0);
@@ -437,7 +437,7 @@ public class GlobalEntityManager {
             }
 	}
 	
-	private void make6(MmsiEntity mmsi, int index) {
+	private void make6(com.all4land.generator.ui.tab.ais.entity.MmsiEntity mmsi, int index) {
             //
             switch (index) {
                 case 30 -> mmsi.testInit(6, 1, SystemConstMessage.positions_6_0);
@@ -451,7 +451,7 @@ public class GlobalEntityManager {
 	}
 	
 	
-	private void make2(MmsiEntity mmsi, int index) {
+	private void make2(com.all4land.generator.ui.tab.ais.entity.MmsiEntity mmsi, int index) {
             //
             switch (index) {
                 case 20 -> mmsi.testInit(2, 1, SystemConstMessage.positions_2_0);
@@ -468,7 +468,7 @@ public class GlobalEntityManager {
                 }
             }
 	}
-	private void make180(MmsiEntity mmsi, int index) {
+	private void make180(com.all4land.generator.ui.tab.ais.entity.MmsiEntity mmsi, int index) {
             //
             switch (index) {
                 case 0 -> mmsi.testInit(180, 3, SystemConstTestData180.positions_180_0);
@@ -782,7 +782,7 @@ public class GlobalEntityManager {
 	}
 
 	// ====================================================================
-	public void setCurrentFrameAchColor(int row, int col, MmsiEntity mmsiEntity, LocalDateTime time) {
+	public void setCurrentFrameAchColor(int row, int col, com.all4land.generator.ui.tab.ais.entity.MmsiEntity mmsiEntity, LocalDateTime time) {
 		//
 		ColorEntityChangeEvent event = new ColorEntityChangeEvent(this, row, col, mmsiEntity, time, 'A',
 				this.currentFrameJTableNameUpper, this.currentFrame1JTableNameUpper, this.currentFrame2JTableNameUpper,
@@ -791,7 +791,7 @@ public class GlobalEntityManager {
 		eventPublisher.publishEvent(event);
 	}
 
-	public void setCurrentFrameBchColor(int row, int col, MmsiEntity mmsiEntity, LocalDateTime time) {
+	public void setCurrentFrameBchColor(int row, int col, com.all4land.generator.ui.tab.ais.entity.MmsiEntity mmsiEntity, LocalDateTime time) {
 		//
 		ColorEntityChangeEvent event = new ColorEntityChangeEvent(this, row, col, mmsiEntity, time, 'B',
 				this.currentFrameJTableNameUpper, this.currentFrame1JTableNameUpper, this.currentFrame2JTableNameUpper,
@@ -840,7 +840,7 @@ public class GlobalEntityManager {
 	 * @param mmsiEntity
 	 * @return
 	 */
-	public int findSlotAndMarking(MmsiEntity mmsiEntity) {
+	public int findSlotAndMarking(com.all4land.generator.ui.tab.ais.entity.MmsiEntity mmsiEntity) {
 		//
 		try {
 			/**
@@ -997,7 +997,7 @@ public class GlobalEntityManager {
 
 	}
 
-	private void setAISMessage(MmsiEntity mmsiEntity, int slotNumber) {
+	private void setAISMessage(com.all4land.generator.ui.tab.ais.entity.MmsiEntity mmsiEntity, int slotNumber) {
 		//
 		Vdm vdm = AisMessage1Util.create(mmsiEntity, slotNumber);
 		mmsiEntity.setMessage1(vdm, slotNumber);
@@ -1005,9 +1005,9 @@ public class GlobalEntityManager {
 
 	}
 
-	private void addAISTargetSlotEntity(MmsiEntity mmsiEntity, int slotNumber, TargetCellInfoEntity s) {
+	private void addAISTargetSlotEntity(com.all4land.generator.ui.tab.ais.entity.MmsiEntity mmsiEntity, int slotNumber, TargetCellInfoEntity s) {
 		//
-		TargetSlotEntity newTargetSlotEntity = new TargetSlotEntity();
+		com.all4land.generator.ui.tab.ais.entity.TargetSlotEntity newTargetSlotEntity = new com.all4land.generator.ui.tab.ais.entity.TargetSlotEntity();
 		newTargetSlotEntity.setRow(s.getRow());
 		newTargetSlotEntity.setColumn(s.getCol());
 
@@ -1025,7 +1025,7 @@ public class GlobalEntityManager {
 	 * @param mmsiEntity MmsiEntity
 	 * @param s 타겟 셀 정보
 	 */
-	private void setSlotMarking(MmsiEntity mmsiEntity, TargetCellInfoEntity s) {
+	private void setSlotMarking(com.all4land.generator.ui.tab.ais.entity.MmsiEntity mmsiEntity, TargetCellInfoEntity s) {
 		//
 		if (mmsiEntity.getTargetChannel()) {
 			//
@@ -1035,7 +1035,7 @@ public class GlobalEntityManager {
 		}
 	}
 
-	public void displayAsm(List<TargetCellInfoEntity> targetCellInfoEntitys, MmsiEntity mmsiEntity) {
+	public void displayAsm(List<TargetCellInfoEntity> targetCellInfoEntitys, com.all4land.generator.ui.tab.ais.entity.MmsiEntity mmsiEntity) {
 		//
 		CustomTableCellRenderer renderer = (CustomTableCellRenderer) this.currentFrameJTableNameUpper
 				.getDefaultRenderer(Object.class);
@@ -1111,7 +1111,7 @@ public class GlobalEntityManager {
 		this.currentFrameJTableNameUpper.repaint();
 	}
 
-	public List<TargetCellInfoEntity> findAsmRule1(int startIndex, MmsiEntity mmsiEntity) {
+	public List<TargetCellInfoEntity> findAsmRule1(int startIndex, com.all4land.generator.ui.tab.ais.entity.MmsiEntity mmsiEntity) {
 		//
 		TableModel model = this.currentFrameJTableNameUpper.getModel();
 		CustomTableCellRenderer renderer = (CustomTableCellRenderer) this.currentFrameJTableNameUpper
@@ -1180,7 +1180,7 @@ public class GlobalEntityManager {
 
 	}
 
-	public List<TargetCellInfoEntity> findAsmRule2(int startIndex, MmsiEntity mmsiEntity) {
+	public List<TargetCellInfoEntity> findAsmRule2(int startIndex, com.all4land.generator.ui.tab.ais.entity.MmsiEntity mmsiEntity) {
 		//
 		TableModel model = this.currentFrameJTableNameUpper.getModel();
 		CustomTableCellRenderer renderer = (CustomTableCellRenderer) this.currentFrameJTableNameUpper
@@ -1243,7 +1243,7 @@ public class GlobalEntityManager {
 
 	}
 
-	public List<TargetCellInfoEntity> findAsmRule3(int startIndex, MmsiEntity mmsiEntity) {
+	public List<TargetCellInfoEntity> findAsmRule3(int startIndex, com.all4land.generator.ui.tab.ais.entity.MmsiEntity mmsiEntity) {
 		//
 		TableModel model = this.currentFrameJTableNameUpper.getModel();
 		CustomTableCellRenderer renderer = (CustomTableCellRenderer) this.currentFrameJTableNameUpper
@@ -1336,7 +1336,7 @@ public class GlobalEntityManager {
 
 	}
 
-	public void findVde(int startIndex, MmsiEntity mmsiEntity) {
+	public void findVde(int startIndex, com.all4land.generator.ui.tab.ais.entity.MmsiEntity mmsiEntity) {
 		//
 		CustomTableCellRenderer renderer = (CustomTableCellRenderer) this.currentFrameJTableNameLower
 				.getDefaultRenderer(Object.class);

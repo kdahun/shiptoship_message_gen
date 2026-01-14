@@ -1,4 +1,4 @@
-package com.all4land.generator.ui.tab.ais.entity.event.quartz;
+package com.all4land.generator.system.schedule.job;
 
 import java.text.ParseException;
 
@@ -9,14 +9,14 @@ import org.quartz.JobExecutionException;
 import org.quartz.SchedulerException;
 import org.springframework.stereotype.Component;
 
-import com.all4land.generator.system.schedule.QuartzCoreService;
 import com.all4land.generator.entity.MmsiEntity;
+import com.all4land.generator.system.schedule.QuartzCoreService;
 import com.all4land.generator.util.RandomGenerator;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@Component("uiMmsiEntitySlotTimeChangeQuartz")
+@Component
 public class MmsiEntitySlotTimeChangeQuartz implements Job {
 	//
 	private MmsiEntity mmsiEntity;
@@ -27,8 +27,6 @@ public class MmsiEntitySlotTimeChangeQuartz implements Job {
 		this.quartzCoreService = quartzCoreService;
 	}
 	
-//	@Async
-
 	/**
 	 * [SLOT_TIME_FLOW]-4
 	 * 트리거 발동 시 스케쥴된 Job 실행
@@ -102,3 +100,7 @@ public class MmsiEntitySlotTimeChangeQuartz implements Job {
 		}
 	}
 }
+
+
+
+

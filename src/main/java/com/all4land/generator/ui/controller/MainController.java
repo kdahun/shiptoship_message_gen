@@ -7,6 +7,8 @@ import java.io.IOException;
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Controller;
 
@@ -15,7 +17,9 @@ import com.all4land.generator.ui.view.Sample1;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@Controller
+// @Controller - UI 제거로 인해 주석 처리 (headless 모드에서 실행 시 오류 방지)
+// @Lazy
+// @ConditionalOnProperty(name = "java.awt.headless", havingValue = "false", matchIfMissing = false)
 public class MainController {
 	//
 	private final Sample1 mainFrame;

@@ -31,7 +31,7 @@ import lombok.extern.slf4j.Slf4j;
  * @author Lenovo
  */
 @Slf4j
-@Component
+// @Component // UI 컴포넌트이므로 headless 모드에서는 사용하지 않음
 @Getter
 public class Sample0 extends javax.swing.JFrame {
 

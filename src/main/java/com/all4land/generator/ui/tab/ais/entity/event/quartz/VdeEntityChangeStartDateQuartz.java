@@ -16,7 +16,7 @@ import com.all4land.generator.ui.tab.ais.entity.MmsiEntity;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@Component
+@Component("uiVdeEntityChangeStartDateQuartz")
 public class VdeEntityChangeStartDateQuartz implements Job {
 	//
 	private final GlobalEntityManager globalEntityManager;

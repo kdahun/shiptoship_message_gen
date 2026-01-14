@@ -1,5 +1,8 @@
-package com.all4land.generator.ui.tab.ais.entity;
+package com.all4land.generator.entity;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public class TargetSlotEntity {
 	//
 	private double ssSSSS;
@@ -49,3 +52,7 @@ public class TargetSlotEntity {
 	}
 
 }
+
+
+
+

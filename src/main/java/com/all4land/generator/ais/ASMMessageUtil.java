@@ -6,7 +6,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.all4land.generator.system.schedule.SixbitEntityGenerator;
-import com.all4land.generator.ui.tab.ais.entity.MmsiEntity;
+import com.all4land.generator.entity.MmsiEntity;
 import com.all4land.generator.util.CRC16CCITT;
 
 @Service
@@ -24,6 +24,43 @@ public class ASMMessageUtil {
 	
 	
 	public List<String> getMessage(String binaryData, MmsiEntity mmsiEntity) {
+		//
+		List<String> returnMessageList = new ArrayList<>();
+		List<String> sixBitDataList = this.sixbitEntityGenerator.makeSixbitMessage(mmsiEntity.getMmsi(), binaryData, mmsiEntity.getAsmEntity().getSlotCount());
+		
+		for(int i = 0; i < sixBitDataList.size() ; i++) {
+			//
+			StringBuilder sbCrc = new StringBuilder();
+			sbCrc.append(talker);
+			sbCrc.append(formatter).append(",");
+			sbCrc.append(sixBitDataList.size()).append(",");
+			sbCrc.append(i+1).append(",");
+			sbCrc.append(mmsiEntity.getAsmMessageSequence()).append(",");
+			sbCrc.append(mmsiEntity.getAsmEntity().getChannel()).append(",");
+			sbCrc.append(sixBitDataList.get(i));
+			
+			String crc = CRC16CCITT.calculateCRC16(sbCrc.toString());
+			
+			StringBuilder sb = new StringBuilder();
+			sb.append(delimiter);
+			sb.append(talker);
+			sb.append(formatter).append(",");
+			sb.append(sixBitDataList.size()).append(",");
+			sb.append(i+1).append(",");
+			sb.append(mmsiEntity.getAsmMessageSequence()).append(",");
+			sb.append(mmsiEntity.getAsmEntity().getChannel()).append(",");
+			sb.append(sixBitDataList.get(i)).append(",0*").append(crc);
+			
+			returnMessageList.add(sb.toString());
+		}
+		
+		return returnMessageList;
+	}
+
+	/**
+	 * UI MmsiEntity를 받는 오버로드 메서드
+	 */
+	public List<String> getMessage(String binaryData, com.all4land.generator.ui.tab.ais.entity.MmsiEntity mmsiEntity) {
 		//
 		List<String> returnMessageList = new ArrayList<>();
 		List<String> sixBitDataList = this.sixbitEntityGenerator.makeSixbitMessage(mmsiEntity.getMmsi(), binaryData, mmsiEntity.getAsmEntity().getSlotCount());

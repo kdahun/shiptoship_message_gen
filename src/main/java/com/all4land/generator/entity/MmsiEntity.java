@@ -1,4 +1,4 @@
-package com.all4land.generator.ui.tab.ais.entity;
+package com.all4land.generator.entity;
 
 import java.text.ParseException;
 import java.time.LocalDateTime;
@@ -9,10 +9,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-import javax.swing.JTable;
-import javax.swing.JTextArea;
-import javax.swing.JTextField;
-import javax.swing.SwingUtilities;
+// UI 제거로 인해 주석 처리
+// import javax.swing.JTable;
+// import javax.swing.JTextArea;
+// import javax.swing.JTextField;
+// import javax.swing.SwingUtilities;
 
 import org.quartz.JobDetail;
 import org.quartz.Scheduler;
@@ -29,12 +30,17 @@ import com.all4land.generator.ais.VSIMessageUtil;
 import com.all4land.generator.system.component.TimeMapRangeCompnents;
 import com.all4land.generator.system.constant.SystemConstMessage;
 import com.all4land.generator.system.schedule.QuartzCoreService;
-import com.all4land.generator.ui.tab.ais.entity.event.change.MmsiEntityChangeStartTimeEvent;
-import com.all4land.generator.ui.tab.ais.entity.event.change.MmsiEntitySlotTimeChangeEvent;
-import com.all4land.generator.ui.tab.ais.entity.event.change.SlotTimeOutChangeEvent;
+import com.all4land.generator.entity.event.MmsiEntityChangeStartTimeEvent;
+import com.all4land.generator.entity.event.MmsiEntitySlotTimeChangeEvent;
+import com.all4land.generator.entity.event.SlotTimeOutChangeEvent;
 import com.all4land.generator.ui.tab.ais.model.TcpServerTableModel;
 import com.all4land.generator.ui.tab.ais.model.UdpServerTableModel;
-import com.all4land.generator.ui.util.TimeString;
+import com.all4land.generator.system.netty.send.config.SimpleTcpServerHandler;
+import com.all4land.generator.system.netty.send.config.NettyServerTCPConfiguration;
+import com.all4land.generator.system.util.BeanUtils;
+import java.util.concurrent.ConcurrentMap;
+import io.netty.channel.Channel;
+import com.all4land.generator.util.TimeString;
 import com.all4land.generator.util.RandomGenerator;
 
 import dk.dma.ais.sentence.Vdm;
@@ -44,7 +50,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@Component("uiMmsiEntity")
+@Component
 public class MmsiEntity {
 	//
 	private final QuartzCoreService quartzCoreService;
@@ -93,7 +99,7 @@ public class MmsiEntity {
 	private VdeEntity vdeEntity;	// VDE 메시지 관리 Entity
 
 	// AIS 점유 슬롯 리스트
-	private List<com.all4land.generator.ui.tab.ais.entity.TargetSlotEntity> targetSlotEntity = new ArrayList<>();
+	private List<TargetSlotEntity> targetSlotEntity = new ArrayList<>();
 
 	// slot time out 시작 시간
 	private LocalDateTime slotTimeOutTime;
@@ -105,32 +111,54 @@ public class MmsiEntity {
 	private JobDetail slotTimeOutJob;
 	private final Scheduler scheduler;
 
-	// log console
-	private JTextArea aisTabjTextAreaName;
+	// UI 제거로 인해 주석 처리
+	// private JTextArea aisTabjTextAreaName;
 
 	private GlobalEntityManager globalEntityManager;
 
-	private JTable currentFrameJTableNameUpper;
-	private JTable currentFrame1JTableNameUpper;
-	private JTable currentFrame2JTableNameUpper;
-	private JTable currentFrame3JTableNameUpper;
-	private JTable currentFrame4JTableNameUpper;
-	private JTable currentFrame5JTableNameUpper;
-	private JTable currentFrame6JTableNameUpper;
-	private JTable currentFrame7JTableNameUpper;
-
-	private JTable currentFrameJTableNameLower;
-	private JTable currentFrame1JTableNameLower;
-	private JTable currentFrame2JTableNameLower;
-	private JTable currentFrame3JTableNameLower;
-	private JTable currentFrame4JTableNameLower;
-	private JTable currentFrame5JTableNameLower;
-	private JTable currentFrame6JTableNameLower;
-	private JTable currentFrame7JTableNameLower;
+	// UI 제거로 인해 주석 처리
+	// private JTable currentFrameJTableNameUpper;
+	// private JTable currentFrame1JTableNameUpper;
+	// private JTable currentFrame2JTableNameUpper;
+	// private JTable currentFrame3JTableNameUpper;
+	// private JTable currentFrame4JTableNameUpper;
+	// private JTable currentFrame5JTableNameUpper;
+	// private JTable currentFrame6JTableNameUpper;
+	// private JTable currentFrame7JTableNameUpper;
+	//
+	// private JTable currentFrameJTableNameLower;
+	// private JTable currentFrame1JTableNameLower;
+	// private JTable currentFrame2JTableNameLower;
+	// private JTable currentFrame3JTableNameLower;
+	// private JTable currentFrame4JTableNameLower;
+	// private JTable currentFrame5JTableNameLower;
+	// private JTable currentFrame6JTableNameLower;
+	// private JTable currentFrame7JTableNameLower;
+	
+	// UI 없이 프레임 정보를 저장하기 위한 식별자 (기능 유지를 위한 대체 메커니즘)
+	private String currentFrameUpper;
+	private String currentFrame1Upper;
+	private String currentFrame2Upper;
+	private String currentFrame3Upper;
+	private String currentFrame4Upper;
+	private String currentFrame5Upper;
+	private String currentFrame6Upper;
+	private String currentFrame7Upper;
+	
+	private String currentFrameLower;
+	private String currentFrame1Lower;
+	private String currentFrame2Lower;
+	private String currentFrame3Lower;
+	private String currentFrame4Lower;
+	private String currentFrame5Lower;
+	private String currentFrame6Lower;
+	private String currentFrame7Lower;
 
 	private final ApplicationEventPublisher eventPublisher;
 	
-	private JTextField jTextFieldSFI;
+	// UI 제거로 인해 주석 처리
+	// private JTextField jTextFieldSFI;
+	private String sfiValue; // UI 제거 후 SFI 값을 문자열로 저장
 
 	public MmsiEntity(ApplicationEventPublisher eventPublisher, Scheduler scheduler,
 			QuartzCoreService quartzCoreService, TimeMapRangeCompnents timeMapRangeCompnents
@@ -410,15 +438,15 @@ public class MmsiEntity {
 		this.asmEntity = asmEntity;
 	}
 
-	public List<com.all4land.generator.ui.tab.ais.entity.TargetSlotEntity> getTargetSlotEntity() {
+	public List<TargetSlotEntity> getTargetSlotEntity() {
 		return this.targetSlotEntity;
 	}
 
-	public void setTargetSlotEntity(List<com.all4land.generator.ui.tab.ais.entity.TargetSlotEntity> targetSlotEntity) {
+	public void setTargetSlotEntity(List<TargetSlotEntity> targetSlotEntity) {
 		this.targetSlotEntity = targetSlotEntity;
 	}
 
-	public void addTargetSlotEntity(com.all4land.generator.ui.tab.ais.entity.TargetSlotEntity targetSlotEntity) {
+	public void addTargetSlotEntity(TargetSlotEntity targetSlotEntity) {
 		//
 		this.targetSlotEntity.add(targetSlotEntity);
 	}
@@ -463,24 +491,21 @@ public class MmsiEntity {
 		//
 		this.slotTimeOut = slotTimeOut;
 		if (slotTimeOut > -1) {
-			SlotTimeOutChangeEvent event = new SlotTimeOutChangeEvent(this, 'A', this, this.currentFrameJTableNameUpper,
-					this.currentFrame1JTableNameUpper, this.currentFrame2JTableNameUpper,
-					this.currentFrame3JTableNameUpper, this.currentFrame4JTableNameUpper,
-					this.currentFrame5JTableNameUpper, this.currentFrame6JTableNameUpper,
-					this.currentFrame7JTableNameUpper);
+			SlotTimeOutChangeEvent event = new SlotTimeOutChangeEvent(this, 'A', this);
 
 			eventPublisher.publishEvent(event);
 		}
 
 	}
 
-	public JTextArea getAisTabjTextAreaName() {
-		return this.aisTabjTextAreaName;
-	}
-
-	public void setAisTabjTextAreaName(JTextArea aisTabjTextAreaName) {
-		this.aisTabjTextAreaName = aisTabjTextAreaName;
-	}
+	// UI 제거로 인해 주석 처리
+	// public JTextArea getAisTabjTextAreaName() {
+	//	return this.aisTabjTextAreaName;
+	// }
+	//
+	// public void setAisTabjTextAreaName(JTextArea aisTabjTextAreaName) {
+	//	this.aisTabjTextAreaName = aisTabjTextAreaName;
+	// }
 
 	public boolean isChk() {
 		return this.chk;
@@ -492,9 +517,11 @@ public class MmsiEntity {
 	 * To [MMSI_AIS_FLOW]-3 MmsiEntity.setStartTime
 	 */
 	public void setChk(boolean chk) {
+		System.out.println("[DEBUG] MmsiEntity.setChk() 호출 - MMSI: " + this.mmsi + ", chk: " + chk);
 		this.chk = chk;
 		if (!this.chk) {
 			//
+			System.out.println("[DEBUG] AIS 비활성화 - MMSI: " + this.mmsi);
 			try {
 				this.quartzCoreService.removeStartTimeTrigger(this);
 				this.quartzCoreService.removeSlotTimeOutTimeTrigger(this);
@@ -512,11 +539,15 @@ public class MmsiEntity {
 
 		} else {
 			//
+			System.out.println("[DEBUG] AIS 활성화 시작 - MMSI: " + this.mmsi);
 //			this.setCalculateBasic();
-			this.setStartTime(RandomGenerator.generateRandomLocalDateTimeFormToAddMillisec(3500, 10502));
+			LocalDateTime startTime = RandomGenerator.generateRandomLocalDateTimeFormToAddMillisec(3500, 10502);
+			this.setStartTime(startTime);
+			System.out.println("[DEBUG] 시작 시간 설정 완료 - MMSI: " + this.mmsi + ", startTime: " + startTime);
 //			int randomDelay = RandomGenerator.generateRandomIntFromTo(3, 10);
 //			this.setStartTime(LocalDateTime.now().plusSeconds(randomDelay));
 			this.resetRRAndNI();
+			System.out.println("[DEBUG] RR, NI 초기화 완료 - MMSI: " + this.mmsi + ", RR: " + this.RR + ", NI: " + this.NI);
 		}
 	}
 
@@ -595,11 +626,15 @@ public class MmsiEntity {
 	 */
 	public void setStartTime(LocalDateTime startTime) {
 		//
+		System.out.println("[DEBUG] MmsiEntity.setStartTime() 호출 - MMSI: " + this.mmsi + 
+				", startTime: " + startTime);
 		this.startTime = startTime;
 
 		MmsiEntityChangeStartTimeEvent event = new MmsiEntityChangeStartTimeEvent(this, "startTime", this.startTime,
 				startTime, this);
+		System.out.println("[DEBUG] MmsiEntityChangeStartTimeEvent 발행 - MMSI: " + this.mmsi);
 		eventPublisher.publishEvent(event);
+		System.out.println("[DEBUG] 이벤트 발행 완료 - MMSI: " + this.mmsi);
 	}
 
 	public void setSelectionInterval() {
@@ -643,7 +678,7 @@ public class MmsiEntity {
 				this.format450_AIS = 0; 
 			}
 			GroupControl groupControl = new GroupControl(1,2,this.format450_AIS);
-			SourceIdentification sourceIdentification = new SourceIdentification(this.jTextFieldSFI.getText());
+			SourceIdentification sourceIdentification = new SourceIdentification(this.sfiValue != null ? this.sfiValue : "");
 			DestinationIdentification destinationIdentification = new DestinationIdentification("RS0001");
 			TagBlock tagBlock = new TagBlock(groupControl, sourceIdentification, destinationIdentification);
 			Formatter_61162 Formatter_61162 = new Formatter_61162(tagBlock);
@@ -661,7 +696,7 @@ public class MmsiEntity {
 			
 			//VSI
 			GroupControl groupControlVSI = new GroupControl(2,2,this.format450_AIS);
-			SourceIdentification sourceIdentificationVSI = new SourceIdentification(this.jTextFieldSFI.getText());
+			SourceIdentification sourceIdentificationVSI = new SourceIdentification(this.sfiValue != null ? this.sfiValue : "");
 			DestinationIdentification destinationIdentificationVSI = new DestinationIdentification("RS0001");
 			TagBlock tagBlockVSI = new TagBlock(groupControlVSI, sourceIdentificationVSI, destinationIdentificationVSI);
 			Formatter_61162 Formatter_61162_VSI = new Formatter_61162(tagBlockVSI);
@@ -683,12 +718,30 @@ public class MmsiEntity {
 			
 			CompletableFuture.runAsync(() -> this.printConsoleLog(sbTime.toString()));
 
-			// TCP로 전송하는 메시지... 확인 필요
-			CompletableFuture.runAsync(() -> this.sendTableModel.sendAISMessage(
-					Formatter_61162_message+aisMessage, Formatter_61162_VSI_message+vsiMessage));
+			// TCP로 전송하는 메시지
+			CompletableFuture.runAsync(() -> {
+				log.info("[DEBUG] AIS message sending - MMSI: {}, Slot: {}", this.mmsi, slotNumber);
+				log.info("[DEBUG] AIS message sending: {}", Formatter_61162_message+aisMessage);
+				log.info("[DEBUG] VSI message sending: {}", Formatter_61162_VSI_message+vsiMessage);
+				
+				// TcpServerTableModel을 통한 전송 (UI 모드)
+				if (this.sendTableModel != null) {
+					log.info("[DEBUG] TcpServerTableModel을 통한 전송 시도");
+					this.sendTableModel.sendAISMessage(
+							Formatter_61162_message+aisMessage, Formatter_61162_VSI_message+vsiMessage);
+				}
+				// SimpleTcpServerHandler를 통한 직접 전송 (headless 모드)
+				log.info("[DEBUG] SimpleTcpServerHandler를 통한 전송 시도");
+				this.sendAISMessageToSimpleTcpClients(
+						Formatter_61162_message+aisMessage, Formatter_61162_VSI_message+vsiMessage);
+			});
 			
-			CompletableFuture.runAsync(() -> this.udpServerTableModel.sendAISMessage(
-					Formatter_61162_message+aisMessage, Formatter_61162_VSI_message+vsiMessage));
+			CompletableFuture.runAsync(() -> {
+				if (this.udpServerTableModel != null) {
+					this.udpServerTableModel.sendAISMessage(
+							Formatter_61162_message+aisMessage, Formatter_61162_VSI_message+vsiMessage);
+				}
+			});
 		}
 	}
 		
@@ -709,7 +762,7 @@ public class MmsiEntity {
 				//for(String asmMessage : asmMessageList) {
 					//
 					GroupControl groupControl = new GroupControl(i+1, this.asmMessageList.size()+1,this.format450_ASM);
-					SourceIdentification sourceIdentification = new SourceIdentification(this.jTextFieldSFI.getText());
+					SourceIdentification sourceIdentification = new SourceIdentification(this.sfiValue != null ? this.sfiValue : "");
 					DestinationIdentification destinationIdentification = new DestinationIdentification("RS0001");
 					TagBlock tagBlock = new TagBlock(groupControl, sourceIdentification, destinationIdentification);
 					Formatter_61162 Formatter_61162 = new Formatter_61162(tagBlock);
@@ -737,7 +790,7 @@ public class MmsiEntity {
 				
 				//VSI
 				GroupControl groupControlVSI = new GroupControl(this.asmMessageList.size()+1, this.asmMessageList.size()+1,this.format450_ASM);
-				SourceIdentification sourceIdentificationVSI = new SourceIdentification(this.jTextFieldSFI.getText());
+				SourceIdentification sourceIdentificationVSI = new SourceIdentification(this.sfiValue != null ? this.sfiValue : "");
 				DestinationIdentification destinationIdentificationVSI = new DestinationIdentification("RS0001");
 				TagBlock tagBlockVSI = new TagBlock(groupControlVSI, sourceIdentificationVSI, destinationIdentificationVSI);
 				Formatter_61162 Formatter_61162_VSI = new Formatter_61162(tagBlockVSI);
@@ -772,9 +825,11 @@ public class MmsiEntity {
 	
 	private void printConsoleLog(String s) {
 		//
-		SwingUtilities.invokeLater(() -> {
-			this.aisTabjTextAreaName.append(s);
-		});
+		// UI 제거로 인해 주석 처리 - 로그는 System.out으로 출력
+		System.out.println(s);
+		// SwingUtilities.invokeLater(() -> {
+		//	this.aisTabjTextAreaName.append(s);
+		// });
 	}
 	
 	private String makeSendVsiMessage(int slotNumber, int sequence, LocalDateTime time) {
@@ -825,144 +880,57 @@ public class MmsiEntity {
 		this.startTimeJob = job;
 	}
 
-	public JTable getCurrentFrameJTableNameUpper() {
-		return this.currentFrameJTableNameUpper;
-	}
-
-	public void setCurrentFrameJTableNameUpper(JTable currentFrameJTableNameUpper) {
-		this.currentFrameJTableNameUpper = currentFrameJTableNameUpper;
-	}
-
-	public JTable getCurrentFrame1JTableNameUpper() {
-		return currentFrame1JTableNameUpper;
-	}
-
-	public void setCurrentFrame1JTableNameUpper(JTable currentFrame1JTableNameUpper) {
-		this.currentFrame1JTableNameUpper = currentFrame1JTableNameUpper;
-	}
-
-	public JTable getCurrentFrame2JTableNameUpper() {
-		return currentFrame2JTableNameUpper;
-	}
-
-	public void setCurrentFrame2JTableNameUpper(JTable currentFrame2JTableNameUpper) {
-		this.currentFrame2JTableNameUpper = currentFrame2JTableNameUpper;
-	}
-
-	public JTable getCurrentFrame3JTableNameUpper() {
-		return currentFrame3JTableNameUpper;
-	}
-
-	public void setCurrentFrame3JTableNameUpper(JTable currentFrame3JTableNameUpper) {
-		this.currentFrame3JTableNameUpper = currentFrame3JTableNameUpper;
-	}
-
-	public JTable getCurrentFrame4JTableNameUpper() {
-		return currentFrame4JTableNameUpper;
-	}
-
-	public void setCurrentFrame4JTableNameUpper(JTable currentFrame4JTableNameUpper) {
-		this.currentFrame4JTableNameUpper = currentFrame4JTableNameUpper;
-	}
-
-	public JTable getCurrentFrame5JTableNameUpper() {
-		return currentFrame5JTableNameUpper;
-	}
-
-	public void setCurrentFrame5JTableNameUpper(JTable currentFrame5JTableNameUpper) {
-		this.currentFrame5JTableNameUpper = currentFrame5JTableNameUpper;
-	}
-
-	public JTable getCurrentFrame6JTableNameUpper() {
-		return currentFrame6JTableNameUpper;
-	}
-
-	public void setCurrentFrame6JTableNameUpper(JTable currentFrame6JTableNameUpper) {
-		this.currentFrame6JTableNameUpper = currentFrame6JTableNameUpper;
-	}
-
-	public JTable getCurrentFrame7JTableNameUpper() {
-		return currentFrame7JTableNameUpper;
-	}
-
-	public void setCurrentFrame7JTableNameUpper(JTable currentFrame7JTableNameUpper) {
-		this.currentFrame7JTableNameUpper = currentFrame7JTableNameUpper;
-	}
-
-	public JTable getCurrentFrameJTableNameLower() {
-		return currentFrameJTableNameLower;
-	}
-
-	public void setCurrentFrameJTableNameLower(JTable currentFrameJTableNameLower) {
-		this.currentFrameJTableNameLower = currentFrameJTableNameLower;
-	}
-
-	public JTable getCurrentFrame1JTableNameLower() {
-		return currentFrame1JTableNameLower;
-	}
-
-	public void setCurrentFrame1JTableNameLower(JTable currentFrame1JTableNameLower) {
-		this.currentFrame1JTableNameLower = currentFrame1JTableNameLower;
-	}
-
-	public JTable getCurrentFrame2JTableNameLower() {
-		return currentFrame2JTableNameLower;
-	}
-
-	public void setCurrentFrame2JTableNameLower(JTable currentFrame2JTableNameLower) {
-		this.currentFrame2JTableNameLower = currentFrame2JTableNameLower;
-	}
-
-	public JTable getCurrentFrame3JTableNameLower() {
-		return currentFrame3JTableNameLower;
-	}
-
-	public void setCurrentFrame3JTableNameLower(JTable currentFrame3JTableNameLower) {
-		this.currentFrame3JTableNameLower = currentFrame3JTableNameLower;
-	}
-
-	public JTable getCurrentFrame4JTableNameLower() {
-		return currentFrame4JTableNameLower;
-	}
-
-	public void setCurrentFrame4JTableNameLower(JTable currentFrame4JTableNameLower) {
-		this.currentFrame4JTableNameLower = currentFrame4JTableNameLower;
-	}
-
-	public JTable getCurrentFrame5JTableNameLower() {
-		return currentFrame5JTableNameLower;
-	}
-
-	public void setCurrentFrame5JTableNameLower(JTable currentFrame5JTableNameLower) {
-		this.currentFrame5JTableNameLower = currentFrame5JTableNameLower;
-	}
-
-	public JTable getCurrentFrame6JTableNameLower() {
-		return currentFrame6JTableNameLower;
-	}
-
-	public void setCurrentFrame6JTableNameLower(JTable currentFrame6JTableNameLower) {
-		this.currentFrame6JTableNameLower = currentFrame6JTableNameLower;
-	}
-
-	public JTable getCurrentFrame7JTableNameLower() {
-		return currentFrame7JTableNameLower;
-	}
-
-	public void setCurrentFrame7JTableNameLower(JTable currentFrame7JTableNameLower) {
-		this.currentFrame7JTableNameLower = currentFrame7JTableNameLower;
-	}
-
+	// UI 제거로 인해 주석 처리
+	// public JTable getCurrentFrameJTableNameUpper() {
+	//	return this.currentFrameJTableNameUpper;
+	// }
+	//
+	// public void setCurrentFrameJTableNameUpper(JTable currentFrameJTableNameUpper) {
+	//	this.currentFrameJTableNameUpper = currentFrameJTableNameUpper;
+	// }
+	//
+	// ... (모든 JTable getter/setter 주석 처리)
 	
-	
-	public JTextField getjTextFieldSFI() {
-		return jTextFieldSFI;
+	public String getSfiValue() {
+		return sfiValue;
 	}
 
-
-
-	public void setjTextFieldSFI(JTextField jTextFieldSFI) {
-		this.jTextFieldSFI = jTextFieldSFI;
+	public void setSfiValue(String sfiValue) {
+		this.sfiValue = sfiValue;
+	}
+	
+	// UI 없이 프레임 정보를 관리하기 위한 getter/setter 메서드 (기능 유지를 위한 대체 메커니즘)
+	public String getCurrentFrame7Lower() {
+		return currentFrame7Lower;
+	}
+	
+	public void setCurrentFrame7Lower(String currentFrame7Lower) {
+		this.currentFrame7Lower = currentFrame7Lower;
+	}
+	
+	public String getCurrentFrame7Upper() {
+		return currentFrame7Upper;
+	}
+	
+	public void setCurrentFrame7Upper(String currentFrame7Upper) {
+		this.currentFrame7Upper = currentFrame7Upper;
+	}
+	
+	// 다른 프레임들도 필요시 추가 가능
+	public String getCurrentFrameLower() {
+		return currentFrameLower;
+	}
+	
+	public void setCurrentFrameLower(String currentFrameLower) {
+		this.currentFrameLower = currentFrameLower;
+	}
+	
+	public String getCurrentFrameUpper() {
+		return currentFrameUpper;
+	}
+	
+	public void setCurrentFrameUpper(String currentFrameUpper) {
+		this.currentFrameUpper = currentFrameUpper;
 	}
 
 
@@ -1039,6 +1007,69 @@ public class MmsiEntity {
         }
         return cog;
     }
+	
+	/**
+	 * SimpleTcpServerHandler를 통해 연결된 모든 클라이언트에게 AIS 메시지 전송
+	 */
+	private void sendAISMessageToSimpleTcpClients(String aisMessage, String vsiMessage) {
+		try {
+			// TCP 서버 포트 (ApplicationInitializer에서 설정한 포트)
+			int tcpPort = 10110;
+			String beanName = tcpPort + "_TcpServer";
+			
+			log.info("[DEBUG] sendAISMessageToSimpleTcpClients 시작 - 포트: {}", tcpPort);
+			
+			// TCP 서버 설정 가져오기
+			NettyServerTCPConfiguration tcpServer = (NettyServerTCPConfiguration) BeanUtils.getBean(beanName);
+			if (tcpServer == null) {
+				log.warn("[DEBUG] TCP 서버를 찾을 수 없음: {}", beanName);
+				return;
+			}
+			log.info("[DEBUG] TCP 서버 찾음: {}", beanName);
+			
+			// 연결된 클라이언트 확인
+			ConcurrentMap<String, Channel> clients = SimpleTcpServerHandler.getAllClients();
+			log.info("[DEBUG] 연결된 클라이언트 수: {}", clients.size());
+			if (clients.isEmpty()) {
+				log.warn("[DEBUG] 연결된 클라이언트가 없습니다!");
+				return;
+			}
+			
+			// 메시지 조합
+			StringBuilder sb = new StringBuilder();
+			sb.append(aisMessage).append(SystemConstMessage.CRLF);
+			sb.append(vsiMessage).append(SystemConstMessage.CRLF);
+			String message = sb.toString();
+			log.info("[DEBUG] 전송할 메시지 길이: {} bytes", message.length());
+			
+			// 연결된 모든 클라이언트에게 메시지 전송
+			clients.forEach((clientKey, channel) -> {
+				log.info("[DEBUG] 클라이언트 처리 시작: {}", clientKey);
+				if (channel != null && channel.isActive()) {
+					log.info("[DEBUG] 채널 활성 상태 확인: {} - isActive: {}", clientKey, channel.isActive());
+					try {
+						String[] parts = clientKey.split(":");
+						if (parts.length == 2) {
+							String clientIP = parts[0];
+							int clientPort = Integer.parseInt(parts[1]);
+							log.info("[DEBUG] 메시지 전송 시도: {}:{}", clientIP, clientPort);
+							tcpServer.sendToClient(channel, clientIP, clientPort, message);
+							log.info("[DEBUG] ✅ AIS 메시지 전송 완료: {}:{}", clientIP, clientPort);
+						} else {
+							log.warn("[DEBUG] 잘못된 클라이언트 키 형식: {}", clientKey);
+						}
+					} catch (Exception e) {
+						log.error("[DEBUG] ❌ AIS 메시지 전송 실패: {} - {}", clientKey, e.getMessage(), e);
+					}
+				} else {
+					log.warn("[DEBUG] 채널이 null이거나 비활성 상태: {} - channel: {}, isActive: {}", 
+							clientKey, channel != null, channel != null ? channel.isActive() : false);
+				}
+			});
+		} catch (Exception e) {
+			log.error("[DEBUG] ❌ AIS 메시지 전송 중 오류: {}", e.getMessage(), e);
+		}
+	}
 	
 	@PreDestroy
 	public void preDestroy() {

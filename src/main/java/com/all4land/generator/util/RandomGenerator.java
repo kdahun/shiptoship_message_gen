@@ -5,7 +5,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Random;
 
-import com.all4land.generator.ui.entity.TargetCellInfoEntity;
+import com.all4land.generator.entity.TargetCellInfoEntity;
 
 public class RandomGenerator {
 	//

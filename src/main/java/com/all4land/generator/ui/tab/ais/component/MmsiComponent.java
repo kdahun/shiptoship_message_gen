@@ -34,6 +34,7 @@ import javax.swing.table.TableColumnModel;
 import javax.swing.text.DefaultCaret;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
@@ -91,7 +92,7 @@ public class MmsiComponent {
 	}
 
 	@Autowired
-	public void setGlobalEntityManager(@Lazy GlobalEntityManager globalEntityManager) {
+	public void setGlobalEntityManager(@Lazy @Qualifier("uiGlobalEntityManager") GlobalEntityManager globalEntityManager) {
 		this.globalEntityManager = globalEntityManager;
 	}
 	

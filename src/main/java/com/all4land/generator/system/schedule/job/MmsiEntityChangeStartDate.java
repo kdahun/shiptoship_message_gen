@@ -1,4 +1,4 @@
-package com.all4land.generator.ui.tab.ais.entity.event.quartz;
+package com.all4land.generator.system.schedule.job;
 
 import java.time.LocalDateTime;
 
@@ -9,16 +9,16 @@ import org.quartz.JobExecutionException;
 import org.springframework.stereotype.Component;
 
 import com.all4land.generator.ais.AisMessage1Util;
+import com.all4land.generator.entity.GlobalEntityManager;
+import com.all4land.generator.entity.MmsiEntity;
+import com.all4land.generator.entity.TargetSlotEntity;
 import com.all4land.generator.system.constant.SystemConstMessage;
-import com.all4land.generator.ui.tab.ais.entity.GlobalEntityManager;
-import com.all4land.generator.ui.tab.ais.entity.MmsiEntity;
-import com.all4land.generator.ui.tab.ais.entity.TargetSlotEntity;
 
 import dk.dma.ais.sentence.Vdm;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@Component("uiMmsiEntityChangeStartDate")
+@Component
 public class MmsiEntityChangeStartDate implements Job {
 	//
 	private final GlobalEntityManager globalEntityManager;
@@ -39,17 +39,21 @@ public class MmsiEntityChangeStartDate implements Job {
 	@Override
 	public void execute(JobExecutionContext context) throws JobExecutionException {
 		// TODO Auto-generated method stub
-		log.info("{} , {}", LocalDateTime.now(), "시작");
+		System.out.println("[DEBUG] ========== MmsiEntityChangeStartDate.execute() 시작 ==========");
 		JobDataMap jobDataMap = context.getMergedJobDataMap();
 		this.mmsiEntity = (MmsiEntity) jobDataMap.get("mmsiEntity");
-		 log.info("{} , {}", LocalDateTime.now(), this.mmsiEntity.getStartTime());
+		System.out.println("[DEBUG] Quartz Job 실행 - MMSI: " + 
+				(this.mmsiEntity != null ? this.mmsiEntity.getMmsi() : "null") + 
+				", StartTime: " + (this.mmsiEntity != null ? this.mmsiEntity.getStartTime() : "null"));
 		try {
 			this.mainProcess();
 		}catch (Exception e) {
 			// TODO: handle exception
+			System.out.println("[DEBUG] ❌ mainProcess() 실행 중 오류 발생");
 			e.printStackTrace();
 		}
 		this.addFuture();
+		System.out.println("[DEBUG] ========== MmsiEntityChangeStartDate.execute() 종료 ==========");
 	}
 
 	/**
@@ -62,43 +66,54 @@ public class MmsiEntityChangeStartDate implements Job {
 	 */
 	private void mainProcess() {
 		//
+		System.out.println("[DEBUG] mainProcess() 시작 - MMSI: " + this.mmsiEntity.getMmsi());
 		/**
 		 * mmsiEntity가 활성화되어 있는지 확인
 		 * 화면상에서의 CheckBox
 		 */
 		if (this.mmsiEntity.isChk()) {
+			System.out.println("[DEBUG] ✅ MmsiEntity 활성화 확인 - MMSI: " + this.mmsiEntity.getMmsi());
 			//
 			/** 
 			 * 이전에 전송된 슬롯 확인
 			 */ 
 			TargetSlotEntity rtnValue = this.checkHistorySlot();
+			System.out.println("[DEBUG] checkHistorySlot() 결과 - MMSI: " + this.mmsiEntity.getMmsi() + 
+					", rtnValue: " + (rtnValue != null ? "있음 (slotNumber: " + rtnValue.getSlotNumber() + ")" : "없음"));
+			
 			if (rtnValue != null) {
 				// 
+				System.out.println("[DEBUG] 이전 슬롯 사용 - MMSI: " + this.mmsiEntity.getMmsi() + 
+						", SlotNumber: " + rtnValue.getSlotNumber());
 				Vdm vdm = AisMessage1Util.create(this.mmsiEntity, rtnValue.getSlotNumber());
+				System.out.println("[DEBUG] ✅ AIS 메시지 생성 완료 (이전 슬롯) - MMSI: " + this.mmsiEntity.getMmsi() + 
+						", SlotNumber: " + rtnValue.getSlotNumber());
 				this.mmsiEntity.setMessage1(vdm, rtnValue.getSlotNumber());
 				this.mmsiEntity.setAisMessageSequence(mmsiEntity.getAisMessageSequence()+1);
 				
 			} else {
 				//
+				System.out.println("[DEBUG] 새 슬롯 찾기 시작 - MMSI: " + this.mmsiEntity.getMmsi());
 				// SI 계산
 				this.mmsiEntity.setSelectionInterval();
+				System.out.println("[DEBUG] SI 계산 완료 - MMSI: " + this.mmsiEntity.getMmsi() + 
+						", SI: " + this.mmsiEntity.getSI());
 				// 마킹 및 전송
 				// int successSlotNumber = 
-				this.globalEntityManager.findSlotAndMarking(mmsiEntity);
-				/**
-//				if(successSlotNumber <= -1) {
-//					log.info("점유 못함1. MMSI : {}, NS : {} , {}", this.mmsiEntity.getMmsi(), this.mmsiEntity.getNS(),
-//							this.mmsiEntity);
-//				}else {
-//					log.info("점유 성공1. MMSI : {}, NS : {} , {}", this.mmsiEntity.getMmsi(), this.mmsiEntity.getNS(),
-//							this.mmsiEntity);
-//				}
-//				log.info("NSS : {}", this.mmsiEntity.getNSSA());
-//				log.info("MMSI : {}, NS : {} , {}", this.mmsiEntity.getMmsi(), this.mmsiEntity.getNS(),
-//						this.mmsiEntity);
-//				log.info("SI : {}", this.mmsiEntity.getSI());
-				 */
+				int result = this.globalEntityManager.findSlotAndMarking(mmsiEntity);
+				System.out.println("[DEBUG] findSlotAndMarking() 결과 - MMSI: " + this.mmsiEntity.getMmsi() + 
+						", result: " + result);
+				if (result <= -1) {
+					System.out.println("[DEBUG] ❌ 슬롯 찾기 실패 - MMSI: " + this.mmsiEntity.getMmsi() + 
+							", result: " + result);
+				} else {
+					System.out.println("[DEBUG] ✅ 슬롯 찾기 성공 - MMSI: " + this.mmsiEntity.getMmsi() + 
+							", slotNumber: " + result);
+				}
 			}
+		} else {
+			System.out.println("[DEBUG] ❌ MmsiEntity 비활성화 상태 - MMSI: " + this.mmsiEntity.getMmsi() + 
+					", chk: " + this.mmsiEntity.isChk());
 		}
 	}
 
@@ -168,3 +183,7 @@ public class MmsiEntityChangeStartDate implements Job {
 	}
 
 }
+
+
+
+

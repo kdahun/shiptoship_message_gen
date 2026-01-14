@@ -27,7 +27,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@Component
+// @Component // UI 컴포넌트이므로 headless 모드에서는 사용하지 않음
 @Getter
 public class MainFrame extends javax.swing.JFrame {
 	//
