@@ -103,6 +103,60 @@ public class GlobalEntityManager {
 		// UI 제거로 인해 주석 처리
 		// this.mmsiTableModel2.setData();
 	}
+	
+	/**
+	 * MMSI로 선박을 찾아서 반환합니다.
+	 */
+	public MmsiEntity findMmsiEntity(long mmsi) {
+		if (this.mmsiEntityLists == null) {
+			return null;
+		}
+		for (MmsiEntity entity : this.mmsiEntityLists) {
+			if (entity.getMmsi() == mmsi) {
+				return entity;
+			}
+		}
+		return null;
+	}
+	
+	/**
+	 * MMSI별로 메시지 생성 상태를 제어합니다.
+	 * @param mmsi MMSI 번호
+	 * @param state "0"=OFF(중단), "1"=ON(시작/재개)
+	 * @return 제어 성공 여부
+	 */
+	public boolean controlMmsiState(long mmsi, String state) {
+		MmsiEntity mmsiEntity = findMmsiEntity(mmsi);
+		if (mmsiEntity == null) {
+			System.out.println("[DEBUG] ⚠️ MMSI를 찾을 수 없음: " + mmsi);
+			return false;
+		}
+		
+		if ("1".equals(state)) {
+			// ON: 메시지 생성 시작/재개
+			if (!mmsiEntity.isChk()) {
+				System.out.println("[DEBUG] AIS 활성화 시작 - MMSI: " + mmsi);
+				mmsiEntity.setChk(true);
+				System.out.println("[DEBUG] ✅ AIS 활성화 완료 - MMSI: " + mmsi);
+			} else {
+				System.out.println("[DEBUG] ⚠️ AIS가 이미 활성화되어 있음 - MMSI: " + mmsi);
+			}
+			return true;
+		} else if ("0".equals(state)) {
+			// OFF: 메시지 생성 중단
+			if (mmsiEntity.isChk()) {
+				System.out.println("[DEBUG] AIS 비활성화 시작 - MMSI: " + mmsi);
+				mmsiEntity.setChk(false);
+				System.out.println("[DEBUG] ✅ AIS 비활성화 완료 - MMSI: " + mmsi);
+			} else {
+				System.out.println("[DEBUG] ⚠️ AIS가 이미 비활성화되어 있음 - MMSI: " + mmsi);
+			}
+			return true;
+		} else {
+			System.out.println("[DEBUG] ❌ 유효하지 않은 state 값: " + state + " (MMSI: " + mmsi + ")");
+			return false;
+		}
+	}
 
 	public void addMmsiEntity180(Scheduler scheduler, QuartzCoreService quartzCoreService) {
 		// UI 제거로 인해 JTextArea 파라미터 제거
@@ -286,10 +340,9 @@ public class GlobalEntityManager {
 		// 리스트에 추가
 		this.mmsiEntityLists.add(mmsiEntity);
 		
-		// AIS 활성화 (이것이 메시지 생성 프로세스를 시작합니다)
-		System.out.println("[DEBUG] AIS 활성화 시작 - MMSI: " + mmsi);
-		mmsiEntity.setChk(true);
-		System.out.println("[DEBUG] AIS 활성화 완료 - MMSI: " + mmsi);
+		// 선박 생성과 메시지 생성 시작을 분리
+		// AIS는 제어 메시지(STG-02)로 별도 활성화해야 함
+		System.out.println("[DEBUG] 선박 생성 완료 - MMSI: " + mmsi + " (메시지 생성은 제어 메시지로 활성화 필요)");
 		
 		// ASM 활성화 (선택사항)
 		mmsiEntity.setAsm(true);
