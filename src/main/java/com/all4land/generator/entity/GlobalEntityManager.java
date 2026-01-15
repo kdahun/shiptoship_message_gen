@@ -1,7 +1,5 @@
 package com.all4land.generator.entity;
 
-// UI 제거로 인해 주석 처리
-// import java.awt.Point;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -9,13 +7,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-
-// UI 제거로 인해 주석 처리
-// import javax.swing.JTable;
-// import javax.swing.JTextArea;
-// import javax.swing.JTextField;
-// import javax.swing.table.TableModel;
 
 import org.quartz.Scheduler;
 import org.springframework.context.ApplicationEventPublisher;
@@ -28,20 +19,10 @@ import com.all4land.generator.system.constant.SystemConstTestData180;
 import com.all4land.generator.system.schedule.QuartzCoreService;
 import com.all4land.generator.system.util.BeanUtils;
 import com.all4land.generator.entity.TargetCellInfoEntity;
-// UI 제거로 인해 주석 처리
-// import com.all4land.generator.ui.tab.ais.entity.event.change.ColorEntityChangeEvent;
-// UI 제거로 인해 주석 처리
-// import com.all4land.generator.ui.tab.ais.entity.event.change.ToggleDisplayAis;
-// import com.all4land.generator.ui.tab.ais.entity.event.change.ToggleDisplayAsm;
-// import com.all4land.generator.ui.tab.ais.entity.event.change.ToggleDisplayVde;
-// import com.all4land.generator.ui.tab.ais.model.MmsiTableModel;
-// import com.all4land.generator.ui.tab.ais.renderer.CustomTableCellRenderer;
 import com.all4land.generator.util.RandomGenerator;
 
 import dk.dma.ais.sentence.Vdm;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 @Component
 public class GlobalEntityManager {
 	//

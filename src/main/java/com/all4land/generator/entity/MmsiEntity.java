@@ -9,12 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-// UI 제거로 인해 주석 처리
-// import javax.swing.JTable;
-// import javax.swing.JTextArea;
-// import javax.swing.JTextField;
-// import javax.swing.SwingUtilities;
-
 import org.quartz.JobDetail;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
@@ -47,9 +41,7 @@ import dk.dma.ais.sentence.Vdm;
 import jakarta.annotation.PreDestroy;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 @Component
 public class MmsiEntity {
 	//
@@ -720,18 +712,18 @@ public class MmsiEntity {
 
 			// TCP로 전송하는 메시지
 			CompletableFuture.runAsync(() -> {
-				log.info("[DEBUG] AIS message sending - MMSI: {}, Slot: {}", this.mmsi, slotNumber);
-				log.info("[DEBUG] AIS message sending: {}", Formatter_61162_message+aisMessage);
-				log.info("[DEBUG] VSI message sending: {}", Formatter_61162_VSI_message+vsiMessage);
+				System.out.println("[DEBUG] AIS message sending - MMSI: " + this.mmsi + ", Slot: " + slotNumber);
+				System.out.println("[DEBUG] AIS message sending: " + Formatter_61162_message+aisMessage);
+				System.out.println("[DEBUG] VSI message sending: " + Formatter_61162_VSI_message+vsiMessage);
 				
 				// TcpServerTableModel을 통한 전송 (UI 모드)
 				if (this.sendTableModel != null) {
-					log.info("[DEBUG] TcpServerTableModel을 통한 전송 시도");
+					System.out.println("[DEBUG] TcpServerTableModel을 통한 전송 시도");
 					this.sendTableModel.sendAISMessage(
 							Formatter_61162_message+aisMessage, Formatter_61162_VSI_message+vsiMessage);
 				}
 				// SimpleTcpServerHandler를 통한 직접 전송 (headless 모드)
-				log.info("[DEBUG] SimpleTcpServerHandler를 통한 전송 시도");
+				System.out.println("[DEBUG] SimpleTcpServerHandler를 통한 전송 시도");
 				this.sendAISMessageToSimpleTcpClients(
 						Formatter_61162_message+aisMessage, Formatter_61162_VSI_message+vsiMessage);
 			});
@@ -1017,21 +1009,21 @@ public class MmsiEntity {
 			int tcpPort = 10110;
 			String beanName = tcpPort + "_TcpServer";
 			
-			log.info("[DEBUG] sendAISMessageToSimpleTcpClients 시작 - 포트: {}", tcpPort);
+			System.out.println("[DEBUG] sendAISMessageToSimpleTcpClients 시작 - 포트: " + tcpPort);
 			
 			// TCP 서버 설정 가져오기
 			NettyServerTCPConfiguration tcpServer = (NettyServerTCPConfiguration) BeanUtils.getBean(beanName);
 			if (tcpServer == null) {
-				log.warn("[DEBUG] TCP 서버를 찾을 수 없음: {}", beanName);
+				System.out.println("[DEBUG] TCP 서버를 찾을 수 없음: " + beanName);
 				return;
 			}
-			log.info("[DEBUG] TCP 서버 찾음: {}", beanName);
+			System.out.println("[DEBUG] TCP 서버 찾음: " + beanName);
 			
 			// 연결된 클라이언트 확인
 			ConcurrentMap<String, Channel> clients = SimpleTcpServerHandler.getAllClients();
-			log.info("[DEBUG] 연결된 클라이언트 수: {}", clients.size());
+			System.out.println("[DEBUG] 연결된 클라이언트 수: " + clients.size());
 			if (clients.isEmpty()) {
-				log.warn("[DEBUG] 연결된 클라이언트가 없습니다!");
+				System.out.println("[DEBUG] 연결된 클라이언트가 없습니다!");
 				return;
 			}
 			
@@ -1040,34 +1032,35 @@ public class MmsiEntity {
 			sb.append(aisMessage).append(SystemConstMessage.CRLF);
 			sb.append(vsiMessage).append(SystemConstMessage.CRLF);
 			String message = sb.toString();
-			log.info("[DEBUG] 전송할 메시지 길이: {} bytes", message.length());
+			System.out.println("[DEBUG] 전송할 메시지 길이: " + message.length() + " bytes");
 			
 			// 연결된 모든 클라이언트에게 메시지 전송
 			clients.forEach((clientKey, channel) -> {
-				log.info("[DEBUG] 클라이언트 처리 시작: {}", clientKey);
+				System.out.println("[DEBUG] 클라이언트 처리 시작: " + clientKey);
 				if (channel != null && channel.isActive()) {
-					log.info("[DEBUG] 채널 활성 상태 확인: {} - isActive: {}", clientKey, channel.isActive());
+					System.out.println("[DEBUG] 채널 활성 상태 확인: " + clientKey + " - isActive: " + channel.isActive());
 					try {
 						String[] parts = clientKey.split(":");
 						if (parts.length == 2) {
 							String clientIP = parts[0];
 							int clientPort = Integer.parseInt(parts[1]);
-							log.info("[DEBUG] 메시지 전송 시도: {}:{}", clientIP, clientPort);
+							System.out.println("[DEBUG] 메시지 전송 시도: " + clientIP + ":" + clientPort);
 							tcpServer.sendToClient(channel, clientIP, clientPort, message);
-							log.info("[DEBUG] ✅ AIS 메시지 전송 완료: {}:{}", clientIP, clientPort);
+							System.out.println("[DEBUG] ✅ AIS 메시지 전송 완료: " + clientIP + ":" + clientPort);
 						} else {
-							log.warn("[DEBUG] 잘못된 클라이언트 키 형식: {}", clientKey);
+							System.out.println("[DEBUG] 잘못된 클라이언트 키 형식: " + clientKey);
 						}
 					} catch (Exception e) {
-						log.error("[DEBUG] ❌ AIS 메시지 전송 실패: {} - {}", clientKey, e.getMessage(), e);
+						System.out.println("[DEBUG] ❌ AIS 메시지 전송 실패: " + clientKey + " - " + e.getMessage());
+						e.printStackTrace();
 					}
 				} else {
-					log.warn("[DEBUG] 채널이 null이거나 비활성 상태: {} - channel: {}, isActive: {}", 
-							clientKey, channel != null, channel != null ? channel.isActive() : false);
+					System.out.println("[DEBUG] 채널이 null이거나 비활성 상태: " + clientKey + " - channel: " + (channel != null) + ", isActive: " + (channel != null ? channel.isActive() : false));
 				}
 			});
 		} catch (Exception e) {
-			log.error("[DEBUG] ❌ AIS 메시지 전송 중 오류: {}", e.getMessage(), e);
+			System.out.println("[DEBUG] ❌ AIS 메시지 전송 중 오류: " + e.getMessage());
+			e.printStackTrace();
 		}
 	}
 	
