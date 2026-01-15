@@ -4,8 +4,10 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.quartz.Scheduler;
@@ -19,6 +21,7 @@ import com.all4land.generator.system.constant.SystemConstTestData180;
 import com.all4land.generator.system.schedule.QuartzCoreService;
 import com.all4land.generator.system.util.BeanUtils;
 import com.all4land.generator.entity.TargetCellInfoEntity;
+import com.all4land.generator.entity.SlotStateManager;
 import com.all4land.generator.util.RandomGenerator;
 
 import dk.dma.ais.sentence.Vdm;
@@ -29,6 +32,7 @@ public class GlobalEntityManager {
 	private final String uuid = "00"+String.valueOf(RandomGenerator.generateRandomInt(7));
 	private final ASMMessageUtil aSMMessageUtil;
 	private final ApplicationEventPublisher eventPublisher;
+	private final SlotStateManager slotStateManager;
 	Set<Long> generatedMmsiSet = new HashSet<>();
 	// UI 제거로 인해 주석 처리
 	// private JTable currentFrameJTableNameUpper;
@@ -54,31 +58,6 @@ public class GlobalEntityManager {
 	// private JTable currentFrame8JTableNameLower;
 	// private JTable currentFrame9JTableNameLower;
 	// private JTable currentFrame10JTableNameLower;
-	
-	// UI 없이 프레임 정보를 저장하기 위한 식별자 (기능 유지를 위한 대체 메커니즘)
-	private String currentFrameUpper;
-	private String currentFrame1Upper;
-	private String currentFrame2Upper;
-	private String currentFrame3Upper;
-	private String currentFrame4Upper;
-	private String currentFrame5Upper;
-	private String currentFrame6Upper;
-	private String currentFrame7Upper;
-	private String currentFrame8Upper;
-	private String currentFrame9Upper;
-	private String currentFrame10Upper;
-	
-	private String currentFrameLower;
-	private String currentFrame1Lower;
-	private String currentFrame2Lower;
-	private String currentFrame3Lower;
-	private String currentFrame4Lower;
-	private String currentFrame5Lower;
-	private String currentFrame6Lower;
-	private String currentFrame7Lower;
-	private String currentFrame8Lower;
-	private String currentFrame9Lower;
-	private String currentFrame10Lower;
 
 	private boolean aisMsgDisplay = true;
 	private boolean asmMsgDisplay = true;
@@ -92,10 +71,11 @@ public class GlobalEntityManager {
 	// private JTextField jTextFieldSFI;
 	private String sfiValue; // UI 제거 후 SFI 값을 문자열로 저장
 	
-	GlobalEntityManager(ApplicationEventPublisher eventPublisher, ASMMessageUtil aSMMessageUtil) {
+	GlobalEntityManager(ApplicationEventPublisher eventPublisher, ASMMessageUtil aSMMessageUtil, SlotStateManager slotStateManager) {
 		// 생성자에서 리스트를 초기화합니다.
 		this.eventPublisher = eventPublisher;
 		this.aSMMessageUtil = aSMMessageUtil;
+		this.slotStateManager = slotStateManager;
 		this.mmsiEntityLists = new ArrayList<>();
 	}
 
@@ -235,6 +215,87 @@ public class GlobalEntityManager {
 		mmsi.setChk(true);
 		System.out.println("[DEBUG] setChk(true) 호출 후 - MMSI: " + mmsi.getMmsi() + ", chk: " + mmsi.isChk());
 		System.out.println("[DEBUG] GlobalEntityManager.addMmsiEntity10() 완료");
+	}
+	
+	/**
+	 * JSON 데이터로부터 선박을 생성합니다.
+	 * @param scheduler Quartz Scheduler
+	 * @param quartzCoreService QuartzCoreService
+	 * @param mmsiStr MMSI 문자열
+	 * @param lat 위도
+	 * @param lon 경도
+	 * @param aisPeriod AIS 메시지 전송 주기 (초 단위)
+	 * @param regionId 지역 ID (선택사항)
+	 */
+	public void createMmsiFromJson(Scheduler scheduler, QuartzCoreService quartzCoreService,
+			String mmsiStr, double lat, double lon, int aisPeriod, String regionId) {
+		System.out.println("[DEBUG] ========== GlobalEntityManager.createMmsiFromJson() 시작 ==========");
+		System.out.println("[DEBUG] MMSI: " + mmsiStr + ", Lat: " + lat + ", Lon: " + lon + 
+				", AIS Period: " + aisPeriod + ", Region: " + regionId);
+		
+		if (this.mmsiEntityLists == null) {
+			this.mmsiEntityLists = new ArrayList<>();
+		}
+		
+		// MMSI 문자열을 Long으로 변환
+		long mmsi;
+		try {
+			mmsi = Long.parseLong(mmsiStr);
+		} catch (NumberFormatException e) {
+			System.out.println("[DEBUG] ❌ 유효하지 않은 MMSI: " + mmsiStr);
+			throw new IllegalArgumentException("Invalid MMSI format: " + mmsiStr, e);
+		}
+		
+		// MMSI 중복 확인
+		if (!generatedMmsiSet.add(mmsi)) {
+			System.out.println("[DEBUG] ⚠️ 중복된 MMSI - 선박 생성 건너뜀: " + mmsi);
+			return; // 예외를 throw하지 않고 경고만 출력하고 종료
+		}
+		
+		// MmsiEntity Bean 등록 및 생성
+		BeanUtils.registerBean(mmsi + "", MmsiEntity.class);
+		MmsiEntity mmsiEntity = (MmsiEntity) BeanUtils.getBean(mmsi + "");
+		System.out.println("[DEBUG] MmsiEntity Bean 생성 완료 - MMSI: " + mmsiEntity.getMmsi());
+		
+		// 기본 설정
+		mmsiEntity.setSfiValue(this.sfiValue);
+		mmsiEntity.setMmsi(mmsi);
+		mmsiEntity.setGlobalEntityManager(this);
+		
+		// AIS Period를 speed로 설정 (aisPeriod가 180이면 speed=180, 그 외에는 aisPeriod 값 사용)
+		int speed = aisPeriod;
+		mmsiEntity.setSpeed(speed);
+		
+		// SlotTimeOut 설정 (speed가 180이면 3, 그 외에는 7)
+		int slotTimeOut = (speed == 180) ? 3 : 7;
+		mmsiEntity.setSlotTimeOut(slotTimeOut);
+		
+		// 위도/경도 설정을 위한 positions Map 생성
+		// 단일 위치를 사용하여 초기 위치 설정
+		Map<Integer, double[]> positions = new HashMap<>();
+		double[] position = new double[3];
+		position[0] = lat;  // 위도
+		position[1] = lon;   // 경도
+		position[2] = 0;     // COG (초기값)
+		positions.put(0, position);
+		
+		// testInit 메서드를 사용하여 위치 정보 설정
+		mmsiEntity.testInit(speed, slotTimeOut, positions);
+		System.out.println("[DEBUG] 위치 정보 설정 완료 - Lat: " + lat + ", Lon: " + lon);
+		
+		// 리스트에 추가
+		this.mmsiEntityLists.add(mmsiEntity);
+		
+		// AIS 활성화 (이것이 메시지 생성 프로세스를 시작합니다)
+		System.out.println("[DEBUG] AIS 활성화 시작 - MMSI: " + mmsi);
+		mmsiEntity.setChk(true);
+		System.out.println("[DEBUG] AIS 활성화 완료 - MMSI: " + mmsi);
+		
+		// ASM 활성화 (선택사항)
+		mmsiEntity.setAsm(true);
+		System.out.println("[DEBUG] ASM 활성화 완료 - MMSI: " + mmsi);
+		
+		System.out.println("[DEBUG] ========== GlobalEntityManager.createMmsiFromJson() 완료 - MMSI: " + mmsi + " ==========");
 	}
 	
 	public void addMmsiEntity6(Scheduler scheduler, QuartzCoreService quartzCoreService) {
@@ -611,38 +672,6 @@ public class GlobalEntityManager {
 	}
 	
 	// UI 없이 프레임 정보를 관리하기 위한 getter/setter 메서드 (기능 유지를 위한 대체 메커니즘)
-	public String getCurrentFrame7Lower() {
-		return currentFrame7Lower;
-	}
-	
-	public void setCurrentFrame7Lower(String currentFrame7Lower) {
-		this.currentFrame7Lower = currentFrame7Lower;
-	}
-	
-	public String getCurrentFrame7Upper() {
-		return currentFrame7Upper;
-	}
-	
-	public void setCurrentFrame7Upper(String currentFrame7Upper) {
-		this.currentFrame7Upper = currentFrame7Upper;
-	}
-	
-	// 다른 프레임들도 필요시 추가 가능
-	public String getCurrentFrameLower() {
-		return currentFrameLower;
-	}
-	
-	public void setCurrentFrameLower(String currentFrameLower) {
-		this.currentFrameLower = currentFrameLower;
-	}
-	
-	public String getCurrentFrameUpper() {
-		return currentFrameUpper;
-	}
-	
-	public void setCurrentFrameUpper(String currentFrameUpper) {
-		this.currentFrameUpper = currentFrameUpper;
-	}
 
 	public boolean isAisMsgDisplay() {
 		return aisMsgDisplay;
@@ -778,10 +807,13 @@ public class GlobalEntityManager {
 				return -1;
 			}
 			
-			// SI 범위 내에서 랜덤으로 슬롯 선택 (간단한 구현)
-			// 실제로는 연속으로 비어있는 슬롯 4개를 찾아야 하지만, 
-			// UI 없이 구현하기 위해 SI 범위 내에서 랜덤 선택
-			int selectedSlot = com.all4land.generator.util.RandomGenerator.generateRandomIntFromTo(siMin, siMax);
+			// SlotStateManager를 사용하여 빈 슬롯 찾기
+			int selectedSlot = slotStateManager.findAvailableSlot(siMin, siMax);
+			if (selectedSlot == -1) {
+				System.out.println("[DEBUG] ❌ SI 범위 내에서 빈 슬롯을 찾을 수 없음 - MMSI: " + mmsiEntity.getMmsi());
+				return -1;
+			}
+			
 			System.out.println("[DEBUG] 슬롯 선택 - MMSI: " + mmsiEntity.getMmsi() + ", SlotNumber: " + selectedSlot);
 			
 			// 슬롯의 TimeOutTime이 설정되어 있지 않은 경우에만 설정
@@ -792,10 +824,30 @@ public class GlobalEntityManager {
 				System.out.println("[DEBUG] SlotTimeOutTime 설정 - MMSI: " + mmsiEntity.getMmsi() + ", Time: " + modifiedDateTime);
 			}
 			
-			// TargetCellInfoEntity 생성 (row, col은 UI 없이 사용하지 않으므로 임의 값)
+			// 슬롯 좌표 계산
+			int row = selectedSlot / 32;
+			int col = selectedSlot % 32;
+			boolean channel = mmsiEntity.getTargetChannel(); // true: A channel, false: B channel
+			
+			// SlotStateManager에 슬롯 초기화 및 점유
+			slotStateManager.initializeSlot(selectedSlot, row, col, channel);
+			boolean occupied = slotStateManager.occupySlot(
+				selectedSlot, 
+				mmsiEntity.getMmsi(), 
+				mmsiEntity.getStartTime(), 
+				mmsiEntity.getSlotTimeOutTime(), 
+				"AIS"
+			);
+			
+			if (!occupied) {
+				System.out.println("[DEBUG] ❌ 슬롯 점유 실패 (이미 점유됨) - MMSI: " + mmsiEntity.getMmsi() + ", SlotNumber: " + selectedSlot);
+				return -1;
+			}
+			
+			// TargetCellInfoEntity 생성
 			TargetCellInfoEntity targetCellInfo = new TargetCellInfoEntity();
-			targetCellInfo.setRow(selectedSlot / 32); // 대략적인 row 계산
-			targetCellInfo.setCol(selectedSlot % 32); // 대략적인 col 계산
+			targetCellInfo.setRow(row);
+			targetCellInfo.setCol(col);
 			targetCellInfo.setSlotNumber(String.valueOf(selectedSlot));
 			
 			// AIS 타겟 슬롯 Entity 추가

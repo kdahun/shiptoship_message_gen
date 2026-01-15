@@ -8,11 +8,16 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 import com.all4land.generator.ui.controller.MainController;
 import com.all4land.generator.ui.view.Sample1;
+import com.all4land.generator.ui.tab.ais.entity.event.listener.MmsiEntitySlotTimeChangeListener;
 
 @SpringBootApplication
 @EnableScheduling
 @ComponentScan(excludeFilters = {
-	@ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = {Sample1.class, MainController.class})
+	@ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = {
+		Sample1.class, 
+		MainController.class,
+		MmsiEntitySlotTimeChangeListener.class
+	})
 })
 public class GeneratorApplication {
 

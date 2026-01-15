@@ -126,25 +126,6 @@ public class MmsiEntity {
 	// private JTable currentFrame5JTableNameLower;
 	// private JTable currentFrame6JTableNameLower;
 	// private JTable currentFrame7JTableNameLower;
-	
-	// UI 없이 프레임 정보를 저장하기 위한 식별자 (기능 유지를 위한 대체 메커니즘)
-	private String currentFrameUpper;
-	private String currentFrame1Upper;
-	private String currentFrame2Upper;
-	private String currentFrame3Upper;
-	private String currentFrame4Upper;
-	private String currentFrame5Upper;
-	private String currentFrame6Upper;
-	private String currentFrame7Upper;
-	
-	private String currentFrameLower;
-	private String currentFrame1Lower;
-	private String currentFrame2Lower;
-	private String currentFrame3Lower;
-	private String currentFrame4Lower;
-	private String currentFrame5Lower;
-	private String currentFrame6Lower;
-	private String currentFrame7Lower;
 
 	private final ApplicationEventPublisher eventPublisher;
 	
@@ -890,40 +871,6 @@ public class MmsiEntity {
 	public void setSfiValue(String sfiValue) {
 		this.sfiValue = sfiValue;
 	}
-	
-	// UI 없이 프레임 정보를 관리하기 위한 getter/setter 메서드 (기능 유지를 위한 대체 메커니즘)
-	public String getCurrentFrame7Lower() {
-		return currentFrame7Lower;
-	}
-	
-	public void setCurrentFrame7Lower(String currentFrame7Lower) {
-		this.currentFrame7Lower = currentFrame7Lower;
-	}
-	
-	public String getCurrentFrame7Upper() {
-		return currentFrame7Upper;
-	}
-	
-	public void setCurrentFrame7Upper(String currentFrame7Upper) {
-		this.currentFrame7Upper = currentFrame7Upper;
-	}
-	
-	// 다른 프레임들도 필요시 추가 가능
-	public String getCurrentFrameLower() {
-		return currentFrameLower;
-	}
-	
-	public void setCurrentFrameLower(String currentFrameLower) {
-		this.currentFrameLower = currentFrameLower;
-	}
-	
-	public String getCurrentFrameUpper() {
-		return currentFrameUpper;
-	}
-	
-	public void setCurrentFrameUpper(String currentFrameUpper) {
-		this.currentFrameUpper = currentFrameUpper;
-	}
 
 
 
@@ -980,9 +927,23 @@ public class MmsiEntity {
 	private double[] interpolate(double[] x, double[] y) {
         int n = y.length;
         double[] result = new double[x.length];
+        
+        // 단일 점만 있는 경우 (n == 1) 모든 결과를 같은 값으로 설정
+        if (n == 1) {
+            for (int i = 0; i < x.length; i++) {
+                result[i] = y[0];
+            }
+            return result;
+        }
+        
+        // 최소 2개 이상의 점이 있는 경우에만 보간 수행
         for (int i = 0; i < x.length; i++) {
-            int j = Math.min((int)Math.floor(x[i]), n - 2);
-            double t = x[i] - j;
+            // x[i] 값을 [0, n-1] 범위로 정규화
+            double normalizedX = Math.max(0.0, Math.min(x[i], n - 1.0));
+            int j = Math.min((int)Math.floor(normalizedX), n - 2);
+            // j가 음수가 되지 않도록 보정
+            j = Math.max(0, j);
+            double t = normalizedX - j;
             result[i] = (1 - t) * y[j] + t * y[j + 1];
         }
         return result;
