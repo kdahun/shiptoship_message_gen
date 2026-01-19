@@ -8,7 +8,7 @@ import lombok.Data;
 public class VSIMessageUtil {
 	//
 	private String delimiter = "$";
-	private String talker = "AB";
+	private String talker = "AI";
 	private String formatter = "VSI";
 //	private String uniqueIdentifierHeader = "00";
 	private String uniqueIdentifier = "";

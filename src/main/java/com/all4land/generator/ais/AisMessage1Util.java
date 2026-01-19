@@ -69,7 +69,7 @@ public class AisMessage1Util {
         msg1.setSubMessage(slotNumber);
 		
 		Vdm vdm = new Vdm();
-		vdm.setTalker("AB");
+		vdm.setTalker("AI");
 		vdm.setFormatter("VDM");
 		vdm.setTotal(1);
 		vdm.setNum(1);
@@ -140,7 +140,7 @@ public class AisMessage1Util {
         msg1.setSubMessage(slotNumber);
 		
 		Vdm vdm = new Vdm();
-		vdm.setTalker("AB");
+		vdm.setTalker("AI");
 		vdm.setFormatter("VDM");
 		vdm.setTotal(1);
 		vdm.setNum(1);

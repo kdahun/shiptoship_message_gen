@@ -83,7 +83,7 @@ public class AsmEntityChangeStartDateQuartz implements Job {
 	
 	private void addFuture() {
 		//
-		int randomDelay = RandomGenerator.generateRandomIntFromTo(30, 58);
+		int randomDelay = RandomGenerator.generateRandomIntFromTo(10, 20);
 		LocalDateTime newLocalDateTime = this.mmsiEntity.getAsmEntity().getStartTime().plusSeconds(randomDelay);
 		this.mmsiEntity.getAsmEntity().setStartTime(newLocalDateTime, this.mmsiEntity);
 	}

@@ -192,6 +192,22 @@ public class QuartzCoreService {
 		
     }
 	
+	public void removeAsmStartTimeTrigger(MmsiEntity mmsiEntity) throws SchedulerException, ParseException {
+		//
+		if(mmsiEntity.getAsmEntity().getAsmStartTimeJob() != null) {
+			// 작업(Job)을 삭제하기 위해 해당 작업(Job)의 키를 얻어온다.
+			JobKey jobKey = mmsiEntity.getAsmEntity().getAsmStartTimeJob().getKey();
+
+			// 작업(Job)과 연결된 모든 트리거를 얻어온다.
+			List<? extends Trigger> triggersOfJob = scheduler.getTriggersOfJob(jobKey);
+
+			// 작업(Job)과 연결된 모든 트리거를 삭제한다.
+			for (Trigger trigger : triggersOfJob) {
+				scheduler.unscheduleJob(trigger.getKey());
+			}
+		}
+    }
+	
 	public void addScheduleJobforVde(Trigger trigger, MmsiEntity mmsiEntity) throws SchedulerException, ParseException {
 		//
         // Quartz JobDetail 생성

@@ -157,6 +157,73 @@ public class GlobalEntityManager {
 			return false;
 		}
 	}
+	
+	/**
+	 * ASM 메시지 생성 상태를 제어합니다.
+	 * @param mmsi 선박 MMSI
+	 * @param state "0"=OFF, "1"=ON
+	 * @param size 슬롯 점유 개수 (1~3)
+	 * @param asmPeriod "0"=단문 메시지, "1"=계속 보내는 메시지
+	 * @param quartzCoreService QuartzCoreService (스케줄 삭제용)
+	 * @return 성공 여부
+	 */
+	public boolean controlAsmState(long mmsi, String state, String size, String asmPeriod, QuartzCoreService quartzCoreService) {
+		MmsiEntity mmsiEntity = findMmsiEntity(mmsi);
+		if (mmsiEntity == null) {
+			System.out.println("[DEBUG] ❌ MMSI를 찾을 수 없음: " + mmsi);
+			return false;
+		}
+
+		boolean newState = "1".equals(state);
+		
+		// 슬롯 개수 설정 (1~3)
+		if (size != null && !size.isEmpty()) {
+			try {
+				int slotCount = Integer.parseInt(size);
+				if (slotCount >= 1 && slotCount <= 3) {
+					mmsiEntity.getAsmEntity().setSlotCount(slotCount);
+					System.out.println("[DEBUG] ✅ MMSI: " + mmsi + " ASM 슬롯 개수 설정: " + slotCount);
+				} else {
+					System.out.println("[DEBUG] ⚠️ MMSI: " + mmsi + " 유효하지 않은 슬롯 개수: " + slotCount + " (1~3 범위여야 함)");
+				}
+			} catch (NumberFormatException e) {
+				System.out.println("[DEBUG] ⚠️ MMSI: " + mmsi + " 슬롯 개수 파싱 실패: " + size);
+			}
+		}
+		
+		// ASM 상태 변경
+		if (mmsiEntity.isAsm() != newState) {
+			mmsiEntity.setAsm(newState);
+			
+			if (newState) {
+				// ON: ASM 메시지 생성 시작
+				System.out.println("[DEBUG] ✅ MMSI: " + mmsi + " ASM 메시지 생성 시작 (슬롯: " + 
+						mmsiEntity.getAsmEntity().getSlotCount() + ", Period: " + asmPeriod + ")");
+			} else {
+				// OFF: ASM 메시지 생성 중지 및 스케줄 삭제
+				if (quartzCoreService != null) {
+					try {
+						quartzCoreService.removeAsmStartTimeTrigger(mmsiEntity);
+						System.out.println("[DEBUG] ✅ MMSI: " + mmsi + " ASM 메시지 생성 중지 및 스케줄 삭제 완료");
+					} catch (Exception e) {
+						System.out.println("[DEBUG] ⚠️ MMSI: " + mmsi + " ASM 스케줄 삭제 중 오류: " + e.getMessage());
+						e.printStackTrace();
+					}
+				}
+			}
+		} else {
+			System.out.println("[DEBUG] ℹ️ MMSI: " + mmsi + " ASM 메시지 생성 상태가 이미 " + (newState ? "ON" : "OFF") + "입니다.");
+		}
+		
+		// asmPeriod는 현재 구조에서는 별도 처리하지 않음
+		// 단문(0)과 계속(1)의 차이는 향후 구현 가능
+		if (asmPeriod != null) {
+			System.out.println("[DEBUG] ℹ️ MMSI: " + mmsi + " ASM Period: " + asmPeriod + 
+					" (" + ("0".equals(asmPeriod) ? "단문" : "계속") + ")");
+		}
+		
+		return true;
+	}
 
 	public void addMmsiEntity180(Scheduler scheduler, QuartzCoreService quartzCoreService) {
 		// UI 제거로 인해 JTextArea 파라미터 제거
@@ -345,7 +412,7 @@ public class GlobalEntityManager {
 		System.out.println("[DEBUG] 선박 생성 완료 - MMSI: " + mmsi + " (메시지 생성은 제어 메시지로 활성화 필요)");
 		
 		// ASM 활성화 (선택사항)
-		mmsiEntity.setAsm(true);
+		//mmsiEntity.setAsm(true);
 		System.out.println("[DEBUG] ASM 활성화 완료 - MMSI: " + mmsi);
 		
 		System.out.println("[DEBUG] ========== GlobalEntityManager.createMmsiFromJson() 완료 - MMSI: " + mmsi + " ==========");
@@ -1047,25 +1114,152 @@ public class GlobalEntityManager {
 		// this.currentFrameJTableNameUpper.repaint();
 	}
 
+	/**
+	 * ASM Rule1: 연속된 8개 이상의 빈 슬롯 찾기
+	 * AIS, ASM A/B 채널, VDE 모두 비어있는 슬롯 찾기
+	 */
 	public List<TargetCellInfoEntity> findAsmRule1(int startIndex, MmsiEntity mmsiEntity) {
 		//
-		// UI 제거로 인해 주석 처리 - 이 메서드는 UI 테이블에 의존하므로 비활성화
-		// TODO: UI 없이 ASM 슬롯 검색 로직을 구현해야 함
-		return new ArrayList<>();
+		System.out.println("[DEBUG] findAsmRule1 시작 - MMSI: " + mmsiEntity.getMmsi() + ", startIndex: " + startIndex);
+		List<TargetCellInfoEntity> targetInfoList = new ArrayList<>();
+		
+		int consecutiveCount = 0;
+		int maxSlot = Math.min(startIndex + 235, 2249); // 최대 슬롯 번호 제한
+		
+		// startIndex부터 연속된 빈 슬롯 찾기
+		for (int slot = startIndex; slot <= maxSlot; slot++) {
+			SlotStateManager.SlotInfo slotInfo = slotStateManager.getSlotInfo(slot);
+			
+			// 슬롯이 비어있거나 점유되지 않은 경우
+			if (slotInfo == null || !slotInfo.isOccupied()) {
+				consecutiveCount++;
+				TargetCellInfoEntity targetCell = new TargetCellInfoEntity();
+				
+				// 슬롯 번호를 기반으로 row, col 계산 (간단한 매핑)
+				int row = slot / 32;
+				int col = slot % 32;
+				targetCell.setRow(row);
+				targetCell.setCol(col);
+				targetCell.setSlotNumber(String.valueOf(slot));
+				targetInfoList.add(targetCell);
+				
+				// 연속으로 8개 이상 찾으면 반환
+				if (consecutiveCount >= 8) {
+					System.out.println("[DEBUG] findAsmRule1 성공 - MMSI: " + mmsiEntity.getMmsi() + 
+							", 연속 슬롯: " + consecutiveCount);
+					return targetInfoList;
+				}
+			} else {
+				// 연속이 끊기면 초기화
+				targetInfoList.clear();
+				consecutiveCount = 0;
+			}
+		}
+		
+		System.out.println("[DEBUG] findAsmRule1 실패 - MMSI: " + mmsiEntity.getMmsi() + 
+				", 찾은 연속 슬롯: " + consecutiveCount);
+		return targetInfoList;
 	}
 
+	/**
+	 * ASM Rule2: 연속된 8개 이상의 빈 슬롯 찾기 (AIS만 체크)
+	 * AIS가 비어있고, ASM A/B 채널이 비어있는 슬롯 찾기
+	 */
 	public List<TargetCellInfoEntity> findAsmRule2(int startIndex, MmsiEntity mmsiEntity) {
 		//
-		// UI 제거로 인해 주석 처리 - 이 메서드는 UI 테이블에 의존하므로 비활성화
-		// TODO: UI 없이 ASM 슬롯 검색 로직을 구현해야 함
-		return new ArrayList<>();
+		System.out.println("[DEBUG] findAsmRule2 시작 - MMSI: " + mmsiEntity.getMmsi() + ", startIndex: " + startIndex);
+		List<TargetCellInfoEntity> targetInfoList = new ArrayList<>();
+		
+		int consecutiveCount = 0;
+		int maxSlot = Math.min(startIndex + 235, 2249);
+		
+		for (int slot = startIndex; slot <= maxSlot; slot++) {
+			SlotStateManager.SlotInfo slotInfo = slotStateManager.getSlotInfo(slot);
+			
+			// 슬롯이 비어있거나 AIS 메시지 타입이 아닌 경우
+			if (slotInfo == null || !slotInfo.isOccupied() || 
+					!"AIS".equals(slotInfo.getMessageType())) {
+				consecutiveCount++;
+				TargetCellInfoEntity targetCell = new TargetCellInfoEntity();
+				int row = slot / 32;
+				int col = slot % 32;
+				targetCell.setRow(row);
+				targetCell.setCol(col);
+				targetCell.setSlotNumber(String.valueOf(slot));
+				targetInfoList.add(targetCell);
+				
+				if (consecutiveCount >= 8) {
+					System.out.println("[DEBUG] findAsmRule2 성공 - MMSI: " + mmsiEntity.getMmsi() + 
+							", 연속 슬롯: " + consecutiveCount);
+					return targetInfoList;
+				}
+			} else {
+				targetInfoList.clear();
+				consecutiveCount = 0;
+			}
+		}
+		
+		System.out.println("[DEBUG] findAsmRule2 실패 - MMSI: " + mmsiEntity.getMmsi() + 
+				", 찾은 연속 슬롯: " + consecutiveCount);
+		return targetInfoList;
 	}
 
+	/**
+	 * ASM Rule3: 연속된 8개 이상의 빈 슬롯 찾기 (채널별 체크)
+	 * AIS가 비어있고, ASM 채널(A 또는 B)이 비어있는 슬롯 찾기
+	 */
 	public List<TargetCellInfoEntity> findAsmRule3(int startIndex, MmsiEntity mmsiEntity) {
 		//
-		// UI 제거로 인해 주석 처리 - 이 메서드는 UI 테이블에 의존하므로 비활성화
-		// TODO: UI 없이 ASM 슬롯 검색 로직을 구현해야 함
-		return new ArrayList<>();
+		System.out.println("[DEBUG] findAsmRule3 시작 - MMSI: " + mmsiEntity.getMmsi() + 
+				", startIndex: " + startIndex + ", Channel: " + mmsiEntity.getAsmEntity().getChannel());
+		List<TargetCellInfoEntity> targetInfoList = new ArrayList<>();
+		
+		int consecutiveCount = 0;
+		int maxSlot = Math.min(startIndex + 235, 2249);
+		char targetChannel = mmsiEntity.getAsmEntity().getChannel();
+		
+		for (int slot = startIndex; slot <= maxSlot; slot++) {
+			SlotStateManager.SlotInfo slotInfo = slotStateManager.getSlotInfo(slot);
+			
+			// 슬롯이 비어있거나, AIS가 아니고, ASM이 아니거나 다른 채널인 경우
+			boolean isAvailable = false;
+			if (slotInfo == null || !slotInfo.isOccupied()) {
+				isAvailable = true;
+			} else {
+				String msgType = slotInfo.getMessageType();
+				boolean isChannel = slotInfo.isChannel();
+				
+				// AIS가 아니고, ASM이 아니거나 같은 채널이 아닌 경우
+				if (!"AIS".equals(msgType) && 
+					(!"ASM".equals(msgType) || (targetChannel == 'A' && !isChannel) || (targetChannel == 'B' && isChannel))) {
+					isAvailable = true;
+				}
+			}
+			
+			if (isAvailable) {
+				consecutiveCount++;
+				TargetCellInfoEntity targetCell = new TargetCellInfoEntity();
+				int row = slot / 32;
+				int col = slot % 32;
+				targetCell.setRow(row);
+				targetCell.setCol(col);
+				targetCell.setSlotNumber(String.valueOf(slot));
+				targetInfoList.add(targetCell);
+				
+				if (consecutiveCount >= 8) {
+					System.out.println("[DEBUG] findAsmRule3 성공 - MMSI: " + mmsiEntity.getMmsi() + 
+							", 연속 슬롯: " + consecutiveCount);
+					return targetInfoList;
+				}
+			} else {
+				targetInfoList.clear();
+				consecutiveCount = 0;
+			}
+		}
+		
+		System.out.println("[DEBUG] findAsmRule3 실패 - MMSI: " + mmsiEntity.getMmsi() + 
+				", 찾은 연속 슬롯: " + consecutiveCount);
+		return targetInfoList;
 	}
 
 	public void findVde(int startIndex, MmsiEntity mmsiEntity) {

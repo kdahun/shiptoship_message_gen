@@ -81,6 +81,10 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 						// AIS 상태 제어: traffic-ships/ais-state
 						processAisStateMessage(message);
 						break;
+					case "asm-state":
+						// ASM 상태 제어: traffic-ships/asm-state
+						processAsmStateMessage(message);
+						break;
 					default:
 						// 기타 액션은 기본 JSON 처리
 						processJsonMessage(message);
@@ -307,6 +311,81 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 		}
 		
 		System.out.println("[DEBUG] ========== AIS 상태 제어 완료 ==========");
+		System.out.println("[DEBUG] 성공: " + successCount + ", 실패: " + failCount);
+	}
+	
+	/**
+	 * ASM 상태 제어 메시지를 처리합니다.
+	 * 토픽: mt/mg/traffic-ships/asm-state/{timestamp}
+	 * 형식: [{"mmsi": "440301234", "state": "1", "size": "3", "asmPeriod": "0"}, ...]
+	 */
+	private void processAsmStateMessage(String message) {
+		System.out.println("[DEBUG] ========== ASM 상태 제어 메시지 처리 ==========");
+		
+		try {
+			String trimmedMessage = message.trim();
+			com.all4land.generator.system.netty.dto.AsmControlMessage asmControlMessage;
+			
+			if (trimmedMessage.startsWith("[")) {
+				// 배열 형식: [{"mmsi": "...", "state": "...", "size": "...", "asmPeriod": "..."}, ...]
+				System.out.println("[DEBUG] 배열 형식 ASM 상태 제어 메시지 감지");
+				java.lang.reflect.Type listType = new TypeToken<List<com.all4land.generator.system.netty.dto.AsmControlMessage.AsmShipControl>>(){}.getType();
+				List<com.all4land.generator.system.netty.dto.AsmControlMessage.AsmShipControl> ships = gson.fromJson(trimmedMessage, listType);
+				
+				// AsmControlMessage 객체로 변환
+				asmControlMessage = new com.all4land.generator.system.netty.dto.AsmControlMessage();
+				asmControlMessage.setShips(ships);
+			} else {
+				// 객체 형식: {"ships": [...]}
+				asmControlMessage = gson.fromJson(trimmedMessage, com.all4land.generator.system.netty.dto.AsmControlMessage.class);
+			}
+			
+			if (asmControlMessage != null && asmControlMessage.getShips() != null) {
+				handleAsmControlMessage(asmControlMessage);
+			} else {
+				System.out.println("[DEBUG] ⚠️ ASM 상태 제어 메시지 형식이 올바르지 않습니다.");
+			}
+		} catch (JsonSyntaxException e) {
+			System.out.println("[DEBUG] ❌ ASM 상태 제어 메시지 JSON 파싱 오류: " + e.getMessage());
+			e.printStackTrace();
+		}
+	}
+	
+	/**
+	 * ASM 제어 메시지를 처리하여 MMSI의 ASM 메시지 생성 상태를 변경합니다.
+	 */
+	private void handleAsmControlMessage(com.all4land.generator.system.netty.dto.AsmControlMessage asmControlMessage) {
+		if (asmControlMessage.getShips() == null || asmControlMessage.getShips().isEmpty()) {
+			System.out.println("[DEBUG] ⚠️ ASM 제어 메시지에 ships 데이터가 없습니다.");
+			return;
+		}
+		
+		int successCount = 0;
+		int failCount = 0;
+		
+		for (com.all4land.generator.system.netty.dto.AsmControlMessage.AsmShipControl ship : asmControlMessage.getShips()) {
+			try {
+				long mmsi = Long.parseLong(ship.getMmsi());
+				String state = ship.getState(); // "0"=OFF, "1"=ON
+				String size = ship.getSize();   // "1"~"3" (슬롯 점유 개수)
+				String asmPeriod = ship.getAsmPeriod(); // "0"=단문, "1"=계속
+				
+				boolean result = globalEntityManager.controlAsmState(mmsi, state, size, asmPeriod, quartzCoreService);
+				if (result) {
+					successCount++;
+				} else {
+					failCount++;
+				}
+			} catch (NumberFormatException e) {
+				System.out.println("[DEBUG] ❌ 유효하지 않은 MMSI: " + ship.getMmsi());
+				failCount++;
+			} catch (Exception e) {
+				System.out.println("[DEBUG] ❌ MMSI ASM 상태 변경 실패: " + ship.getMmsi() + ", 오류: " + e.getMessage());
+				failCount++;
+			}
+		}
+		
+		System.out.println("[DEBUG] ========== ASM 상태 제어 완료 ==========");
 		System.out.println("[DEBUG] 성공: " + successCount + ", 실패: " + failCount);
 	}
 	

@@ -786,8 +786,26 @@ public class MmsiEntity {
 //					sbForSend.append(sbSubForSend);
 //				}
 				sbForSend.append(Formatter_61162_VSI_message+vsiMessage).append(SystemConstMessage.CRLF);
-				CompletableFuture.runAsync(() -> this.sendTableModel.sendASMMessage(sbForSend.toString()));
-				CompletableFuture.runAsync(() -> this.udpServerTableModel.sendASMMessage(sbForSend.toString()));
+				
+				CompletableFuture.runAsync(() -> {
+					System.out.println("[DEBUG] ASM message sending - MMSI: " + this.mmsi + ", Slot: " + slotNumber);
+					System.out.println("[DEBUG] ASM message sending: " + sbForSend.toString());
+					
+					// TcpServerTableModel을 통한 전송 (UI 모드)
+					if (this.sendTableModel != null) {
+						System.out.println("[DEBUG] TcpServerTableModel을 통한 ASM 전송 시도");
+						this.sendTableModel.sendASMMessage(sbForSend.toString());
+					}
+					// SimpleTcpServerHandler를 통한 직접 전송 (headless 모드)
+					System.out.println("[DEBUG] SimpleTcpServerHandler를 통한 ASM 전송 시도");
+					this.sendASMMessageToSimpleTcpClients(sbForSend.toString());
+				});
+				
+				CompletableFuture.runAsync(() -> {
+					if (this.udpServerTableModel != null) {
+						this.udpServerTableModel.sendASMMessage(sbForSend.toString());
+					}
+				});
 		}
 		
 		
@@ -990,8 +1008,12 @@ public class MmsiEntity {
 			
 			// 메시지 조합
 			StringBuilder sb = new StringBuilder();
-			sb.append(aisMessage).append(SystemConstMessage.CRLF);
-			sb.append(vsiMessage).append(SystemConstMessage.CRLF);
+			// AIS 메시지에 CRLF가 없으면 추가
+			String aisMsg = aisMessage.endsWith(SystemConstMessage.CRLF) ? aisMessage : aisMessage + SystemConstMessage.CRLF;
+			sb.append(aisMsg);
+			// VSI 메시지에 CRLF가 없으면 추가
+			String vsiMsg = vsiMessage.endsWith(SystemConstMessage.CRLF) ? vsiMessage : vsiMessage + SystemConstMessage.CRLF;
+			sb.append(vsiMsg);
 			String message = sb.toString();
 			System.out.println("[DEBUG] 전송할 메시지 길이: " + message.length() + " bytes");
 			
@@ -1021,6 +1043,65 @@ public class MmsiEntity {
 			});
 		} catch (Exception e) {
 			System.out.println("[DEBUG] ❌ AIS 메시지 전송 중 오류: " + e.getMessage());
+			e.printStackTrace();
+		}
+	}
+	
+	/**
+	 * SimpleTcpServerHandler를 통해 연결된 모든 클라이언트에게 ASM 메시지 전송
+	 */
+	private void sendASMMessageToSimpleTcpClients(String asmMessageAndVsiMessage) {
+		try {
+			// TCP 서버 포트 (ApplicationInitializer에서 설정한 포트)
+			int tcpPort = 10110;
+			String beanName = tcpPort + "_TcpServer";
+			
+			System.out.println("[DEBUG] sendASMMessageToSimpleTcpClients 시작 - 포트: " + tcpPort);
+			
+			// TCP 서버 설정 가져오기
+			NettyServerTCPConfiguration tcpServer = (NettyServerTCPConfiguration) BeanUtils.getBean(beanName);
+			if (tcpServer == null) {
+				System.out.println("[DEBUG] TCP 서버를 찾을 수 없음: " + beanName);
+				return;
+			}
+			System.out.println("[DEBUG] TCP 서버 찾음: " + beanName);
+			
+			// 연결된 클라이언트 확인
+			ConcurrentMap<String, Channel> clients = SimpleTcpServerHandler.getAllClients();
+			System.out.println("[DEBUG] 연결된 클라이언트 수: " + clients.size());
+			if (clients.isEmpty()) {
+				System.out.println("[DEBUG] 연결된 클라이언트가 없습니다!");
+				return;
+			}
+			
+			System.out.println("[DEBUG] 전송할 ASM 메시지 길이: " + asmMessageAndVsiMessage.length() + " bytes");
+			
+			// 연결된 모든 클라이언트에게 메시지 전송
+			clients.forEach((clientKey, channel) -> {
+				System.out.println("[DEBUG] ASM 클라이언트 처리 시작: " + clientKey);
+				if (channel != null && channel.isActive()) {
+					System.out.println("[DEBUG] ASM 채널 활성 상태 확인: " + clientKey + " - isActive: " + channel.isActive());
+					try {
+						String[] parts = clientKey.split(":");
+						if (parts.length == 2) {
+							String clientIP = parts[0];
+							int clientPort = Integer.parseInt(parts[1]);
+							System.out.println("[DEBUG] ASM 메시지 전송 시도: " + clientIP + ":" + clientPort);
+							tcpServer.sendToClient(channel, clientIP, clientPort, asmMessageAndVsiMessage);
+							System.out.println("[DEBUG] ✅ ASM 메시지 전송 완료: " + clientIP + ":" + clientPort);
+						} else {
+							System.out.println("[DEBUG] 잘못된 클라이언트 키 형식: " + clientKey);
+						}
+					} catch (Exception e) {
+						System.out.println("[DEBUG] ❌ ASM 메시지 전송 실패: " + clientKey + " - " + e.getMessage());
+						e.printStackTrace();
+					}
+				} else {
+					System.out.println("[DEBUG] ⚠️ ASM 채널이 비활성 상태: " + clientKey);
+				}
+			});
+		} catch (Exception e) {
+			System.out.println("[DEBUG] ❌ ASM 메시지 전송 중 오류 발생: " + e.getMessage());
 			e.printStackTrace();
 		}
 	}
