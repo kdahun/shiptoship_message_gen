@@ -5,6 +5,7 @@ import org.quartz.Scheduler;
 import java.util.List;
 
 import com.all4land.generator.entity.GlobalEntityManager;
+import com.all4land.generator.system.component.VirtualTimeManager;
 import com.all4land.generator.system.netty.dto.CreateMmsiRequest;
 import com.all4land.generator.system.schedule.QuartzCoreService;
 import com.google.gson.Gson;
@@ -21,14 +22,17 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 	private final GlobalEntityManager globalEntityManager;
 	private final Scheduler scheduler;
 	private final QuartzCoreService quartzCoreService;
+	private final VirtualTimeManager virtualTimeManager;
 	private final Gson gson = new Gson();
 	
 	public MqttMessageProcessor(GlobalEntityManager globalEntityManager,
 			Scheduler scheduler,
-			QuartzCoreService quartzCoreService) {
+			QuartzCoreService quartzCoreService,
+			VirtualTimeManager virtualTimeManager) {
 		this.globalEntityManager = globalEntityManager;
 		this.scheduler = scheduler;
 		this.quartzCoreService = quartzCoreService;
+		this.virtualTimeManager = virtualTimeManager;
 	}
 	
 	@Override
@@ -85,6 +89,10 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 					case "asm-state":
 						// ASM 상태 제어: traffic-ships/asm-state
 						processAsmStateMessage(message);
+						break;
+					case "sim-state":
+						// 시뮬레이터 배속 제어: simulator/sim-state
+						processSimStateMessage(message);
 						break;
 					default:
 						// 기타 액션은 기본 JSON 처리
@@ -388,6 +396,93 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 		
 		System.out.println("[DEBUG] ========== ASM 상태 제어 완료 ==========");
 		System.out.println("[DEBUG] 성공: " + successCount + ", 실패: " + failCount);
+	}
+	
+	/**
+	 * 시뮬레이터 배속 상태 제어 메시지를 처리합니다.
+	 * 토픽: mt/mg/simulator/sim-state/{timestamp}
+	 * 형식: [{"state": "3", "simulationSpeed":"8"}]
+	 */
+	private void processSimStateMessage(String message) {
+		System.out.println("[DEBUG] ========== 시뮬레이터 배속 상태 제어 메시지 처리 ==========");
+		
+		try {
+			String trimmedMessage = message.trim();
+			
+			if (virtualTimeManager == null) {
+				System.out.println("[DEBUG] ❌ VirtualTimeManager를 찾을 수 없습니다.");
+				return;
+			}
+			
+			// JSON 파싱 - 배열 형식 지원
+			List<SimStateMessage> simStates;
+			if (trimmedMessage.startsWith("[")) {
+				// 배열 형식: [{"state": "3", "simulationSpeed":"8"}]
+				System.out.println("[DEBUG] 배열 형식 시뮬레이터 배속 상태 제어 메시지 감지");
+				java.lang.reflect.Type listType = new TypeToken<List<SimStateMessage>>(){}.getType();
+				simStates = gson.fromJson(trimmedMessage, listType);
+			} else if (trimmedMessage.startsWith("{")) {
+				// 단일 객체 형식: {"state": "3", "simulationSpeed":"8"}
+				SimStateMessage simState = gson.fromJson(trimmedMessage, SimStateMessage.class);
+				simStates = java.util.Collections.singletonList(simState);
+			} else {
+				System.out.println("[DEBUG] ⚠️ 유효하지 않은 JSON 형식: " + message);
+				return;
+			}
+			
+			if (simStates == null || simStates.isEmpty()) {
+				System.out.println("[DEBUG] ⚠️ 시뮬레이터 배속 상태 메시지에 데이터가 없습니다.");
+				return;
+			}
+			
+			// 첫 번째 메시지만 처리
+			SimStateMessage simState = simStates.get(0);
+			String simulationSpeed = simState.getSimulationSpeed();
+			
+			if (simulationSpeed == null || simulationSpeed.trim().isEmpty()) {
+				System.out.println("[DEBUG] ⚠️ simulationSpeed 값이 없습니다.");
+				return;
+			}
+			
+			boolean success = virtualTimeManager.setSpeedMultiplier(simulationSpeed);
+			if (success) {
+				System.out.println("[DEBUG] ✅ 시뮬레이터 배속 변경 성공: " + simulationSpeed + "배");
+				virtualTimeManager.printCurrentStatus();
+			} else {
+				System.out.println("[DEBUG] ❌ 시뮬레이터 배속 변경 실패: " + simulationSpeed + 
+						"배 (1, 2, 4, 8배만 허용)");
+			}
+		} catch (JsonSyntaxException e) {
+			System.out.println("[DEBUG] ❌ 시뮬레이터 배속 상태 메시지 JSON 파싱 오류: " + e.getMessage());
+			e.printStackTrace();
+		} catch (Exception e) {
+			System.out.println("[DEBUG] ❌ 시뮬레이터 배속 상태 메시지 처리 중 오류: " + e.getMessage());
+			e.printStackTrace();
+		}
+	}
+	
+	/**
+	 * 시뮬레이터 배속 상태 메시지 DTO
+	 */
+	private static class SimStateMessage {
+		private String state;
+		private String simulationSpeed;
+		
+		public String getState() {
+			return state;
+		}
+		
+		public void setState(String state) {
+			this.state = state;
+		}
+		
+		public String getSimulationSpeed() {
+			return simulationSpeed;
+		}
+		
+		public void setSimulationSpeed(String simulationSpeed) {
+			this.simulationSpeed = simulationSpeed;
+		}
 	}
 	
 	/**

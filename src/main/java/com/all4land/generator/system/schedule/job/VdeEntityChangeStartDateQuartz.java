@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 import com.all4land.generator.entity.GlobalEntityManager;
 import com.all4land.generator.entity.MmsiEntity;
+import com.all4land.generator.system.component.VirtualTimeManager;
 import com.all4land.generator.system.constant.SystemConstMessage;
 
 import lombok.extern.slf4j.Slf4j;
@@ -19,11 +20,14 @@ import lombok.extern.slf4j.Slf4j;
 public class VdeEntityChangeStartDateQuartz implements Job {
 	//
 	private final GlobalEntityManager globalEntityManager;
+	private final VirtualTimeManager virtualTimeManager;
 	private MmsiEntity mmsiEntity;
 
-	public VdeEntityChangeStartDateQuartz(GlobalEntityManager globalEntityManager) {
+	public VdeEntityChangeStartDateQuartz(GlobalEntityManager globalEntityManager
+			, VirtualTimeManager virtualTimeManager) {
 		// TODO Auto-generated constructor stub
 		this.globalEntityManager = globalEntityManager;
+		this.virtualTimeManager = virtualTimeManager;
 	}
 	
 	@Override
@@ -39,9 +43,13 @@ public class VdeEntityChangeStartDateQuartz implements Job {
 	
 	private void addFuture() {
 		//
-		LocalDateTime newLocalDateTime = this.mmsiEntity.getVdeEntity().getStartTime().plusSeconds(60);
+		// 가상 시간 기준으로 다음 시간 계산 (60초 후)
+		LocalDateTime currentVirtualTime = virtualTimeManager.getCurrentVirtualTime();
+		LocalDateTime newLocalDateTime = currentVirtualTime.plusSeconds(60);
 		this.mmsiEntity.getVdeEntity().setStartTime(newLocalDateTime, this.mmsiEntity);
-
+		
+		System.out.println("[DEBUG] 다음 VDE 메시지 가상 시간: " + newLocalDateTime + 
+				" (현재 가상 시간: " + currentVirtualTime + ", +60초)");
 	}
 	
 	

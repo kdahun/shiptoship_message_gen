@@ -1,6 +1,7 @@
 package com.all4land.generator.ui.tab.ais.entity.event.quartz;
 
 import java.text.ParseException;
+import java.time.LocalDateTime;
 
 import org.quartz.Job;
 import org.quartz.JobDataMap;
@@ -9,6 +10,7 @@ import org.quartz.JobExecutionException;
 import org.quartz.SchedulerException;
 import org.springframework.stereotype.Component;
 
+import com.all4land.generator.system.component.VirtualTimeManager;
 import com.all4land.generator.system.schedule.QuartzCoreService;
 import com.all4land.generator.entity.MmsiEntity;
 import com.all4land.generator.util.RandomGenerator;
@@ -21,10 +23,13 @@ public class MmsiEntitySlotTimeChangeQuartz implements Job {
 	//
 	private MmsiEntity mmsiEntity;
 	private final QuartzCoreService quartzCoreService;
+	private final VirtualTimeManager virtualTimeManager;
 	
-	MmsiEntitySlotTimeChangeQuartz(QuartzCoreService quartzCoreService){
+	MmsiEntitySlotTimeChangeQuartz(QuartzCoreService quartzCoreService
+			, VirtualTimeManager virtualTimeManager){
 		//
 		this.quartzCoreService = quartzCoreService;
+		this.virtualTimeManager = virtualTimeManager;
 	}
 	
 //	@Async
@@ -87,17 +92,22 @@ public class MmsiEntitySlotTimeChangeQuartz implements Job {
 			
 			/**
 			 * 특정 시간에 모든 mmsi엔티티가 동시에 슬롯을 재할당 받는것을 방지하기 위해 랜덤 딜레이 부여(*추측)
-			 * 
+			 * 가상 시간 기준으로 계산
 			 */
+			LocalDateTime currentVirtualTime = virtualTimeManager.getCurrentVirtualTime();
 			int randomDelay = RandomGenerator.generateRandomIntFromTo(3, 10);
-			this.mmsiEntity.setStartTime(this.mmsiEntity.getStartTime().plusSeconds(randomDelay));
+			LocalDateTime nextStartTime = currentVirtualTime.plusSeconds(randomDelay);
+			this.mmsiEntity.setStartTime(nextStartTime);
 			this.mmsiEntity.setPositionsCnt(0);
 			this.mmsiEntity.setTargetChannel(true);
 		}else {
 			//
 			if(this.mmsiEntity.getSpeed() != 180) {
 				this.mmsiEntity.setSlotTimeOut(this.mmsiEntity.getSlotTimeOut()-1);
-				this.mmsiEntity.setSlotTimeOutTime(this.mmsiEntity.getSlotTimeOutTime().plusMinutes(1));
+				// 가상 시간 기준으로 1분 추가
+				LocalDateTime currentVirtualTime = virtualTimeManager.getCurrentVirtualTime();
+				LocalDateTime nextSlotTimeOutTime = currentVirtualTime.plusMinutes(1);
+				this.mmsiEntity.setSlotTimeOutTime(nextSlotTimeOutTime);
 			}
 		}
 	}

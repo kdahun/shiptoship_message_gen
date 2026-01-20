@@ -12,6 +12,7 @@ import org.quartz.TriggerBuilder;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
+import com.all4land.generator.system.component.VirtualTimeManager;
 import com.all4land.generator.system.schedule.QuartzCoreService;
 import com.all4land.generator.ui.tab.ais.entity.MmsiEntity;
 import com.all4land.generator.ui.tab.ais.entity.VdeEntity;
@@ -21,10 +22,13 @@ import com.all4land.generator.ui.tab.ais.entity.event.change.VdeEntityChangeStar
 public class VdeEntityChangeStartTimeListener {
 	//
 	private final QuartzCoreService quartzCoreService;
+	private final VirtualTimeManager virtualTimeManager;
 
-	VdeEntityChangeStartTimeListener(QuartzCoreService quartzCoreService) {
+	VdeEntityChangeStartTimeListener(QuartzCoreService quartzCoreService
+			, VirtualTimeManager virtualTimeManager) {
 		//
 		this.quartzCoreService = quartzCoreService;
+		this.virtualTimeManager = virtualTimeManager;
 	}
 
 	@EventListener
@@ -39,20 +43,25 @@ public class VdeEntityChangeStartTimeListener {
 		jobDataMap.put("mmsiEntity", mmsiEntity);
 
 		String mmsi = String.valueOf(mmsiEntity.getMmsi());
-		LocalDateTime localDateTime = newValue;
+		LocalDateTime localDateTime = newValue; // 가상 시간
+
+		// 가상 시간을 실제 시간으로 변환 (Quartz는 실제 시간을 사용)
+		LocalDateTime realDateTime = virtualTimeManager.convertVirtualToRealTime(localDateTime);
 
 		String localDateTimeString = localDateTime.toString();
+		
+		System.out.println("[DEBUG] VDE 가상 시간: " + localDateTime + " -> 실제 시간: " + realDateTime);
 
 		Trigger trigger = null;
 		if (vdeEntity.getVdeStartTimeJob() == null) {
-			// Quartz Trigger 생성
+			// Quartz Trigger 생성 (실제 시간 사용)
 			trigger = TriggerBuilder.newTrigger().withIdentity(localDateTimeString, mmsi)
-					.startAt(Date.from(localDateTime.atZone(ZoneId.systemDefault()).toInstant()))
+					.startAt(Date.from(realDateTime.atZone(ZoneId.systemDefault()).toInstant()))
 					.build();
 		} else {
-			// Quartz Trigger 생성
+			// Quartz Trigger 생성 (실제 시간 사용)
 			trigger = TriggerBuilder.newTrigger().forJob(vdeEntity.getVdeStartTimeJob()).withIdentity(localDateTimeString, mmsi)
-					.startAt(Date.from(localDateTime.atZone(ZoneId.systemDefault()).toInstant())).build();
+					.startAt(Date.from(realDateTime.atZone(ZoneId.systemDefault()).toInstant())).build();
 		}
 
 		try {

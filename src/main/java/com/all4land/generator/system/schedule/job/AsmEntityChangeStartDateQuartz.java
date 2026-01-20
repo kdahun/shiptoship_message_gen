@@ -14,6 +14,7 @@ import com.all4land.generator.entity.GlobalEntityManager;
 import com.all4land.generator.entity.MmsiEntity;
 import com.all4land.generator.entity.TargetCellInfoEntity;
 import com.all4land.generator.system.component.TimeMapRangeCompnents;
+import com.all4land.generator.system.component.VirtualTimeManager;
 import com.all4land.generator.system.constant.SystemConstMessage;
 import com.all4land.generator.util.RandomGenerator;
 
@@ -25,13 +26,16 @@ public class AsmEntityChangeStartDateQuartz implements Job {
 	//
 	private final GlobalEntityManager globalEntityManager;
 	private final TimeMapRangeCompnents timeMapRangeCompnents;
+	private final VirtualTimeManager virtualTimeManager;
 	private MmsiEntity mmsiEntity;
 
 	public AsmEntityChangeStartDateQuartz(GlobalEntityManager globalEntityManager
-			, TimeMapRangeCompnents timeMapRangeCompnents) {
+			, TimeMapRangeCompnents timeMapRangeCompnents
+			, VirtualTimeManager virtualTimeManager) {
 		// TODO Auto-generated constructor stub
 		this.globalEntityManager = globalEntityManager;
 		this.timeMapRangeCompnents = timeMapRangeCompnents;
+		this.virtualTimeManager = virtualTimeManager;
 	}
 	
 	@Override
@@ -83,9 +87,14 @@ public class AsmEntityChangeStartDateQuartz implements Job {
 	
 	private void addFuture() {
 		//
+		// 가상 시간 기준으로 다음 시간 계산
+		LocalDateTime currentVirtualTime = virtualTimeManager.getCurrentVirtualTime();
 		int randomDelay = RandomGenerator.generateRandomIntFromTo(10, 20);
-		LocalDateTime newLocalDateTime = this.mmsiEntity.getAsmEntity().getStartTime().plusSeconds(randomDelay);
+		LocalDateTime newLocalDateTime = currentVirtualTime.plusSeconds(randomDelay);
 		this.mmsiEntity.getAsmEntity().setStartTime(newLocalDateTime, this.mmsiEntity);
+		
+		System.out.println("[DEBUG] 다음 ASM 메시지 가상 시간: " + newLocalDateTime + 
+				" (현재 가상 시간: " + currentVirtualTime + ", delay: " + randomDelay + "초)");
 	}
 	
 	private List<TargetCellInfoEntity> findAsmRule1(int startIndex) {

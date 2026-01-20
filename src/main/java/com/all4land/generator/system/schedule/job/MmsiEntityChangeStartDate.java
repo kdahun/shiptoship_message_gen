@@ -12,6 +12,7 @@ import com.all4land.generator.ais.AisMessage1Util;
 import com.all4land.generator.entity.GlobalEntityManager;
 import com.all4land.generator.entity.MmsiEntity;
 import com.all4land.generator.entity.TargetSlotEntity;
+import com.all4land.generator.system.component.VirtualTimeManager;
 import com.all4land.generator.system.constant.SystemConstMessage;
 
 import dk.dma.ais.sentence.Vdm;
@@ -22,11 +23,14 @@ import lombok.extern.slf4j.Slf4j;
 public class MmsiEntityChangeStartDate implements Job {
 	//
 	private final GlobalEntityManager globalEntityManager;
+	private final VirtualTimeManager virtualTimeManager;
 	private MmsiEntity mmsiEntity;
 
-	public MmsiEntityChangeStartDate(GlobalEntityManager globalEntityManager) {
+	public MmsiEntityChangeStartDate(GlobalEntityManager globalEntityManager
+			, VirtualTimeManager virtualTimeManager) {
 		// TODO Auto-generated constructor stub
 		this.globalEntityManager = globalEntityManager;
+		this.virtualTimeManager = virtualTimeManager;
 	}
 
 	/**
@@ -129,9 +133,14 @@ public class MmsiEntityChangeStartDate implements Job {
 		//
 		/**
 		 * startTime 설정(startTime + speed)
+		 * 가상 시간 기준으로 계산: 현재 가상 시간에서 speed만큼 더한 시간
 		 */
-		LocalDateTime nextStartTime = this.mmsiEntity.getStartTime().plusSeconds(this.mmsiEntity.getSpeed());
+		LocalDateTime currentVirtualTime = virtualTimeManager.getCurrentVirtualTime();
+		LocalDateTime nextStartTime = currentVirtualTime.plusSeconds(this.mmsiEntity.getSpeed());
 		this.mmsiEntity.setStartTime(nextStartTime);
+		
+		System.out.println("[DEBUG] 다음 AIS 메시지 가상 시간: " + nextStartTime + 
+				" (현재 가상 시간: " + currentVirtualTime + ", speed: " + this.mmsiEntity.getSpeed() + "초)");
 
 		/**
 		 * 전송 카운트 업

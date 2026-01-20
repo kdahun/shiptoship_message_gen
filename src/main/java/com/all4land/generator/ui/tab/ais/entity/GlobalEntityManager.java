@@ -21,6 +21,7 @@ import org.springframework.stereotype.Component;
 
 import com.all4land.generator.ais.ASMMessageUtil;
 import com.all4land.generator.ais.AisMessage1Util;
+import com.all4land.generator.system.component.VirtualTimeManager;
 import com.all4land.generator.system.constant.SystemConstMessage;
 import com.all4land.generator.system.constant.SystemConstTestData180;
 import com.all4land.generator.system.schedule.QuartzCoreService;
@@ -45,6 +46,7 @@ public class GlobalEntityManager {
 	private final String uuid = "00"+String.valueOf(RandomGenerator.generateRandomInt(7));
 	private final ASMMessageUtil aSMMessageUtil;
 	private final ApplicationEventPublisher eventPublisher;
+	private final VirtualTimeManager virtualTimeManager;
 	Set<Long> generatedMmsiSet = new HashSet<>();
 	private JTable currentFrameJTableNameUpper;
 	private JTable currentFrame1JTableNameUpper;
@@ -79,10 +81,12 @@ public class GlobalEntityManager {
 
 	private JTextField jTextFieldSFI;
 	
-	GlobalEntityManager(ApplicationEventPublisher eventPublisher, ASMMessageUtil aSMMessageUtil) {
+	GlobalEntityManager(ApplicationEventPublisher eventPublisher, ASMMessageUtil aSMMessageUtil
+			, VirtualTimeManager virtualTimeManager) {
 		// 생성자에서 리스트를 초기화합니다.
 		this.eventPublisher = eventPublisher;
 		this.aSMMessageUtil = aSMMessageUtil;
+		this.virtualTimeManager = virtualTimeManager;
 		this.mmsiEntityLists = new ArrayList<>();
 	}
 
@@ -941,7 +945,9 @@ public class GlobalEntityManager {
 									 * 슬롯의 TimeOutTime이 설정되어 있지 않은 경우에만 설정한다.
 									 */
 									if (mmsiEntity.getSlotTimeOutTime() == null) {
-										LocalDateTime modifiedDateTime = mmsiEntity.getStartTime().plusMinutes(1)
+										// 가상 시간 기준으로 계산
+										LocalDateTime currentVirtualTime = virtualTimeManager.getCurrentVirtualTime();
+										LocalDateTime modifiedDateTime = currentVirtualTime.plusMinutes(1)
 												.minus((mmsiEntity.getSpeed() * 1000) - 100, ChronoUnit.MILLIS);
 										
 										/**

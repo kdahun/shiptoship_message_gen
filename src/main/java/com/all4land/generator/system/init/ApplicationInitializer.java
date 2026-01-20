@@ -6,6 +6,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
 import com.all4land.generator.entity.GlobalEntityManager;
+import com.all4land.generator.system.component.VirtualTimeManager;
 import com.all4land.generator.system.mqtt.MqttClientConfiguration;
 import com.all4land.generator.system.mqtt.MqttMessageProcessor;
 import com.all4land.generator.system.netty.send.config.NettyServerTCPConfiguration;
@@ -26,6 +27,7 @@ public class ApplicationInitializer implements CommandLineRunner {
 	private final GlobalEntityManager globalEntityManager;
 	private final Scheduler scheduler;
 	private final QuartzCoreService quartzCoreService;
+	private final VirtualTimeManager virtualTimeManager;
 	
 	// MQTT 설정 (application.properties에서 읽어옴)
 	@Value("${mqtt.broker.url:tcp://localhost:1883}")
@@ -39,10 +41,12 @@ public class ApplicationInitializer implements CommandLineRunner {
 
 	public ApplicationInitializer(GlobalEntityManager globalEntityManager, 
 			Scheduler scheduler, 
-			QuartzCoreService quartzCoreService) {
+			QuartzCoreService quartzCoreService,
+			VirtualTimeManager virtualTimeManager) {
 		this.globalEntityManager = globalEntityManager;
 		this.scheduler = scheduler;
 		this.quartzCoreService = quartzCoreService;
+		this.virtualTimeManager = virtualTimeManager;
 	}
 
 	@Override
@@ -130,7 +134,8 @@ public class ApplicationInitializer implements CommandLineRunner {
 			MqttMessageProcessor messageProcessor = new MqttMessageProcessor(
 				globalEntityManager,
 				scheduler,
-				quartzCoreService
+				quartzCoreService,
+				virtualTimeManager
 			);
 			
 			// MQTT 클라이언트 연결 및 구독

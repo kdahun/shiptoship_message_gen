@@ -13,6 +13,7 @@ import org.quartz.TriggerBuilder;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
+import com.all4land.generator.system.component.VirtualTimeManager;
 import com.all4land.generator.system.schedule.QuartzCoreService;
 import com.all4land.generator.entity.MmsiEntity;
 import com.all4land.generator.ui.tab.ais.entity.event.change.MmsiEntitySlotTimeChangeEvent;
@@ -22,12 +23,15 @@ public class MmsiEntitySlotTimeChangeListener {
 	//
 	private final QuartzCoreService quartzCoreService;
 	private final Scheduler scheduler;
+	private final VirtualTimeManager virtualTimeManager;
 
 	MmsiEntitySlotTimeChangeListener(QuartzCoreService quartzCoreService
-			, Scheduler scheduler) {
+			, Scheduler scheduler
+			, VirtualTimeManager virtualTimeManager) {
 		//
 		this.quartzCoreService = quartzCoreService;
 		this.scheduler = scheduler;
+		this.virtualTimeManager = virtualTimeManager;
 	}
 
 	/**
@@ -50,20 +54,25 @@ public class MmsiEntitySlotTimeChangeListener {
 		jobDataMap.put("globalEntityManager", event.getGlobalEntityManager());
 		
 		String mmsi = String.valueOf(mmsiEntity.getMmsi());
-		LocalDateTime localDateTime = (LocalDateTime) newValue;
+		LocalDateTime localDateTime = (LocalDateTime) newValue; // 가상 시간
 		
 		if(newValue != null) {
+			// 가상 시간을 실제 시간으로 변환 (Quartz는 실제 시간을 사용)
+			LocalDateTime realDateTime = virtualTimeManager.convertVirtualToRealTime(localDateTime);
+			
 			String localDateTimeString = localDateTime.toString();
-			Date date = Date.from(localDateTime.atZone(ZoneId.systemDefault()).toInstant());
+			Date date = Date.from(realDateTime.atZone(ZoneId.systemDefault()).toInstant());
+			
+			System.out.println("[DEBUG] SlotTimeOut 가상 시간: " + localDateTime + " -> 실제 시간: " + realDateTime);
 			
 			Trigger trigger;
 			if(mmsiEntity.getSlotTimeOutJob() == null) {
-				// Quartz Trigger 생성
+				// Quartz Trigger 생성 (실제 시간 사용)
 				trigger = TriggerBuilder.newTrigger().withIdentity(localDateTimeString, mmsi)
 						.startAt(date)
 						.build();
 			}else {
-				// Quartz Trigger 생성
+				// Quartz Trigger 생성 (실제 시간 사용)
 				trigger = TriggerBuilder.newTrigger()
 						.forJob(mmsiEntity.getSlotTimeOutJob())
 						.withIdentity(localDateTimeString, mmsi)
