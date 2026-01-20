@@ -42,6 +42,8 @@ import jakarta.annotation.PreDestroy;
 import lombok.Getter;
 import lombok.Setter;
 
+import com.all4land.generator.system.mqtt.MqttClientConfiguration;
+
 @Component
 public class MmsiEntity {
 	//
@@ -715,6 +717,23 @@ public class MmsiEntity {
 							Formatter_61162_message+aisMessage, Formatter_61162_VSI_message+vsiMessage);
 				}
 			});
+
+			// MQTT로 AIS 메시지 전송
+			CompletableFuture.runAsync(() -> {
+				try {
+					MqttClientConfiguration mqttClient = (MqttClientConfiguration) BeanUtils.getBean("mqttClient");
+					if (mqttClient != null && mqttClient.isConnected()) {
+						String aisMessageToSend = aisMessage + SystemConstMessage.CRLF + vsiMessage;
+						mqttClient.publish("test/msg/ais", aisMessageToSend, 0, false);
+						System.out.println("[DEBUG] ✅ MQTT로 AIS 메시지 전송 완료: MMSI=" + this.mmsi);
+					} else {
+						System.out.println("[DEBUG] ⚠️ MQTT 클라이언트가 연결되지 않았거나 사용할 수 없습니다.");
+					}
+				} catch (Exception e) {
+					System.out.println("[DEBUG] ❌ MQTT AIS 메시지 전송 실패: " + e.getMessage());
+					e.printStackTrace();
+				}
+			});
 		}
 	}
 		
@@ -725,6 +744,8 @@ public class MmsiEntity {
 		this.asmMessageList = asmMessageList;
 		StringBuilder sb = new StringBuilder();
 		StringBuilder sbForSend = new StringBuilder();
+		StringBuilder sbForSendMqtt = new StringBuilder();
+
 		if (this.asmMessageList != null) {
 			//
 			if(this.format450_ASM >= 99) {
@@ -753,6 +774,7 @@ public class MmsiEntity {
 					sb.append(sbTime);
 					
 					sbForSend.append(Formatter_61162_message+this.asmMessageList.get(i)).append(SystemConstMessage.CRLF);
+					sbForSendMqtt.append(this.asmMessageList.get(i)).append(SystemConstMessage.CRLF);
 //					StringBuilder sbTime = new StringBuilder(SystemConstMessage.CRLF)
 //							.append(TimeString.getLogDisplay(this.asmEntity.getStartTime()));
 //					sbTime.append(" MMSI : ").append(this.mmsi);
@@ -786,7 +808,8 @@ public class MmsiEntity {
 //					sbForSend.append(sbSubForSend);
 //				}
 				sbForSend.append(Formatter_61162_VSI_message+vsiMessage).append(SystemConstMessage.CRLF);
-				
+				sbForSendMqtt.append(vsiMessage).append(SystemConstMessage.CRLF);
+
 				CompletableFuture.runAsync(() -> {
 					System.out.println("[DEBUG] ASM message sending - MMSI: " + this.mmsi + ", Slot: " + slotNumber);
 					System.out.println("[DEBUG] ASM message sending: " + sbForSend.toString());
@@ -806,11 +829,24 @@ public class MmsiEntity {
 						this.udpServerTableModel.sendASMMessage(sbForSend.toString());
 					}
 				});
+
+
+				// MQTT로 ASM 메시지 전송
+				CompletableFuture.runAsync(() -> {
+					try {
+						MqttClientConfiguration mqttClient = (MqttClientConfiguration) BeanUtils.getBean("mqttClient");
+						if (mqttClient != null && mqttClient.isConnected()) {
+							mqttClient.publish("test/msg/asm", sbForSendMqtt.toString(), 0, false);
+							System.out.println("[DEBUG] ✅ MQTT로 ASM 메시지 전송 완료: MMSI=" + this.mmsi + ", Slot=" + slotNumber);
+						} else {
+							System.out.println("[DEBUG] ⚠️ MQTT 클라이언트가 연결되지 않았거나 사용할 수 없습니다.");
+						}
+					} catch (Exception e) {
+						System.out.println("[DEBUG] ❌ MQTT ASM 메시지 전송 실패: " + e.getMessage());
+						e.printStackTrace();
+					}
+				});
 		}
-		
-		
-		
-		
 	}
 	
 	
