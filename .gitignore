@@ -31,3 +31,9 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Binary installers
+*.msi
+*.msi.backup
+output/
+hs_err_pid*.log
