@@ -39,7 +39,6 @@ public class AsmEntityChangeStartTimeListener {
 		MmsiEntity mmsiEntity = event.getMmsiEntity();
 		AsmEntity asmEntity = event.getAsmEntity();
 		
-		System.out.println("[DEBUG] ========== AsmEntityChangeStartTimeListener.onChange() 호출 ==========");
 		System.out.println("[DEBUG] MMSI: " + mmsiEntity.getMmsi() + ", ASM StartTime: " + newValue);
 		
 		JobDataMap jobDataMap = new JobDataMap();
@@ -56,22 +55,17 @@ public class AsmEntityChangeStartTimeListener {
 			trigger = TriggerBuilder.newTrigger().withIdentity(localDateTimeString, mmsi)
 					.startAt(Date.from(localDateTime.atZone(ZoneId.systemDefault()).toInstant()))
 					.build();
-			System.out.println("[DEBUG] 새로운 ASM Job을 위한 Trigger 생성 - MMSI: " + mmsi);
 		} else {
 			// Quartz Trigger 생성
 			trigger = TriggerBuilder.newTrigger().forJob(asmEntity.getAsmStartTimeJob()).withIdentity(localDateTimeString, mmsi)
 					.startAt(Date.from(localDateTime.atZone(ZoneId.systemDefault()).toInstant())).build();
-			System.out.println("[DEBUG] 기존 ASM Job을 위한 Trigger 생성 - MMSI: " + mmsi);
 		}
 
 		try {
 			this.quartzCoreService.addScheduleJobforAsm(trigger, mmsiEntity);
-			System.out.println("[DEBUG] ✅ ASM Quartz Job 등록 완료 - MMSI: " + mmsi + ", StartTime: " + localDateTime);
 		} catch (SchedulerException | ParseException e) {
-			System.out.println("[DEBUG] ❌ ASM Quartz Job 등록 실패 - MMSI: " + mmsi + ", 오류: " + e.getMessage());
 			e.printStackTrace();
 		}
-		System.out.println("[DEBUG] ========== AsmEntityChangeStartTimeListener.onChange() 종료 ==========");
 	}
 }
 

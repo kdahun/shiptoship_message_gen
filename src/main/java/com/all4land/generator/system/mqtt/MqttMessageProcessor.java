@@ -10,7 +10,8 @@ import com.all4land.generator.system.schedule.QuartzCoreService;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
-
+import com.all4land.generator.system.netty.dto.AsmControlMessage.AsmShipControl;
+import com.all4land.generator.system.netty.dto.AsmControlMessage;
 /**
  * MQTT 메시지를 처리하는 클래스
  * TCP 서버와 동일한 방식으로 메시지를 처리합니다.
@@ -324,20 +325,20 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 		
 		try {
 			String trimmedMessage = message.trim();
-			com.all4land.generator.system.netty.dto.AsmControlMessage asmControlMessage;
+			AsmControlMessage asmControlMessage;
 			
 			if (trimmedMessage.startsWith("[")) {
 				// 배열 형식: [{"mmsi": "...", "state": "...", "size": "...", "asmPeriod": "..."}, ...]
 				System.out.println("[DEBUG] 배열 형식 ASM 상태 제어 메시지 감지");
-				java.lang.reflect.Type listType = new TypeToken<List<com.all4land.generator.system.netty.dto.AsmControlMessage.AsmShipControl>>(){}.getType();
-				List<com.all4land.generator.system.netty.dto.AsmControlMessage.AsmShipControl> ships = gson.fromJson(trimmedMessage, listType);
+				java.lang.reflect.Type listType = new TypeToken<List<AsmShipControl>>(){}.getType();
+				List<AsmShipControl> ships = gson.fromJson(trimmedMessage, listType);
 				
 				// AsmControlMessage 객체로 변환
-				asmControlMessage = new com.all4land.generator.system.netty.dto.AsmControlMessage();
+				asmControlMessage = new AsmControlMessage();
 				asmControlMessage.setShips(ships);
 			} else {
 				// 객체 형식: {"ships": [...]}
-				asmControlMessage = gson.fromJson(trimmedMessage, com.all4land.generator.system.netty.dto.AsmControlMessage.class);
+				asmControlMessage = gson.fromJson(trimmedMessage, AsmControlMessage.class);
 			}
 			
 			if (asmControlMessage != null && asmControlMessage.getShips() != null) {
