@@ -2,6 +2,7 @@ package com.all4land.generator.system.netty.dto;
 
 import java.util.List;
 
+import com.google.gson.annotations.SerializedName;
 import lombok.Data;
 
 /**
@@ -19,6 +20,7 @@ public class AsmControlMessage {
 		private String state; // "0"=OFF, "1"=ON
 		private String size;   // "1"~"3" (슬롯 점유 개수)
 		private String asmPeriod; // "0"=단문 메시지, "1"=계속 보내는 메시지
+		private List<String> destMMSI;
 	}
 }
 

@@ -404,7 +404,32 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 				String size = ship.getSize();   // "1"~"3" (슬롯 점유 개수)
 				String asmPeriod = ship.getAsmPeriod(); // "0"=단문, "1"=계속
 				
-				boolean result = globalEntityManager.controlAsmState(mmsi, state, size, asmPeriod, quartzCoreService);
+				// destMMSI 리스트 추출 및 변환
+				List<Long> destMMSIList = null;
+				System.out.println("[DEBUG] ASM destMMSI 파싱 시작 - MMSI: " + mmsi + ", getDestMMSI(): " + ship.getDestMMSI());
+				if (ship.getDestMMSI() != null && !ship.getDestMMSI().isEmpty()) {
+					System.out.println("[DEBUG] ASM destMMSI 리스트 발견 - MMSI: " + mmsi + ", 크기: " + ship.getDestMMSI().size());
+					destMMSIList = new java.util.ArrayList<>();
+					for (String destMMSIStr : ship.getDestMMSI()) {
+						try {
+							long destMMSI = Long.parseLong(destMMSIStr);
+							destMMSIList.add(destMMSI);
+							System.out.println("[DEBUG] ASM destMMSI 추가됨 - MMSI: " + mmsi + ", destMMSI: " + destMMSI);
+						} catch (NumberFormatException e) {
+							System.out.println("[DEBUG] ⚠️ 유효하지 않은 ASM destMMSI 값 무시: " + destMMSIStr + " (MMSI: " + mmsi + ")");
+						}
+					}
+					if (destMMSIList.isEmpty()) {
+						System.out.println("[DEBUG] ⚠️ ASM destMMSI 리스트가 비어있음 - MMSI: " + mmsi);
+						destMMSIList = null; // 빈 리스트는 null로 처리하여 기존 동작 사용
+					} else {
+						System.out.println("[DEBUG] ✅ ASM destMMSI 리스트 파싱 완료 - MMSI: " + mmsi + ", 크기: " + destMMSIList.size());
+					}
+				} else {
+					System.out.println("[DEBUG] ⚠️ ASM destMMSI 필드가 null이거나 비어있음 - MMSI: " + mmsi);
+				}
+				
+				boolean result = globalEntityManager.controlAsmState(mmsi, state, size, asmPeriod, quartzCoreService, destMMSIList);
 				if (result) {
 					successCount++;
 				} else {

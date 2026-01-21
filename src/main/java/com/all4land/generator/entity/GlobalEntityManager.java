@@ -234,11 +234,30 @@ public class GlobalEntityManager {
 	 * @return 성공 여부
 	 */
 	public boolean controlAsmState(long mmsi, String state, String size, String asmPeriod, QuartzCoreService quartzCoreService) {
+		return controlAsmState(mmsi, state, size, asmPeriod, quartzCoreService, null);
+	}
+
+	/**
+	 * ASM 메시지 생성 상태를 제어합니다 (destMMSI 포함).
+	 * @param mmsi 선박 MMSI
+	 * @param state "0"=OFF, "1"=ON
+	 * @param size 슬롯 점유 개수 (1~3)
+	 * @param asmPeriod "0"=단문 메시지, "1"=계속 보내는 메시지
+	 * @param quartzCoreService QuartzCoreService (스케줄 삭제용)
+	 * @param destMMSIList destMMSI 리스트 (null이면 기존 동작)
+	 * @return 성공 여부
+	 */
+	public boolean controlAsmState(long mmsi, String state, String size, String asmPeriod, QuartzCoreService quartzCoreService, List<Long> destMMSIList) {
 		MmsiEntity mmsiEntity = findMmsiEntity(mmsi);
 		if (mmsiEntity == null) {
 			System.out.println("[DEBUG] ❌ MMSI를 찾을 수 없음: " + mmsi);
 			return false;
 		}
+
+		// destMMSI 리스트가 제공된 경우 destMMSI 기능 사용
+		boolean useDestMMSI = (destMMSIList != null && !destMMSIList.isEmpty());
+		System.out.println("[DEBUG] controlAsmState - MMSI: " + mmsi + ", state: " + state + 
+				", useDestMMSI: " + useDestMMSI + ", destMMSIList: " + destMMSIList);
 
 		boolean newState = "1".equals(state);
 		
@@ -258,27 +277,86 @@ public class GlobalEntityManager {
 		}
 		
 		// ASM 상태 변경
-		if (mmsiEntity.isAsm() != newState) {
-			mmsiEntity.setAsm(newState);
-			
-			if (newState) {
-				// ON: ASM 메시지 생성 시작
-				System.out.println("[DEBUG] ✅ MMSI: " + mmsi + " ASM 메시지 생성 시작 (슬롯: " + 
-						mmsiEntity.getAsmEntity().getSlotCount() + ", Period: " + asmPeriod + ")");
-			} else {
-				// OFF: ASM 메시지 생성 중지 및 스케줄 삭제
-				if (quartzCoreService != null) {
-					try {
-						quartzCoreService.removeAsmStartTimeTrigger(mmsiEntity);
-						System.out.println("[DEBUG] ✅ MMSI: " + mmsi + " ASM 메시지 생성 중지 및 스케줄 삭제 완료");
-					} catch (Exception e) {
-						System.out.println("[DEBUG] ⚠️ MMSI: " + mmsi + " ASM 스케줄 삭제 중 오류: " + e.getMessage());
-						e.printStackTrace();
+		if ("1".equals(state)) {
+			// ON: 메시지 생성 시작/재개
+			if (useDestMMSI) {
+				System.out.println("[DEBUG] ASM destMMSI 사용 모드 - MMSI: " + mmsi);
+				// destMMSI 리스트에 추가
+				for (Long destMMSI : destMMSIList) {
+					if (destMMSI != null) {
+						mmsiEntity.getAsmEntity().addDestMMSI(destMMSI);
 					}
+				}
+				// destMMSI 리스트가 비어있지 않으면 메시지 생성 시작
+				boolean hasDestMMSI = mmsiEntity.getAsmEntity().hasDestMMSI();
+				System.out.println("[DEBUG] addDestMMSI 후 hasDestMMSI 체크 - MMSI: " + mmsi + 
+						", hasDestMMSI: " + hasDestMMSI + ", 리스트 크기: " + mmsiEntity.getAsmEntity().getDestMMSIList().size());
+				if (hasDestMMSI) {
+					if (!mmsiEntity.isAsm()) {
+						System.out.println("[DEBUG] ASM 활성화 시작 (destMMSI 사용) - MMSI: " + mmsi);
+						mmsiEntity.setAsm(true);
+						System.out.println("[DEBUG] ✅ ASM 활성화 완료 - MMSI: " + mmsi + 
+								", destMMSI 리스트 크기: " + mmsiEntity.getAsmEntity().getDestMMSIList().size());
+					} else {
+						System.out.println("[DEBUG] ⚠️ ASM이 이미 활성화되어 있음 (destMMSI 사용) - MMSI: " + mmsi);
+					}
+				} else {
+					System.out.println("[DEBUG] ⚠️ destMMSI 리스트가 비어있어 ASM 메시지 생성하지 않음 - MMSI: " + mmsi);
+				}
+			} else {
+				// 기존 동작: destMMSI 없이 state만으로 제어
+				if (!mmsiEntity.isAsm()) {
+					System.out.println("[DEBUG] ASM 활성화 시작 - MMSI: " + mmsi);
+					mmsiEntity.setAsm(true);
+					System.out.println("[DEBUG] ✅ ASM 활성화 완료 - MMSI: " + mmsi);
+				} else {
+					System.out.println("[DEBUG] ⚠️ ASM이 이미 활성화되어 있음 - MMSI: " + mmsi);
+				}
+			}
+		} else if ("0".equals(state)) {
+			// OFF: 메시지 생성 중단
+			if (useDestMMSI) {
+				// destMMSI 리스트에서 제거
+				for (Long destMMSI : destMMSIList) {
+					if (destMMSI != null) {
+						mmsiEntity.getAsmEntity().removeDestMMSI(destMMSI);
+					}
+				}
+				// destMMSI 리스트가 비어있으면 메시지 생성 중단
+				if (!mmsiEntity.getAsmEntity().hasDestMMSI()) {
+					if (mmsiEntity.isAsm()) {
+						System.out.println("[DEBUG] ASM 비활성화 시작 (destMMSI 리스트 비어있음) - MMSI: " + mmsi);
+						// setAsm(false)가 내부에서 스케줄러 job을 제거하므로 별도 호출 불필요
+						mmsiEntity.setAsm(false);
+						System.out.println("[DEBUG] ✅ ASM 메시지 생성 중지 완료 - MMSI: " + mmsi);
+					} else {
+						System.out.println("[DEBUG] ⚠️ ASM이 이미 비활성화되어 있음 - MMSI: " + mmsi);
+					}
+				} else {
+					System.out.println("[DEBUG] ℹ️ destMMSI 리스트에 항목이 남아있어 ASM 메시지 생성 계속 - MMSI: " + mmsi + 
+							", 리스트 크기: " + mmsiEntity.getAsmEntity().getDestMMSIList().size());
+				}
+			} else {
+				// 기존 동작: destMMSI 없이 state만으로 제어
+				if (mmsiEntity.isAsm()) {
+					System.out.println("[DEBUG] ASM 비활성화 시작 - MMSI: " + mmsi);
+					mmsiEntity.setAsm(false);
+					if (quartzCoreService != null) {
+						try {
+							quartzCoreService.removeAsmStartTimeTrigger(mmsiEntity);
+							System.out.println("[DEBUG] ✅ MMSI: " + mmsi + " ASM 메시지 생성 중지 및 스케줄 삭제 완료");
+						} catch (Exception e) {
+							System.out.println("[DEBUG] ⚠️ MMSI: " + mmsi + " ASM 스케줄 삭제 중 오류: " + e.getMessage());
+							e.printStackTrace();
+						}
+					}
+				} else {
+					System.out.println("[DEBUG] ℹ️ MMSI: " + mmsi + " ASM 메시지 생성 상태가 이미 OFF입니다.");
 				}
 			}
 		} else {
-			System.out.println("[DEBUG] ℹ️ MMSI: " + mmsi + " ASM 메시지 생성 상태가 이미 " + (newState ? "ON" : "OFF") + "입니다.");
+			System.out.println("[DEBUG] ❌ 유효하지 않은 state 값: " + state + " (MMSI: " + mmsi + ")");
+			return false;
 		}
 		
 		// asmPeriod는 현재 구조에서는 별도 처리하지 않음

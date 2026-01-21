@@ -44,6 +44,12 @@ public class AsmEntityChangeStartDateQuartz implements Job {
 		JobDataMap jobDataMap = context.getMergedJobDataMap();
 		this.mmsiEntity = (MmsiEntity) jobDataMap.get("mmsiEntity");
 
+		// ASM 메시지 생성 여부 확인 (destMMSI 리스트 체크)
+		if (!this.mmsiEntity.isAsm()) {
+			System.out.println("[DEBUG] ❌ ASM 비활성화 상태 또는 destMMSI 리스트가 비어있음 - MMSI: " + this.mmsiEntity.getMmsi());
+			return; // 메시지 생성하지 않음
+		}
+
 		int startIndex = this.timeMapRangeCompnents.findSlotNumber(this.mmsiEntity.getAsmEntity().getStartTime().format(SystemConstMessage.formatterForStartIndex));
 		
 		CompletableFuture<List<TargetCellInfoEntity>> rule1 = CompletableFuture.supplyAsync(() -> {

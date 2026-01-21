@@ -937,11 +937,23 @@ public class MmsiEntity {
 						MqttClientConfiguration mqttClient = (MqttClientConfiguration) BeanUtils.getBean("mqttClient");
 						if (mqttClient != null && mqttClient.isConnected()) {
 							
-							// JSON 형태로 변환 : [{"NMEA":"!AIVDM..."}]
+							// JSON 형태로 변환 : [{"destMMSI":["440123456", "440654321"], "NMEA":"!AIVDM..."}]
 							String mqttMessage = sbForSendMqtt.toString();
-							Map<String, String> nmeaObject = new HashMap<>();
+							Map<String, Object> nmeaObject = new HashMap<>();
 							nmeaObject.put("NMEA", mqttMessage);
-							List<Map<String, String>> jsonArray = new ArrayList<>();
+							
+							// destMMSI 리스트 추가
+							List<Long> destMMSIList = this.asmEntity.getDestMMSIList();
+							if (destMMSIList != null && !destMMSIList.isEmpty()) {
+								List<String> destMMSIStrList = destMMSIList.stream()
+										.map(String::valueOf)
+										.collect(Collectors.toList());
+								nmeaObject.put("destMMSI", destMMSIStrList);
+								System.out.println("[DEBUG] ASM destMMSI 포함 - MMSI: " + this.mmsi + 
+										", destMMSI: " + destMMSIStrList);
+							}
+							
+							List<Map<String, Object>> jsonArray = new ArrayList<>();
 							jsonArray.add(nmeaObject);
 
 							Gson gson = new Gson();
@@ -986,14 +998,42 @@ public class MmsiEntity {
 				, db, dbm, String.valueOf(sequence));
 	}
 
+	/**
+	 * ASM 메시지 생성 여부 확인
+	 * destMMSI 리스트가 비어있지 않을 때만 메시지 생성 (destMMSI가 있는 경우만 메시지 생성)
+	 * destMMSI 리스트가 비어있으면 자동으로 setAsm(false) 호출하여 스케줄러 job 제거
+	 */
 	public boolean isAsm() {
-		return this.asm;
+		// destMMSI 리스트가 비어있지 않을 때만 메시지 생성
+		if (!this.asmEntity.getDestMMSIList().isEmpty()) {
+			// destMMSI가 있고 asm이 true일 때만 true 반환
+			return this.asm;
+		}
+		// destMMSI 리스트가 비어있으면 메시지 생성하지 않음
+		// asm이 true인 상태에서 destMMSI가 비어있으면 setAsm(false) 호출하여 스케줄러 job 제거
+		if (this.asm) {
+			System.out.println("[DEBUG] isAsm() 체크: destMMSI 리스트가 비어있어 setAsm(false) 호출 - MMSI: " + this.mmsi);
+			this.setAsm(false);
+		}
+		return false;
 	}
 
 	public void setAsm(boolean asm) {
+		System.out.println("[DEBUG] MmsiEntity.setAsm() 호출 - MMSI: " + this.mmsi + ", asm: " + asm);
 		this.asm = asm;
-		if (asm) {
-			//
+		if (!this.asm) {
+			// ASM 비활성화: 스케줄러 job 제거
+			System.out.println("[DEBUG] ASM 비활성화 - MMSI: " + this.mmsi);
+			try {
+				this.quartzCoreService.removeAsmStartTimeTrigger(this);
+				System.out.println("[DEBUG] ✅ ASM 스케줄러 job 제거 완료 - MMSI: " + this.mmsi);
+			} catch (SchedulerException | ParseException e) {
+				System.out.println("[DEBUG] ❌ ASM 스케줄러 job 제거 실패 - MMSI: " + this.mmsi);
+				e.printStackTrace();
+			}
+		} else {
+			// ASM 활성화: 시작 시간 설정
+			System.out.println("[DEBUG] ASM 활성화 시작 - MMSI: " + this.mmsi);
 			this.asmEntity.setStartTime(LocalDateTime.now().plusSeconds(1), this);
 		}
 	}
