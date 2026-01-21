@@ -1015,20 +1015,20 @@ public class GlobalEntityManager {
 		mmsiEntity.addTargetSlotEntity(newTargetSlotEntity);
 	}
 
-	/**
-	 * 테이블 셀 마킹
-	 * @param mmsiEntity MmsiEntity
-	 * @param s 타겟 셀 정보
-	 */
-	private void setSlotMarking(MmsiEntity mmsiEntity, TargetCellInfoEntity s) {
-		//
-		if (mmsiEntity.getTargetChannel()) {
-			//
-			this.setCurrentFrameAchColor(s.getRow(), s.getCol(), mmsiEntity, mmsiEntity.getStartTime());
-		} else {
-			this.setCurrentFrameBchColor(s.getRow(), s.getCol(), mmsiEntity, mmsiEntity.getStartTime());
-		}
-	}
+	// /**
+	//  * 테이블 셀 마킹
+	//  * @param mmsiEntity MmsiEntity
+	//  * @param s 타겟 셀 정보
+	//  */
+	// private void setSlotMarking(MmsiEntity mmsiEntity, TargetCellInfoEntity s) {
+	// 	//
+	// 	if (mmsiEntity.getTargetChannel()) {
+	// 		//
+	// 		this.setCurrentFrameAchColor(s.getRow(), s.getCol(), mmsiEntity, mmsiEntity.getStartTime());
+	// 	} else {
+	// 		this.setCurrentFrameBchColor(s.getRow(), s.getCol(), mmsiEntity, mmsiEntity.getStartTime());
+	// 	}
+	// }
 
 	public void displayAsm(List<TargetCellInfoEntity> targetCellInfoEntitys, MmsiEntity mmsiEntity) {
 		//

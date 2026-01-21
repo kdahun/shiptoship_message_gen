@@ -2,11 +2,13 @@ package com.all4land.generator.entity;
 
 import java.text.ParseException;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.google.gson.Gson;
 import java.util.concurrent.CompletableFuture;
 
 import org.quartz.JobDetail;
@@ -724,8 +726,23 @@ public class MmsiEntity {
 					MqttClientConfiguration mqttClient = (MqttClientConfiguration) BeanUtils.getBean("mqttClient");
 					if (mqttClient != null && mqttClient.isConnected()) {
 						String aisMessageToSend = aisMessage + SystemConstMessage.CRLF + vsiMessage;
-						mqttClient.publish("test/msg/ais", aisMessageToSend, 0, false);
-						System.out.println("[DEBUG] ✅ MQTT로 AIS 메시지 전송 완료: MMSI=" + this.mmsi);
+						
+						// JSON 형태로 변환 : [{"NMEA":"!AIVDM..."}]
+						Map<String, String> nmeaObject = new HashMap<>();
+						nmeaObject.put("NMEA", aisMessageToSend);
+						List<Map<String, String>> jsonArray = new ArrayList<>();
+						jsonArray.add(nmeaObject);
+
+						Gson gson = new Gson();
+						String jsonMessage = gson.toJson(jsonArray);
+
+						// 동적 토픽 생성: mg/ms/ais/{mmsi}/{yyyyMMddHHmmss.ssss}
+						DateTimeFormatter topicFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss.SSSS");
+						String timestamp = LocalDateTime.now().format(topicFormatter);
+						String topic = String.format("mg/ms/ais/%d/%s", this.mmsi, timestamp);
+						
+						mqttClient.publish(topic, jsonMessage, 0, false);
+						System.out.println("[DEBUG] ✅ MQTT로 AIS 메시지 전송 완료: MMSI=" + this.mmsi + ", Topic=" + topic);
 					} else {
 						System.out.println("[DEBUG] ⚠️ MQTT 클라이언트가 연결되지 않았거나 사용할 수 없습니다.");
 					}
@@ -836,8 +853,25 @@ public class MmsiEntity {
 					try {
 						MqttClientConfiguration mqttClient = (MqttClientConfiguration) BeanUtils.getBean("mqttClient");
 						if (mqttClient != null && mqttClient.isConnected()) {
-							mqttClient.publish("test/msg/asm", sbForSendMqtt.toString(), 0, false);
-							System.out.println("[DEBUG] ✅ MQTT로 ASM 메시지 전송 완료: MMSI=" + this.mmsi + ", Slot=" + slotNumber);
+							
+							// JSON 형태로 변환 : [{"NMEA":"!AIVDM..."}]
+							String mqttMessage = sbForSendMqtt.toString();
+							Map<String, String> nmeaObject = new HashMap<>();
+							nmeaObject.put("NMEA", mqttMessage);
+							List<Map<String, String>> jsonArray = new ArrayList<>();
+							jsonArray.add(nmeaObject);
+
+							Gson gson = new Gson();
+							String jsonMessage = gson.toJson(jsonArray);
+							
+							
+							// 동적 토픽 생성: mg/ms/asm/{mmsi}/{yyyyMMddHHmmss.ssss}/{sbForSendMqtt 내용}
+							DateTimeFormatter topicFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss.SSSS");
+							String timestamp = LocalDateTime.now().format(topicFormatter);
+							String topic = String.format("mg/ms/asm/%d/%s", this.mmsi, timestamp);
+							
+							mqttClient.publish(topic, jsonMessage, 0, false);
+							System.out.println("[DEBUG] ✅ MQTT로 ASM 메시지 전송 완료: MMSI=" + this.mmsi + ", Slot=" + slotNumber + ", Topic=" + topic);
 						} else {
 							System.out.println("[DEBUG] ⚠️ MQTT 클라이언트가 연결되지 않았거나 사용할 수 없습니다.");
 						}
