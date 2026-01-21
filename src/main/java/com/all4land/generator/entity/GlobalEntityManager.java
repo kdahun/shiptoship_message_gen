@@ -126,30 +126,96 @@ public class GlobalEntityManager {
 	 * @return 제어 성공 여부
 	 */
 	public boolean controlMmsiState(long mmsi, String state) {
+		return controlMmsiState(mmsi, state, null);
+	}
+
+	/**
+	 * MMSI별로 메시지 생성 상태를 제어합니다 (destMMSI 포함).
+	 * @param mmsi MMSI 번호
+	 * @param state "0"=OFF(중단), "1"=ON(시작/재개)
+	 * @param destMMSIList destMMSI 리스트 (null이면 기존 동작)
+	 * @return 제어 성공 여부
+	 */
+	public boolean controlMmsiState(long mmsi, String state, List<Long> destMMSIList) {
 		MmsiEntity mmsiEntity = findMmsiEntity(mmsi);
 		if (mmsiEntity == null) {
 			System.out.println("[DEBUG] ⚠️ MMSI를 찾을 수 없음: " + mmsi);
 			return false;
 		}
 		
+		// destMMSI 리스트가 제공된 경우 destMMSI 기능 사용
+		boolean useDestMMSI = (destMMSIList != null && !destMMSIList.isEmpty());
+		System.out.println("[DEBUG] controlMmsiState - MMSI: " + mmsi + ", state: " + state + 
+				", useDestMMSI: " + useDestMMSI + ", destMMSIList: " + destMMSIList);
+		
 		if ("1".equals(state)) {
 			// ON: 메시지 생성 시작/재개
-			if (!mmsiEntity.isChk()) {
-				System.out.println("[DEBUG] AIS 활성화 시작 - MMSI: " + mmsi);
-				mmsiEntity.setChk(true);
-				System.out.println("[DEBUG] ✅ AIS 활성화 완료 - MMSI: " + mmsi);
+			if (useDestMMSI) {
+				System.out.println("[DEBUG] destMMSI 사용 모드 - MMSI: " + mmsi);
+				// destMMSI 리스트에 추가
+				for (Long destMMSI : destMMSIList) {
+					if (destMMSI != null) {
+						mmsiEntity.addDestMMSI(destMMSI);
+					}
+				}
+				// destMMSI 리스트가 비어있지 않으면 메시지 생성 시작
+				boolean hasDestMMSI = mmsiEntity.hasDestMMSI();
+				System.out.println("[DEBUG] addDestMMSI 후 hasDestMMSI 체크 - MMSI: " + mmsi + 
+						", hasDestMMSI: " + hasDestMMSI + ", 리스트 크기: " + mmsiEntity.getDestMMSIList().size());
+				if (hasDestMMSI) {
+					if (!mmsiEntity.isChk()) {
+						System.out.println("[DEBUG] AIS 활성화 시작 (destMMSI 사용) - MMSI: " + mmsi);
+						mmsiEntity.setChk(true);
+						System.out.println("[DEBUG] ✅ AIS 활성화 완료 - MMSI: " + mmsi + 
+								", destMMSI 리스트 크기: " + mmsiEntity.getDestMMSIList().size());
+					} else {
+						System.out.println("[DEBUG] ⚠️ AIS가 이미 활성화되어 있음 (destMMSI 사용) - MMSI: " + mmsi);
+					}
+				} else {
+					System.out.println("[DEBUG] ⚠️ destMMSI 리스트가 비어있어 메시지 생성하지 않음 - MMSI: " + mmsi);
+				}
 			} else {
-				System.out.println("[DEBUG] ⚠️ AIS가 이미 활성화되어 있음 - MMSI: " + mmsi);
+				// 기존 동작: destMMSI 없이 state만으로 제어
+				if (!mmsiEntity.isChk()) {
+					System.out.println("[DEBUG] AIS 활성화 시작 - MMSI: " + mmsi);
+					mmsiEntity.setChk(true);
+					System.out.println("[DEBUG] ✅ AIS 활성화 완료 - MMSI: " + mmsi);
+				} else {
+					System.out.println("[DEBUG] ⚠️ AIS가 이미 활성화되어 있음 - MMSI: " + mmsi);
+				}
 			}
 			return true;
 		} else if ("0".equals(state)) {
 			// OFF: 메시지 생성 중단
-			if (mmsiEntity.isChk()) {
-				System.out.println("[DEBUG] AIS 비활성화 시작 - MMSI: " + mmsi);
-				mmsiEntity.setChk(false);
-				System.out.println("[DEBUG] ✅ AIS 비활성화 완료 - MMSI: " + mmsi);
+			if (useDestMMSI) {
+				// destMMSI 리스트에서 제거
+				for (Long destMMSI : destMMSIList) {
+					if (destMMSI != null) {
+						mmsiEntity.removeDestMMSI(destMMSI);
+					}
+				}
+				// destMMSI 리스트가 비어있으면 메시지 생성 중단
+				if (!mmsiEntity.hasDestMMSI()) {
+					if (mmsiEntity.isChk()) {
+						System.out.println("[DEBUG] AIS 비활성화 시작 (destMMSI 리스트 비어있음) - MMSI: " + mmsi);
+						mmsiEntity.setChk(false);
+						System.out.println("[DEBUG] ✅ AIS 비활성화 완료 - MMSI: " + mmsi);
+					} else {
+						System.out.println("[DEBUG] ⚠️ AIS가 이미 비활성화되어 있음 - MMSI: " + mmsi);
+					}
+				} else {
+					System.out.println("[DEBUG] ℹ️ destMMSI 리스트에 항목이 남아있어 메시지 생성 계속 - MMSI: " + mmsi + 
+							", 리스트 크기: " + mmsiEntity.getDestMMSIList().size());
+				}
 			} else {
-				System.out.println("[DEBUG] ⚠️ AIS가 이미 비활성화되어 있음 - MMSI: " + mmsi);
+				// 기존 동작: destMMSI 없이 state만으로 제어
+				if (mmsiEntity.isChk()) {
+					System.out.println("[DEBUG] AIS 비활성화 시작 - MMSI: " + mmsi);
+					mmsiEntity.setChk(false);
+					System.out.println("[DEBUG] ✅ AIS 비활성화 완료 - MMSI: " + mmsi);
+				} else {
+					System.out.println("[DEBUG] ⚠️ AIS가 이미 비활성화되어 있음 - MMSI: " + mmsi);
+				}
 			}
 			return true;
 		} else {

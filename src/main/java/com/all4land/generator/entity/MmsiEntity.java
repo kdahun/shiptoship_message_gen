@@ -8,6 +8,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 import com.google.gson.Gson;
 import java.util.concurrent.CompletableFuture;
 
@@ -87,6 +89,9 @@ public class MmsiEntity {
 	private Vdm message1;	// AIS 메시지
 	
 	private List<String> asmMessageList;	// ASM 메시지 리스트
+
+	// destMMSI 리스트 (thread-safe)
+	private List<Long> destMMSIList = new CopyOnWriteArrayList<>();
 
 	private int slotTimeOut_default;		// 테스트용 slotTimeOut testInit에서 초기화
 	private int slotTimeOut = RandomGenerator.generateRandomIntFromTo(0, 7);	// AIS 메시지 타임아웃 시작 시간
@@ -484,8 +489,24 @@ public class MmsiEntity {
 	//	this.aisTabjTextAreaName = aisTabjTextAreaName;
 	// }
 
+	/**
+	 * AIS 메시지 생성 여부 확인
+	 * destMMSI 리스트가 비어있지 않을 때만 메시지 생성 (destMMSI가 있는 경우만 메시지 생성)
+	 * destMMSI 리스트가 비어있으면 자동으로 setChk(false) 호출하여 스케줄러 job 제거
+	 */
 	public boolean isChk() {
-		return this.chk;
+		// destMMSI 리스트가 비어있지 않을 때만 메시지 생성
+		if (!this.destMMSIList.isEmpty()) {
+			// destMMSI가 있고 chk가 true일 때만 true 반환
+			return this.chk;
+		}
+		// destMMSI 리스트가 비어있으면 메시지 생성하지 않음
+		// chk가 true인 상태에서 destMMSI가 비어있으면 setChk(false) 호출하여 스케줄러 job 제거
+		if (this.chk) {
+			System.out.println("[DEBUG] isChk() 체크: destMMSI 리스트가 비어있어 setChk(false) 호출 - MMSI: " + this.mmsi);
+			this.setChk(false);
+		}
+		return false;
 	}
 
 	/**
@@ -526,6 +547,56 @@ public class MmsiEntity {
 			this.resetRRAndNI();
 			System.out.println("[DEBUG] RR, NI 초기화 완료 - MMSI: " + this.mmsi + ", RR: " + this.RR + ", NI: " + this.NI);
 		}
+	}
+
+	/**
+	 * destMMSI를 리스트에 추가
+	 * @param destMMSI 추가할 목적지 MMSI
+	 */
+	public void addDestMMSI(long destMMSI) {
+		if (!this.destMMSIList.contains(destMMSI)) {
+			this.destMMSIList.add(destMMSI);
+			System.out.println("[DEBUG] destMMSI 추가 - MMSI: " + this.mmsi + ", destMMSI: " + destMMSI + 
+					", 리스트 크기: " + this.destMMSIList.size());
+		} else {
+			System.out.println("[DEBUG] destMMSI 중복 - MMSI: " + this.mmsi + ", destMMSI: " + destMMSI);
+		}
+	}
+
+	/**
+	 * destMMSI를 리스트에서 제거
+	 * 리스트가 비어지면 자동으로 setChk(false) 호출하여 메시지 생성 중단
+	 * @param destMMSI 제거할 목적지 MMSI
+	 */
+	public void removeDestMMSI(long destMMSI) {
+		if (this.destMMSIList.remove(destMMSI)) {
+			System.out.println("[DEBUG] destMMSI 제거 - MMSI: " + this.mmsi + ", destMMSI: " + destMMSI + 
+					", 리스트 크기: " + this.destMMSIList.size());
+			
+			// destMMSI 리스트가 비어지면 메시지 생성 중단
+			if (this.destMMSIList.isEmpty() && this.chk) {
+				System.out.println("[DEBUG] destMMSI 리스트가 비어서 메시지 생성 중단 - MMSI: " + this.mmsi);
+				this.setChk(false);
+			}
+		} else {
+			System.out.println("[DEBUG] destMMSI 없음 - MMSI: " + this.mmsi + ", destMMSI: " + destMMSI);
+		}
+	}
+
+	/**
+	 * destMMSI 리스트 반환
+	 * @return destMMSI 리스트
+	 */
+	public List<Long> getDestMMSIList() {
+		return new ArrayList<>(this.destMMSIList); // 방어적 복사
+	}
+
+	/**
+	 * destMMSI 리스트가 비어있지 않은지 확인
+	 * @return 리스트가 비어있지 않으면 true
+	 */
+	public boolean hasDestMMSI() {
+		return !this.destMMSIList.isEmpty();
 	}
 
 	/**
@@ -727,10 +798,22 @@ public class MmsiEntity {
 					if (mqttClient != null && mqttClient.isConnected()) {
 						String aisMessageToSend = aisMessage + SystemConstMessage.CRLF + vsiMessage;
 						
-						// JSON 형태로 변환 : [{"NMEA":"!AIVDM..."}]
-						Map<String, String> nmeaObject = new HashMap<>();
+						// JSON 형태로 변환 : [{"destMMSI":["440123456", "440654321"], "NMEA":"!AIVDM..."}]
+						Map<String, Object> nmeaObject = new HashMap<>();
 						nmeaObject.put("NMEA", aisMessageToSend);
-						List<Map<String, String>> jsonArray = new ArrayList<>();
+						
+						// destMMSI 리스트 추가
+						List<Long> destMMSIList = this.getDestMMSIList();
+						if (destMMSIList != null && !destMMSIList.isEmpty()) {
+							List<String> destMMSIStrList = destMMSIList.stream()
+									.map(String::valueOf)
+									.collect(Collectors.toList());
+							nmeaObject.put("destMMSI", destMMSIStrList);
+							System.out.println("[DEBUG] destMMSI 포함 - MMSI: " + this.mmsi + 
+									", destMMSI: " + destMMSIStrList);
+						}
+						
+						List<Map<String, Object>> jsonArray = new ArrayList<>();
 						jsonArray.add(nmeaObject);
 
 						Gson gson = new Gson();

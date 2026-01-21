@@ -19,6 +19,7 @@ public class ControlMessage {
 	public static class ShipControl {
 		private String mmsi;
 		private String state; // "0"=OFF, "1"=ON
+		private List<String> destMMSI; // 목적지 MMSI 리스트
 	}
 }
 
