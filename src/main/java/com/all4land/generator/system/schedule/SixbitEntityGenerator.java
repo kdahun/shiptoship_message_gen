@@ -99,20 +99,20 @@ public class SixbitEntityGenerator {
         String dataCountBits = convertToBits(dataCount, 11);
         
         //채우자
-        if(slotCount == 1) {
-        	//
-        	while (binary.length() < 280) {
-            	binary.append("0");
-            }
-        }else if(slotCount == 2) {
-        	while (binary.length() < 792) {
-            	binary.append("0");
-            }
-        }else if(slotCount == 3) {
-        	while (binary.length() < 1304) {
-            	binary.append("0");
-            }
-        }
+        // if(slotCount == 1) {
+        // 	//
+        // 	while (binary.length() < 280) {
+        //     	binary.append("0");
+        //     }
+        // }else if(slotCount == 2) {
+        // 	while (binary.length() < 792) {
+        //     	binary.append("0");
+        //     }
+        // }else if(slotCount == 3) {
+        // 	while (binary.length() < 1304) {
+        //     	binary.append("0");
+        //     }
+        // }
         
         int dac = 999; // DAC 0~999 까지 1000 이상은 예약되어있다
         int function = 63;// 6bit // 변경하고자 하는 값 0~ 63
@@ -136,7 +136,7 @@ public class SixbitEntityGenerator {
         }
         
         String bitString = sb.toString();
-        
+
         StringBuilder resultStr = new StringBuilder();
         for (int i = 0; i < bitString.length(); i += 6) {
             String sixBits = bitString.substring(i, i + 6);

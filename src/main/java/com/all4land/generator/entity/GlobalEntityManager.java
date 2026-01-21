@@ -1118,7 +1118,7 @@ public class GlobalEntityManager {
 					//		targetCellInfoEntitys.get(0).getCol(), mmsiEntity);
                         }
 				case 2 -> {
-					strValue = "NSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFT2";
+					strValue = "NSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFT2";
 					// UI 제거로 인해 주석 처리
 					// renderer.setCellInfosAsmForA(targetCellInfoEntitys.get(0).getRow(),
 					//		targetCellInfoEntitys.get(0).getCol(), mmsiEntity);
@@ -1126,7 +1126,7 @@ public class GlobalEntityManager {
 					//		targetCellInfoEntitys.get(1).getCol(), mmsiEntity);
                         }
 				case 3 -> {
-					strValue = "NSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFT3";
+					strValue = "NSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFT3";
 					// UI 제거로 인해 주석 처리
 					// renderer.setCellInfosAsmForA(targetCellInfoEntitys.get(0).getRow(),
 					//		targetCellInfoEntitys.get(0).getCol(), mmsiEntity);
@@ -1151,7 +1151,7 @@ public class GlobalEntityManager {
 					//		targetCellInfoEntitys.get(0).getCol(), mmsiEntity);
                         }
 				case 2 -> {
-					strValue = "NSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFT2";
+					strValue = "NSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFT2";
 					// UI 제거로 인해 주석 처리
 					// renderer.setCellInfosAsmForB(targetCellInfoEntitys.get(0).getRow(),
 					//		targetCellInfoEntitys.get(0).getCol(), mmsiEntity);
@@ -1159,7 +1159,7 @@ public class GlobalEntityManager {
 					//		targetCellInfoEntitys.get(1).getCol(), mmsiEntity);
                         }
 				case 3 -> {
-					strValue = "NSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFT3";
+					strValue = "NSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFTNSONESOFT3";
 					// UI 제거로 인해 주석 처리
 					// renderer.setCellInfosAsmForB(targetCellInfoEntitys.get(0).getRow(),
 					//		targetCellInfoEntitys.get(0).getCol(), mmsiEntity);
