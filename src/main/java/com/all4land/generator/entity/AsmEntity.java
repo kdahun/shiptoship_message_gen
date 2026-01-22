@@ -3,6 +3,8 @@ package com.all4land.generator.entity;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.quartz.JobDetail;
@@ -25,6 +27,9 @@ public class AsmEntity {
 	
 	// destMMSI 리스트 (thread-safe)
 	private List<Long> destMMSIList = new CopyOnWriteArrayList<>();
+	
+	// 각 destMMSI에 대한 asmPeriod 매핑 (thread-safe)
+	private Map<Long, String> destMMSIAsmPeriodMap = new ConcurrentHashMap<>();
 
 	private AsmTdmaType asmTdmaType;
 	
@@ -78,12 +83,26 @@ public class AsmEntity {
 	 * @param destMMSI 추가할 목적지 MMSI
 	 */
 	public void addDestMMSI(long destMMSI) {
+		addDestMMSI(destMMSI, "1"); // 기본값은 "1" (계속 보내는 메시지)
+	}
+	
+	/**
+	 * destMMSI를 리스트에 추가 (asmPeriod와 함께)
+	 * @param destMMSI 추가할 목적지 MMSI
+	 * @param asmPeriod "0"=단발 메시지, "1"=계속 보내는 메시지
+	 */
+	public void addDestMMSI(long destMMSI, String asmPeriod) {
 		if (!this.destMMSIList.contains(destMMSI)) {
 			this.destMMSIList.add(destMMSI);
+			this.destMMSIAsmPeriodMap.put(destMMSI, asmPeriod != null && !asmPeriod.isEmpty() ? asmPeriod : "1");
 			System.out.println("[DEBUG] ASM destMMSI 추가 - destMMSI: " + destMMSI + 
+					", asmPeriod: " + this.destMMSIAsmPeriodMap.get(destMMSI) + 
 					", 리스트 크기: " + this.destMMSIList.size());
 		} else {
-			System.out.println("[DEBUG] ASM destMMSI 중복 - destMMSI: " + destMMSI);
+			// 이미 존재하는 경우 asmPeriod만 업데이트
+			this.destMMSIAsmPeriodMap.put(destMMSI, asmPeriod != null && !asmPeriod.isEmpty() ? asmPeriod : "1");
+			System.out.println("[DEBUG] ASM destMMSI 중복 - destMMSI: " + destMMSI + 
+					", asmPeriod 업데이트: " + this.destMMSIAsmPeriodMap.get(destMMSI));
 		}
 	}
 
@@ -94,6 +113,7 @@ public class AsmEntity {
 	 */
 	public boolean removeDestMMSI(long destMMSI) {
 		if (this.destMMSIList.remove(destMMSI)) {
+			this.destMMSIAsmPeriodMap.remove(destMMSI);
 			System.out.println("[DEBUG] ASM destMMSI 제거 - destMMSI: " + destMMSI + 
 					", 리스트 크기: " + this.destMMSIList.size());
 			return true;
@@ -101,6 +121,48 @@ public class AsmEntity {
 			System.out.println("[DEBUG] ASM destMMSI 없음 - destMMSI: " + destMMSI);
 			return false;
 		}
+	}
+	
+	/**
+	 * 특정 destMMSI의 asmPeriod 반환
+	 * @param destMMSI 목적지 MMSI
+	 * @return asmPeriod ("0" 또는 "1"), 없으면 null
+	 */
+	public String getAsmPeriodForDestMMSI(long destMMSI) {
+		return this.destMMSIAsmPeriodMap.get(destMMSI);
+	}
+	
+	/**
+	 * asmPeriod=0인 destMMSI만 리스트에서 제거
+	 * @return 제거된 destMMSI 개수
+	 */
+	public int removeDestMMSIWithAsmPeriod0() {
+		int removedCount = 0;
+		List<Long> toRemove = new ArrayList<>();
+		
+		// asmPeriod=0인 destMMSI 찾기
+		for (Long destMMSI : this.destMMSIList) {
+			String asmPeriod = this.destMMSIAsmPeriodMap.get(destMMSI);
+			if ("0".equals(asmPeriod)) {
+				toRemove.add(destMMSI);
+			}
+		}
+		
+		// 제거
+		for (Long destMMSI : toRemove) {
+			if (this.destMMSIList.remove(destMMSI)) {
+				this.destMMSIAsmPeriodMap.remove(destMMSI);
+				removedCount++;
+				System.out.println("[DEBUG] ASM destMMSI 제거 (asmPeriod=0) - destMMSI: " + destMMSI);
+			}
+		}
+		
+		if (removedCount > 0) {
+			System.out.println("[DEBUG] ASM asmPeriod=0인 destMMSI 제거 완료 - 제거 개수: " + removedCount + 
+					", 남은 리스트 크기: " + this.destMMSIList.size());
+		}
+		
+		return removedCount;
 	}
 
 	/**

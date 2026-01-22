@@ -276,15 +276,18 @@ public class GlobalEntityManager {
 			}
 		}
 		
+		// asmPeriod 값 결정 (기본값 "1")
+		String asmPeriodValue = (asmPeriod != null && !asmPeriod.isEmpty()) ? asmPeriod : "1";
+		
 		// ASM 상태 변경
 		if ("1".equals(state)) {
 			// ON: 메시지 생성 시작/재개
 			if (useDestMMSI) {
 				System.out.println("[DEBUG] ASM destMMSI 사용 모드 - MMSI: " + mmsi);
-				// destMMSI 리스트에 추가
+				// destMMSI 리스트에 추가 (asmPeriod와 함께, mmsi는 추가하지 않음)
 				for (Long destMMSI : destMMSIList) {
 					if (destMMSI != null) {
-						mmsiEntity.getAsmEntity().addDestMMSI(destMMSI);
+						mmsiEntity.getAsmEntity().addDestMMSI(destMMSI, asmPeriodValue);
 					}
 				}
 				// destMMSI 리스트가 비어있지 않으면 메시지 생성 시작
@@ -316,7 +319,7 @@ public class GlobalEntityManager {
 		} else if ("0".equals(state)) {
 			// OFF: 메시지 생성 중단
 			if (useDestMMSI) {
-				// destMMSI 리스트에서 제거
+				// destMMSI 리스트에서 제거 (destMMSI 배열의 각 값만 제거, mmsi는 제거하지 않음)
 				for (Long destMMSI : destMMSIList) {
 					if (destMMSI != null) {
 						mmsiEntity.getAsmEntity().removeDestMMSI(destMMSI);
@@ -359,16 +362,10 @@ public class GlobalEntityManager {
 			return false;
 		}
 		
-		// asmPeriod 저장
-		if (asmPeriod != null && !asmPeriod.isEmpty()) {
-			mmsiEntity.getAsmEntity().setAsmPeriod(asmPeriod);
-			System.out.println("[DEBUG] ✅ MMSI: " + mmsi + " ASM Period 저장: " + asmPeriod + 
-					" (" + ("0".equals(asmPeriod) ? "단발" : "계속") + ")");
-		} else {
-			// asmPeriod가 제공되지 않은 경우 기본값 "1" 설정
-			mmsiEntity.getAsmEntity().setAsmPeriod("1");
-			System.out.println("[DEBUG] ℹ️ MMSI: " + mmsi + " ASM Period 기본값 설정: 1 (계속)");
-		}
+		// asmPeriod 저장 (전체 ASM에 대한 기본값으로 사용)
+		mmsiEntity.getAsmEntity().setAsmPeriod(asmPeriodValue);
+		System.out.println("[DEBUG] ✅ MMSI: " + mmsi + " ASM Period 저장: " + asmPeriodValue + 
+				" (" + ("0".equals(asmPeriodValue) ? "단발" : "계속") + ")");
 		
 		return true;
 	}

@@ -93,23 +93,14 @@ public class AsmEntityChangeStartDateQuartz implements Job {
 	
 	private void addFuture() {
 		//
-		// asmPeriod가 "0" (단발 메시지)인 경우
-		String asmPeriod = this.mmsiEntity.getAsmEntity().getAsmPeriod();
-		if ("0".equals(asmPeriod)) {
-			System.out.println("[DEBUG] ✅ 단발 메시지 모드 - destMMSI 리스트 비우고 ASM 비활성화 - MMSI: " + this.mmsiEntity.getMmsi());
-			
-			// destMMSI 리스트 비우기
-			List<Long> destMMSIList = this.mmsiEntity.getAsmEntity().getDestMMSIList();
-			for (Long destMMSI : destMMSIList) {
-				this.mmsiEntity.getAsmEntity().removeDestMMSI(destMMSI);
-			}
-			
-			// ASM 비활성화 (스케줄러 job 제거)
-			this.mmsiEntity.setAsm(false);
+		// destMMSI 리스트가 비어있으면 다음 스케줄 설정하지 않음
+		// (메시지 송신 후 이미 asmPeriod=0인 destMMSI가 제거되었으므로)
+		if (!this.mmsiEntity.getAsmEntity().hasDestMMSI()) {
+			System.out.println("[DEBUG] ✅ destMMSI 리스트가 비어있어 다음 스케줄 설정하지 않음 - MMSI: " + this.mmsiEntity.getMmsi());
 			return; // 다음 스케줄 설정하지 않음
 		}
 		
-		// asmPeriod가 "1" (계속 보내는 메시지)인 경우 다음 스케줄 설정
+		// destMMSI 리스트가 비어있지 않으면 다음 스케줄 설정
 		// 가상 시간 기준으로 다음 시간 계산
 		LocalDateTime currentVirtualTime = virtualTimeManager.getCurrentVirtualTime();
 		int randomDelay = RandomGenerator.generateRandomIntFromTo(10, 20);
@@ -117,7 +108,8 @@ public class AsmEntityChangeStartDateQuartz implements Job {
 		this.mmsiEntity.getAsmEntity().setStartTime(newLocalDateTime, this.mmsiEntity);
 		
 		System.out.println("[DEBUG] 다음 ASM 메시지 가상 시간: " + newLocalDateTime + 
-				" (현재 가상 시간: " + currentVirtualTime + ", delay: " + randomDelay + "초)");
+				" (현재 가상 시간: " + currentVirtualTime + ", delay: " + randomDelay + "초)" +
+				", 남은 destMMSI 리스트 크기: " + this.mmsiEntity.getAsmEntity().getDestMMSIList().size());
 	}
 	
 	private List<TargetCellInfoEntity> findAsmRule1(int startIndex) {

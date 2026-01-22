@@ -931,6 +931,9 @@ public class MmsiEntity {
 				});
 
 
+				// 메시지 송신 전에 destMMSI 리스트를 먼저 가져와서 저장 (송신 후 제거되기 전에 사용하기 위해)
+				List<Long> destMMSIListForSend = this.asmEntity.getDestMMSIList();
+				
 				// MQTT로 ASM 메시지 전송
 				CompletableFuture.runAsync(() -> {
 					try {
@@ -942,15 +945,16 @@ public class MmsiEntity {
 							Map<String, Object> nmeaObject = new HashMap<>();
 							nmeaObject.put("NMEA", mqttMessage);
 							
-							// destMMSI 리스트 추가
-							List<Long> destMMSIList = this.asmEntity.getDestMMSIList();
-							if (destMMSIList != null && !destMMSIList.isEmpty()) {
-								List<String> destMMSIStrList = destMMSIList.stream()
+							// 저장해둔 destMMSI 리스트 추가 (송신 전에 가져온 리스트 사용)
+							if (destMMSIListForSend != null && !destMMSIListForSend.isEmpty()) {
+								List<String> destMMSIStrList = destMMSIListForSend.stream()
 										.map(String::valueOf)
 										.collect(Collectors.toList());
 								nmeaObject.put("destMMSI", destMMSIStrList);
 								System.out.println("[DEBUG] ASM destMMSI 포함 - MMSI: " + this.mmsi + 
 										", destMMSI: " + destMMSIStrList);
+							} else {
+								System.out.println("[DEBUG] ⚠️ ASM destMMSI 리스트가 비어있음 - MMSI: " + this.mmsi);
 							}
 							
 							List<Map<String, Object>> jsonArray = new ArrayList<>();
@@ -967,6 +971,19 @@ public class MmsiEntity {
 							
 							mqttClient.publish(topic, jsonMessage, 0, false);
 							System.out.println("[DEBUG] ✅ MQTT로 ASM 메시지 전송 완료: MMSI=" + this.mmsi + ", Slot=" + slotNumber + ", Topic=" + topic);
+							
+							// 메시지 송신 완료 후 asmPeriod=0인 destMMSI 제거
+							int removedCount = this.asmEntity.removeDestMMSIWithAsmPeriod0();
+							if (removedCount > 0) {
+								System.out.println("[DEBUG] ✅ ASM 메시지 송신 후 asmPeriod=0인 destMMSI 제거 완료 - MMSI: " + this.mmsi + 
+										", 제거 개수: " + removedCount);
+							}
+							
+							// destMMSI 리스트가 비어있으면 ASM 비활성화
+							if (!this.asmEntity.hasDestMMSI()) {
+								System.out.println("[DEBUG] ✅ destMMSI 리스트가 비어있어 ASM 비활성화 - MMSI: " + this.mmsi);
+								this.setAsm(false);
+							}
 						} else {
 							System.out.println("[DEBUG] ⚠️ MQTT 클라이언트가 연결되지 않았거나 사용할 수 없습니다.");
 						}
