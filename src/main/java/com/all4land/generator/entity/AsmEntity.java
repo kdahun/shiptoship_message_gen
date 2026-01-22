@@ -28,6 +28,9 @@ public class AsmEntity {
 
 	private AsmTdmaType asmTdmaType;
 	
+	// ASM 메시지 전송 주기: "0"=단발 메시지, "1"=계속 보내는 메시지 (기본값 "1")
+	private String asmPeriod = "1";
+	
 	public AsmEntity(ApplicationEventPublisher eventPublisher) {
 		//
 		this.eventPublisher = eventPublisher;
@@ -114,6 +117,24 @@ public class AsmEntity {
 	 */
 	public boolean hasDestMMSI() {
 		return !this.destMMSIList.isEmpty();
+	}
+	
+	/**
+	 * ASM 메시지 전송 주기 반환
+	 * @return "0"=단발 메시지, "1"=계속 보내는 메시지
+	 */
+	public String getAsmPeriod() {
+		return asmPeriod;
+	}
+
+	/**
+	 * ASM 메시지 전송 주기 설정
+	 * @param asmPeriod "0"=단발 메시지, "1"=계속 보내는 메시지
+	 */
+	public void setAsmPeriod(String asmPeriod) {
+		this.asmPeriod = asmPeriod != null && !asmPeriod.isEmpty() ? asmPeriod : "1";
+		System.out.println("[DEBUG] ASM Period 설정: " + this.asmPeriod + 
+				" (" + ("0".equals(this.asmPeriod) ? "단발" : "계속") + ")");
 	}
 	
 }
