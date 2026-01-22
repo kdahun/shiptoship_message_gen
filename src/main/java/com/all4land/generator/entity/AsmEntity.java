@@ -28,6 +28,9 @@ public class AsmEntity {
 
 	private AsmTdmaType asmTdmaType;
 	
+	// ASM 메시지 전송 주기 (초 단위, 4초~6분 범위)
+	private Integer asmPeriod;
+	
 	public AsmEntity(ApplicationEventPublisher eventPublisher) {
 		//
 		this.eventPublisher = eventPublisher;
@@ -114,6 +117,22 @@ public class AsmEntity {
 	 */
 	public boolean hasDestMMSI() {
 		return !this.destMMSIList.isEmpty();
+	}
+	
+	/**
+	 * ASM 메시지 전송 주기 반환 (초 단위)
+	 * @return ASM Period (초), 설정되지 않은 경우 null
+	 */
+	public Integer getAsmPeriod() {
+		return asmPeriod;
+	}
+	
+	/**
+	 * ASM 메시지 전송 주기 설정 (초 단위, 4초~6분 범위)
+	 * @param asmPeriod ASM Period (초), 4~360 범위
+	 */
+	public void setAsmPeriod(Integer asmPeriod) {
+		this.asmPeriod = asmPeriod;
 	}
 	
 }

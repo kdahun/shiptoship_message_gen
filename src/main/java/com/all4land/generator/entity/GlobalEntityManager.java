@@ -359,11 +359,20 @@ public class GlobalEntityManager {
 			return false;
 		}
 		
-		// asmPeriod는 현재 구조에서는 별도 처리하지 않음
-		// 단문(0)과 계속(1)의 차이는 향후 구현 가능
-		if (asmPeriod != null) {
-			System.out.println("[DEBUG] ℹ️ MMSI: " + mmsi + " ASM Period: " + asmPeriod + 
-					" (" + ("0".equals(asmPeriod) ? "단문" : "계속") + ")");
+		// asmPeriod 파싱 및 저장 (4초~6분 범위)
+		if (asmPeriod != null && !asmPeriod.isEmpty()) {
+			try {
+				int periodValue = Integer.parseInt(asmPeriod);
+				if (periodValue >= 4 && periodValue <= 360) {
+					mmsiEntity.getAsmEntity().setAsmPeriod(periodValue);
+					System.out.println("[DEBUG] ✅ MMSI: " + mmsi + " ASM Period 설정: " + periodValue + "초");
+				} else {
+					System.out.println("[DEBUG] ⚠️ MMSI: " + mmsi + " 유효하지 않은 ASM Period: " + periodValue + 
+							" (4초~360초 범위여야 함)");
+				}
+			} catch (NumberFormatException e) {
+				System.out.println("[DEBUG] ⚠️ MMSI: " + mmsi + " ASM Period 파싱 실패: " + asmPeriod);
+			}
 		}
 		
 		return true;

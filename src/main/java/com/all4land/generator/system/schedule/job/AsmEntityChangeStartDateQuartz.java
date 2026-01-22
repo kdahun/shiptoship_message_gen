@@ -95,12 +95,23 @@ public class AsmEntityChangeStartDateQuartz implements Job {
 		//
 		// 가상 시간 기준으로 다음 시간 계산
 		LocalDateTime currentVirtualTime = virtualTimeManager.getCurrentVirtualTime();
-		int randomDelay = RandomGenerator.generateRandomIntFromTo(10, 20);
-		LocalDateTime newLocalDateTime = currentVirtualTime.plusSeconds(randomDelay);
+		
+		// asmPeriod가 설정되어 있으면 사용, 없으면 랜덤 지연 사용
+		Integer asmPeriod = this.mmsiEntity.getAsmEntity().getAsmPeriod();
+		int delay;
+		if (asmPeriod != null && asmPeriod >= 4 && asmPeriod <= 360) {
+			delay = asmPeriod;
+			System.out.println("[DEBUG] ASM Period 사용: " + delay + "초");
+		} else {
+			delay = RandomGenerator.generateRandomIntFromTo(10, 20);
+			System.out.println("[DEBUG] ASM Period 미설정, 랜덤 지연 사용: " + delay + "초");
+		}
+		
+		LocalDateTime newLocalDateTime = currentVirtualTime.plusSeconds(delay);
 		this.mmsiEntity.getAsmEntity().setStartTime(newLocalDateTime, this.mmsiEntity);
 		
 		System.out.println("[DEBUG] 다음 ASM 메시지 가상 시간: " + newLocalDateTime + 
-				" (현재 가상 시간: " + currentVirtualTime + ", delay: " + randomDelay + "초)");
+				" (현재 가상 시간: " + currentVirtualTime + ", delay: " + delay + "초)");
 	}
 	
 	private List<TargetCellInfoEntity> findAsmRule1(int startIndex) {
