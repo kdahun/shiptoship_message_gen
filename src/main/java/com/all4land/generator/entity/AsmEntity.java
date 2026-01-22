@@ -33,8 +33,8 @@ public class AsmEntity {
 
 	private AsmTdmaType asmTdmaType;
 	
-	// ASM 메시지 전송 주기: "0"=단발 메시지, "1"=계속 보내는 메시지 (기본값 "1")
-	private String asmPeriod = "1";
+	// ASM 메시지 전송 주기: "0"=단발 메시지, "4"~"360"=초 단위 주기 (기본값 "0")
+	private String asmPeriod = "0";
 	
 	public AsmEntity(ApplicationEventPublisher eventPublisher) {
 		//
@@ -83,24 +83,27 @@ public class AsmEntity {
 	 * @param destMMSI 추가할 목적지 MMSI
 	 */
 	public void addDestMMSI(long destMMSI) {
-		addDestMMSI(destMMSI, "1"); // 기본값은 "1" (계속 보내는 메시지)
+		addDestMMSI(destMMSI, "0"); // 기본값은 "0" (단발 메시지)
 	}
 	
 	/**
 	 * destMMSI를 리스트에 추가 (asmPeriod와 함께)
 	 * @param destMMSI 추가할 목적지 MMSI
-	 * @param asmPeriod "0"=단발 메시지, "1"=계속 보내는 메시지
+	 * @param asmPeriod "0"=단발 메시지, "4"~"360"=초 단위 주기
 	 */
 	public void addDestMMSI(long destMMSI, String asmPeriod) {
+		// asmPeriod 검증 및 정규화
+		String validatedPeriod = validateAsmPeriod(asmPeriod);
+		
 		if (!this.destMMSIList.contains(destMMSI)) {
 			this.destMMSIList.add(destMMSI);
-			this.destMMSIAsmPeriodMap.put(destMMSI, asmPeriod != null && !asmPeriod.isEmpty() ? asmPeriod : "1");
+			this.destMMSIAsmPeriodMap.put(destMMSI, validatedPeriod);
 			System.out.println("[DEBUG] ASM destMMSI 추가 - destMMSI: " + destMMSI + 
 					", asmPeriod: " + this.destMMSIAsmPeriodMap.get(destMMSI) + 
 					", 리스트 크기: " + this.destMMSIList.size());
 		} else {
 			// 이미 존재하는 경우 asmPeriod만 업데이트
-			this.destMMSIAsmPeriodMap.put(destMMSI, asmPeriod != null && !asmPeriod.isEmpty() ? asmPeriod : "1");
+			this.destMMSIAsmPeriodMap.put(destMMSI, validatedPeriod);
 			System.out.println("[DEBUG] ASM destMMSI 중복 - destMMSI: " + destMMSI + 
 					", asmPeriod 업데이트: " + this.destMMSIAsmPeriodMap.get(destMMSI));
 		}
@@ -126,7 +129,7 @@ public class AsmEntity {
 	/**
 	 * 특정 destMMSI의 asmPeriod 반환
 	 * @param destMMSI 목적지 MMSI
-	 * @return asmPeriod ("0" 또는 "1"), 없으면 null
+	 * @return asmPeriod ("0" 또는 "4"~"360"), 없으면 null
 	 */
 	public String getAsmPeriodForDestMMSI(long destMMSI) {
 		return this.destMMSIAsmPeriodMap.get(destMMSI);
@@ -183,7 +186,7 @@ public class AsmEntity {
 	
 	/**
 	 * ASM 메시지 전송 주기 반환
-	 * @return "0"=단발 메시지, "1"=계속 보내는 메시지
+	 * @return "0"=단발 메시지, "4"~"360"=초 단위 주기
 	 */
 	public String getAsmPeriod() {
 		return asmPeriod;
@@ -191,12 +194,44 @@ public class AsmEntity {
 
 	/**
 	 * ASM 메시지 전송 주기 설정
-	 * @param asmPeriod "0"=단발 메시지, "1"=계속 보내는 메시지
+	 * @param asmPeriod "0"=단발 메시지, "4"~"360"=초 단위 주기
 	 */
 	public void setAsmPeriod(String asmPeriod) {
-		this.asmPeriod = asmPeriod != null && !asmPeriod.isEmpty() ? asmPeriod : "1";
+		this.asmPeriod = validateAsmPeriod(asmPeriod);
 		System.out.println("[DEBUG] ASM Period 설정: " + this.asmPeriod + 
-				" (" + ("0".equals(this.asmPeriod) ? "단발" : "계속") + ")");
+				" (" + ("0".equals(this.asmPeriod) ? "단발" : this.asmPeriod + "초 주기") + ")");
+	}
+	
+	/**
+	 * asmPeriod 값 검증 및 정규화
+	 * @param asmPeriod 검증할 asmPeriod 값
+	 * @return 검증된 asmPeriod 값 ("0" 또는 "4"~"360"), 유효하지 않으면 "0"
+	 */
+	private String validateAsmPeriod(String asmPeriod) {
+		if (asmPeriod == null || asmPeriod.isEmpty()) {
+			return "0";
+		}
+		
+		// "0"은 단발 메시지로 허용
+		if ("0".equals(asmPeriod)) {
+			return "0";
+		}
+		
+		// 숫자로 변환 시도
+		try {
+			int period = Integer.parseInt(asmPeriod);
+			// 4~360 범위 검증
+			if (period >= 4 && period <= 360) {
+				return String.valueOf(period);
+			} else {
+				System.out.println("[DEBUG] ⚠️ ASM Period 범위 초과: " + period + " (4~360 범위여야 함), 기본값 0으로 설정");
+				return "0";
+			}
+		} catch (NumberFormatException e) {
+			// 숫자가 아닌 경우 (예: 기존 "1" 값)
+			System.out.println("[DEBUG] ⚠️ ASM Period 형식 오류: " + asmPeriod + " (숫자여야 함), 기본값 0으로 설정");
+			return "0";
+		}
 	}
 	
 }

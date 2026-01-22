@@ -352,6 +352,7 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 	 * ASM 상태 제어 메시지를 처리합니다.
 	 * 토픽: mt/mg/traffic-ships/asm-state/{timestamp}
 	 * 형식: [{"mmsi": "440301234", "state": "1", "size": "3", "asmPeriod": "0"}, ...]
+	 * asmPeriod: "0"=단발 메시지, "4"~"360"=초 단위 주기
 	 */
 	private void processAsmStateMessage(String message) {
 		System.out.println("[DEBUG] ========== ASM 상태 제어 메시지 처리 ==========");
@@ -406,7 +407,7 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 				long mmsi = Long.parseLong(ship.getMmsi());
 				String state = ship.getState(); // "0"=OFF, "1"=ON
 				String size = ship.getSize();   // "1"~"3" (슬롯 점유 개수)
-				String asmPeriod = ship.getAsmPeriod(); // "0"=단문, "1"=계속
+				String asmPeriod = ship.getAsmPeriod(); // "0"=단발, "4"~"360"=초 단위 주기
 				
 				// MMSI 엔티티 찾기
 				com.all4land.generator.entity.MmsiEntity mmsiEntity = globalEntityManager.findMmsiEntity(mmsi);
@@ -434,7 +435,8 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 				// destMMSI 리스트 처리
 				if (ship.getDestMMSI() != null && !ship.getDestMMSI().isEmpty()) {
 					com.all4land.generator.entity.AsmEntity asmEntity = mmsiEntity.getAsmEntity();
-					String asmPeriodValue = (asmPeriod != null && !asmPeriod.isEmpty()) ? asmPeriod : "1";
+					// asmPeriod 검증 및 정규화
+					String asmPeriodValue = validateAsmPeriod(asmPeriod);
 					
 					System.out.println("[DEBUG] ASM destMMSI 처리 시작 - MMSI: " + mmsi + ", state: " + state + 
 							", asmPeriod: " + asmPeriodValue + ", destMMSI: " + ship.getDestMMSI());
@@ -521,6 +523,38 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 		
 		System.out.println("[DEBUG] ========== ASM 상태 제어 완료 ==========");
 		System.out.println("[DEBUG] 성공: " + successCount + ", 실패: " + failCount);
+	}
+	
+	/**
+	 * asmPeriod 값 검증 및 정규화
+	 * @param asmPeriod 검증할 asmPeriod 값
+	 * @return 검증된 asmPeriod 값 ("0" 또는 "4"~"360"), 유효하지 않으면 "0"
+	 */
+	private String validateAsmPeriod(String asmPeriod) {
+		if (asmPeriod == null || asmPeriod.isEmpty()) {
+			return "0"; // 기본값
+		}
+		
+		// "0"은 단발 메시지로 허용
+		if ("0".equals(asmPeriod)) {
+			return "0";
+		}
+		
+		// 숫자로 변환 시도
+		try {
+			int period = Integer.parseInt(asmPeriod);
+			// 4~360 범위 검증
+			if (period >= 4 && period <= 360) {
+				return String.valueOf(period);
+			} else {
+				System.out.println("[DEBUG] ⚠️ ASM Period 범위 초과: " + period + " (4~360 범위여야 함), 기본값 0으로 설정");
+				return "0";
+			}
+		} catch (NumberFormatException e) {
+			// 숫자가 아닌 경우 (예: 기존 "1" 값)
+			System.out.println("[DEBUG] ⚠️ ASM Period 형식 오류: " + asmPeriod + " (숫자여야 함, 0 또는 4~360), 기본값 0으로 설정");
+			return "0";
+		}
 	}
 	
 	/**

@@ -16,7 +16,6 @@ import com.all4land.generator.entity.TargetCellInfoEntity;
 import com.all4land.generator.system.component.TimeMapRangeCompnents;
 import com.all4land.generator.system.component.VirtualTimeManager;
 import com.all4land.generator.system.constant.SystemConstMessage;
-import com.all4land.generator.util.RandomGenerator;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -100,16 +99,81 @@ public class AsmEntityChangeStartDateQuartz implements Job {
 			return; // 다음 스케줄 설정하지 않음
 		}
 		
+		// asmPeriod 값 가져오기 (전역 asmPeriod 우선, 없으면 destMMSI 리스트의 최소값 사용)
+		String asmPeriodStr = this.mmsiEntity.getAsmEntity().getAsmPeriod();
+		int periodSeconds = parseAsmPeriod(asmPeriodStr);
+		
+		// 전역 asmPeriod가 "0"이거나 유효하지 않은 경우, destMMSI 리스트의 최소값 확인
+		if (periodSeconds == 0) {
+			periodSeconds = getMinAsmPeriodFromDestMMSI();
+		}
+		
+		// asmPeriod가 "0"이면 다음 스케줄 설정하지 않음 (단발 메시지)
+		if (periodSeconds == 0) {
+			System.out.println("[DEBUG] ✅ ASM Period가 0이어서 다음 스케줄 설정하지 않음 (단발 메시지) - MMSI: " + this.mmsiEntity.getMmsi());
+			return;
+		}
+		
 		// destMMSI 리스트가 비어있지 않으면 다음 스케줄 설정
-		// 가상 시간 기준으로 다음 시간 계산
+		// 가상 시간 기준으로 다음 시간 계산 (asmPeriod 값 사용)
 		LocalDateTime currentVirtualTime = virtualTimeManager.getCurrentVirtualTime();
-		int randomDelay = RandomGenerator.generateRandomIntFromTo(10, 20);
-		LocalDateTime newLocalDateTime = currentVirtualTime.plusSeconds(randomDelay);
+		LocalDateTime newLocalDateTime = currentVirtualTime.plusSeconds(periodSeconds);
 		this.mmsiEntity.getAsmEntity().setStartTime(newLocalDateTime, this.mmsiEntity);
 		
 		System.out.println("[DEBUG] 다음 ASM 메시지 가상 시간: " + newLocalDateTime + 
-				" (현재 가상 시간: " + currentVirtualTime + ", delay: " + randomDelay + "초)" +
+				" (현재 가상 시간: " + currentVirtualTime + ", asmPeriod: " + periodSeconds + "초)" +
 				", 남은 destMMSI 리스트 크기: " + this.mmsiEntity.getAsmEntity().getDestMMSIList().size());
+	}
+	
+	/**
+	 * asmPeriod 문자열을 정수로 파싱
+	 * @param asmPeriodStr asmPeriod 문자열 ("0" 또는 "4"~"360")
+	 * @return 파싱된 초 단위 값 (0 또는 4~360), 파싱 실패 시 0
+	 */
+	private int parseAsmPeriod(String asmPeriodStr) {
+		if (asmPeriodStr == null || asmPeriodStr.isEmpty()) {
+			return 0;
+		}
+		
+		try {
+			int period = Integer.parseInt(asmPeriodStr);
+			// "0"은 단발 메시지
+			if (period == 0) {
+				return 0;
+			}
+			// 4~360 범위 검증
+			if (period >= 4 && period <= 360) {
+				return period;
+			} else {
+				System.out.println("[DEBUG] ⚠️ ASM Period 범위 초과: " + period + " (4~360 범위여야 함)");
+				return 0;
+			}
+		} catch (NumberFormatException e) {
+			System.out.println("[DEBUG] ⚠️ ASM Period 파싱 실패: " + asmPeriodStr + " (숫자여야 함)");
+			return 0;
+		}
+	}
+	
+	/**
+	 * destMMSI 리스트에서 최소 asmPeriod 값 반환
+	 * @return 최소 asmPeriod 값 (초 단위), 유효한 값이 없으면 0
+	 */
+	private int getMinAsmPeriodFromDestMMSI() {
+		int minPeriod = Integer.MAX_VALUE;
+		boolean foundValidPeriod = false;
+		
+		for (Long destMMSI : this.mmsiEntity.getAsmEntity().getDestMMSIList()) {
+			String periodStr = this.mmsiEntity.getAsmEntity().getAsmPeriodForDestMMSI(destMMSI);
+			if (periodStr != null) {
+				int period = parseAsmPeriod(periodStr);
+				if (period > 0) {
+					minPeriod = Math.min(minPeriod, period);
+					foundValidPeriod = true;
+				}
+			}
+		}
+		
+		return foundValidPeriod ? minPeriod : 0;
 	}
 	
 	private List<TargetCellInfoEntity> findAsmRule1(int startIndex) {

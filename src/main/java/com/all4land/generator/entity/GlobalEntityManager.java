@@ -229,7 +229,7 @@ public class GlobalEntityManager {
 	 * @param mmsi 선박 MMSI
 	 * @param state "0"=OFF, "1"=ON
 	 * @param size 슬롯 점유 개수 (1~3)
-	 * @param asmPeriod "0"=단문 메시지, "1"=계속 보내는 메시지
+	 * @param asmPeriod "0"=단발 메시지, "4"~"360"=초 단위 주기
 	 * @param quartzCoreService QuartzCoreService (스케줄 삭제용)
 	 * @return 성공 여부
 	 */
@@ -242,7 +242,7 @@ public class GlobalEntityManager {
 	 * @param mmsi 선박 MMSI
 	 * @param state "0"=OFF, "1"=ON
 	 * @param size 슬롯 점유 개수 (1~3)
-	 * @param asmPeriod "0"=단문 메시지, "1"=계속 보내는 메시지
+	 * @param asmPeriod "0"=단발 메시지, "4"~"360"=초 단위 주기
 	 * @param quartzCoreService QuartzCoreService (스케줄 삭제용)
 	 * @param destMMSIList destMMSI 리스트 (null이면 기존 동작)
 	 * @return 성공 여부
@@ -276,8 +276,11 @@ public class GlobalEntityManager {
 			}
 		}
 		
-		// asmPeriod 값 결정 (기본값 "1")
-		String asmPeriodValue = (asmPeriod != null && !asmPeriod.isEmpty()) ? asmPeriod : "1";
+		// asmPeriod 값 검증 및 결정 (기본값 "0")
+		String asmPeriodValue = validateAsmPeriod(asmPeriod);
+		if (asmPeriodValue == null) {
+			asmPeriodValue = "0"; // 검증 실패 시 기본값
+		}
 		
 		// ASM 상태 변경
 		if ("1".equals(state)) {
@@ -365,9 +368,41 @@ public class GlobalEntityManager {
 		// asmPeriod 저장 (전체 ASM에 대한 기본값으로 사용)
 		mmsiEntity.getAsmEntity().setAsmPeriod(asmPeriodValue);
 		System.out.println("[DEBUG] ✅ MMSI: " + mmsi + " ASM Period 저장: " + asmPeriodValue + 
-				" (" + ("0".equals(asmPeriodValue) ? "단발" : "계속") + ")");
+				" (" + ("0".equals(asmPeriodValue) ? "단발" : asmPeriodValue + "초 주기") + ")");
 		
 		return true;
+	}
+	
+	/**
+	 * asmPeriod 값 검증
+	 * @param asmPeriod 검증할 asmPeriod 값
+	 * @return 검증된 asmPeriod 값 ("0" 또는 "4"~"360"), 유효하지 않으면 null
+	 */
+	private String validateAsmPeriod(String asmPeriod) {
+		if (asmPeriod == null || asmPeriod.isEmpty()) {
+			return "0"; // 기본값
+		}
+		
+		// "0"은 단발 메시지로 허용
+		if ("0".equals(asmPeriod)) {
+			return "0";
+		}
+		
+		// 숫자로 변환 시도
+		try {
+			int period = Integer.parseInt(asmPeriod);
+			// 4~360 범위 검증
+			if (period >= 4 && period <= 360) {
+				return String.valueOf(period);
+			} else {
+				System.out.println("[DEBUG] ⚠️ ASM Period 범위 초과: " + period + " (4~360 범위여야 함)");
+				return null;
+			}
+		} catch (NumberFormatException e) {
+			// 숫자가 아닌 경우 (예: 기존 "1" 값)
+			System.out.println("[DEBUG] ⚠️ ASM Period 형식 오류: " + asmPeriod + " (숫자여야 함, 0 또는 4~360)");
+			return null;
+		}
 	}
 
 	public void addMmsiEntity180(Scheduler scheduler, QuartzCoreService quartzCoreService) {
