@@ -44,10 +44,8 @@ public class AsmEntityChangeStartTimeListener {
 		MmsiEntity mmsiEntity = event.getMmsiEntity();
 		AsmEntity asmEntity = event.getAsmEntity();
 		
-		System.out.println("[DEBUG] MMSI: " + mmsiEntity.getMmsi() + ", ASM StartTime: " + newValue);
-		
-		JobDataMap jobDataMap = new JobDataMap();
-		jobDataMap.put("mmsiEntity", mmsiEntity);
+		String serviceId = asmEntity.getServiceId() != null ? asmEntity.getServiceId() : "default";
+		System.out.println("[DEBUG] MMSI: " + mmsiEntity.getMmsi() + ", ServiceId: " + serviceId + ", ASM StartTime: " + newValue);
 
 		String mmsi = String.valueOf(mmsiEntity.getMmsi());
 		LocalDateTime localDateTime = newValue; // 가상 시간
@@ -56,23 +54,25 @@ public class AsmEntityChangeStartTimeListener {
 		LocalDateTime realDateTime = virtualTimeManager.convertVirtualToRealTime(localDateTime);
 
 		String localDateTimeString = localDateTime.toString();
+		// Trigger 키에 serviceId 포함 (각 AsmEntity별로 독립적인 Trigger)
+		String triggerKey = localDateTimeString + "_" + mmsi + "_" + serviceId;
 		
-		System.out.println("[DEBUG] ASM 가상 시간: " + localDateTime + " -> 실제 시간: " + realDateTime);
+		System.out.println("[DEBUG] ASM 가상 시간: " + localDateTime + " -> 실제 시간: " + realDateTime + ", ServiceId: " + serviceId);
 
 		Trigger trigger = null;
 		if (asmEntity.getAsmStartTimeJob() == null) {
 			// Quartz Trigger 생성 (실제 시간 사용)
-			trigger = TriggerBuilder.newTrigger().withIdentity(localDateTimeString, mmsi)
+			trigger = TriggerBuilder.newTrigger().withIdentity(triggerKey, mmsi)
 					.startAt(Date.from(realDateTime.atZone(ZoneId.systemDefault()).toInstant()))
 					.build();
 		} else {
 			// Quartz Trigger 생성 (실제 시간 사용)
-			trigger = TriggerBuilder.newTrigger().forJob(asmEntity.getAsmStartTimeJob()).withIdentity(localDateTimeString, mmsi)
+			trigger = TriggerBuilder.newTrigger().forJob(asmEntity.getAsmStartTimeJob()).withIdentity(triggerKey, mmsi)
 					.startAt(Date.from(realDateTime.atZone(ZoneId.systemDefault()).toInstant())).build();
 		}
 
 		try {
-			this.quartzCoreService.addScheduleJobforAsm(trigger, mmsiEntity);
+			this.quartzCoreService.addScheduleJobforAsm(trigger, mmsiEntity, asmEntity);
 		} catch (SchedulerException | ParseException e) {
 			e.printStackTrace();
 		}

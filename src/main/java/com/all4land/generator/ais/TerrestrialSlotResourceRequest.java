@@ -66,4 +66,61 @@ public class TerrestrialSlotResourceRequest {
 		
 		return sb.toString();
 	}
+	
+	/**
+	 * 새로운 형식의 TSQ 메시지 생성
+	 * 형식: $VATSQ,111,seq,sourceMmsi,sourceMmsi,destMmsi,destMmsi,physicalChannelNumber,linkId*CRC
+	 * @param seq 시퀀스 번호
+	 * @param sourceMmsi 송신 MMSI
+	 * @param destMmsi 수신 MMSI
+	 * @param physicalChannelNumber 물리적 채널 번호
+	 * @param linkId 링크 ID
+	 * @return TSQ 메시지 문자열
+	 */
+	public static String getTerrestrialSlotResourceRequestNewFormat(String seq, String sourceMmsi, String destMmsi, 
+			String physicalChannelNumber, String linkId) {
+		//
+		String delimiter = "$";
+		String talker = "VA";
+		String formatter = "TSQ";
+		String seperator = ",";
+		
+		StringBuilder sbCrc = new StringBuilder();
+		sbCrc.append(talker);
+		sbCrc.append(formatter);
+		sbCrc.append(seperator);
+		
+		sbCrc.append("111"); // field 1
+		sbCrc.append(seperator);
+		
+		sbCrc.append(seq); // field 2
+		sbCrc.append(seperator);
+		
+		sbCrc.append(sourceMmsi); // field 3
+		sbCrc.append(seperator);
+		
+		sbCrc.append(sourceMmsi); // field 4
+		sbCrc.append(seperator);
+		
+		sbCrc.append(destMmsi); // field 5
+		sbCrc.append(seperator);
+		
+		sbCrc.append(destMmsi); // field 6
+		sbCrc.append(seperator);
+		
+		sbCrc.append(physicalChannelNumber); // field 7
+		sbCrc.append(seperator);
+		
+		sbCrc.append(linkId);  // field 8
+		
+		String crc = CRC16CCITT.calculateCRC16(sbCrc.toString());
+		
+		StringBuilder sb = new StringBuilder();
+		sb.append(delimiter);
+		sb.append(sbCrc);
+		sb.append("*");
+		sb.append(crc);
+		
+		return sb.toString();
+	}
 }

@@ -16,6 +16,7 @@ import org.quartz.SchedulerException;
 import org.quartz.Trigger;
 import org.springframework.stereotype.Service;
 
+import com.all4land.generator.entity.AsmEntity;
 import com.all4land.generator.entity.MmsiEntity;
 import com.all4land.generator.system.schedule.job.AsmEntityChangeStartDateQuartz;
 import com.all4land.generator.system.schedule.job.MmsiEntityChangeStartDate;
@@ -164,23 +165,34 @@ public class QuartzCoreService {
     }
 	
 	public void addScheduleJobforAsm(Trigger trigger, MmsiEntity mmsiEntity) throws SchedulerException, ParseException {
+		// 호환성을 위해 첫 번째 AsmEntity 사용
+		addScheduleJobforAsm(trigger, mmsiEntity, mmsiEntity.getAsmEntity());
+	}
+	
+	public void addScheduleJobforAsm(Trigger trigger, MmsiEntity mmsiEntity, AsmEntity asmEntity) throws SchedulerException, ParseException {
 		//
         // Quartz JobDetail 생성
 		JobDataMap jobDataMap = new JobDataMap();
 		jobDataMap.put("mmsiEntity", mmsiEntity);
+		jobDataMap.put("asmEntity", asmEntity); // AsmEntity 직접 전달
 		
-		if(mmsiEntity.getAsmEntity().getAsmStartTimeJob() == null) {
+		if(asmEntity.getAsmStartTimeJob() == null) {
 			//
 			String mmsi = String.valueOf(mmsiEntity.getMmsi());
-			String startDate = mmsiEntity.getAsmEntity().getStartTime().toString();
+			String serviceId = asmEntity.getServiceId() != null ? asmEntity.getServiceId() : "default";
+			String startDate = asmEntity.getStartTime().toString();
+			
+			// Job 키에 serviceId 포함 (각 AsmEntity별로 독립적인 Job)
+			String jobKey = startDate + "_" + mmsi + "_" + serviceId;
 			
 			JobDetail job = JobBuilder.newJob(AsmEntityChangeStartDateQuartz.class)
-	                .withIdentity(startDate, mmsi) //"myJob", "group1"
+	                .withIdentity(jobKey, mmsi) // Job 키에 serviceId 포함
 	                .storeDurably(true)
 	                .setJobData(jobDataMap)
 	                .build();
 			this.scheduler.scheduleJob(job, trigger);
-			mmsiEntity.getAsmEntity().setAsmStartTimeJob(job);
+			asmEntity.setAsmStartTimeJob(job);
+			System.out.println("[DEBUG] ASM Job 생성 완료 - MMSI: " + mmsi + ", ServiceId: " + serviceId + ", JobKey: " + jobKey);
 		}else {
 			//
 			//트리거가 이미 존재하는지 확인

@@ -10,6 +10,7 @@ import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.stereotype.Component;
 
+import com.all4land.generator.entity.AsmEntity;
 import com.all4land.generator.entity.GlobalEntityManager;
 import com.all4land.generator.entity.MmsiEntity;
 import com.all4land.generator.entity.TargetCellInfoEntity;
@@ -27,6 +28,7 @@ public class AsmEntityChangeStartDateQuartz implements Job {
 	private final TimeMapRangeCompnents timeMapRangeCompnents;
 	private final VirtualTimeManager virtualTimeManager;
 	private MmsiEntity mmsiEntity;
+	private AsmEntity asmEntity;
 
 	public AsmEntityChangeStartDateQuartz(GlobalEntityManager globalEntityManager
 			, TimeMapRangeCompnents timeMapRangeCompnents
@@ -42,14 +44,36 @@ public class AsmEntityChangeStartDateQuartz implements Job {
 		// TODO Auto-generated method stub
 		JobDataMap jobDataMap = context.getMergedJobDataMap();
 		this.mmsiEntity = (MmsiEntity) jobDataMap.get("mmsiEntity");
+		this.asmEntity = (AsmEntity) jobDataMap.get("asmEntity");
+		
+		// AsmEntity가 JobDataMap에 없으면 기존 방식으로 가져오기 (호환성)
+		if (this.asmEntity == null) {
+			this.asmEntity = this.mmsiEntity.getAsmEntity();
+			System.out.println("[DEBUG] ⚠️ JobDataMap에서 AsmEntity를 찾을 수 없어 기존 방식으로 가져옴 - MMSI: " + this.mmsiEntity.getMmsi());
+		}
 
 		// ASM 메시지 생성 여부 확인 (destMMSI 리스트 체크)
-		if (!this.mmsiEntity.isAsm()) {
-			System.out.println("[DEBUG] ❌ ASM 비활성화 상태 또는 destMMSI 리스트가 비어있음 - MMSI: " + this.mmsiEntity.getMmsi());
+		if (this.asmEntity == null || !this.asmEntity.hasDestMMSI()) {
+			System.out.println("[DEBUG] ❌ ASM Entity가 없거나 destMMSI 리스트가 비어있음 - MMSI: " + 
+					(this.mmsiEntity != null ? this.mmsiEntity.getMmsi() : "null") + 
+					", ServiceId: " + (this.asmEntity != null ? this.asmEntity.getServiceId() : "null"));
 			return; // 메시지 생성하지 않음
 		}
 
-		int startIndex = this.timeMapRangeCompnents.findSlotNumber(this.mmsiEntity.getAsmEntity().getStartTime().format(SystemConstMessage.formatterForStartIndex));
+		// state="0"으로 AsmEntity가 제거되었는지 확인
+		// (state="0"일 때 MqttMessageProcessor에서 AsmEntity가 asmEntityMap에서 제거됨)
+		String serviceId = this.asmEntity.getServiceId();
+		if (serviceId != null) {
+			AsmEntity actualAsmEntity = this.mmsiEntity.getAsmEntity(serviceId);
+			if (actualAsmEntity == null || actualAsmEntity != this.asmEntity) {
+				System.out.println("[DEBUG] ❌ ASM Entity가 MmsiEntity에서 제거됨 (state=0) - MMSI: " + 
+						(this.mmsiEntity != null ? this.mmsiEntity.getMmsi() : "null") + 
+						", ServiceId: " + serviceId);
+				return; // 메시지 생성하지 않음
+			}
+		}
+
+		int startIndex = this.timeMapRangeCompnents.findSlotNumber(this.asmEntity.getStartTime().format(SystemConstMessage.formatterForStartIndex));
 		
 		CompletableFuture<List<TargetCellInfoEntity>> rule1 = CompletableFuture.supplyAsync(() -> {
 		    return this.findAsmRule1(startIndex); });
@@ -68,15 +92,15 @@ public class AsmEntityChangeStartDateQuartz implements Job {
 		
 		// 타겟 cell이 8개 이상인 경우에만 displayAsm 호출
 		if(rule1Value.size() >= 8) {
-			CompletableFuture.runAsync(() -> this.globalEntityManager.displayAsm(rule1Value, this.mmsiEntity));
+			CompletableFuture.runAsync(() -> this.globalEntityManager.displayAsm(rule1Value, this.mmsiEntity, this.asmEntity));
 		}else {
 			if(rule2Value.size() >= 8) {
 				//
-				CompletableFuture.runAsync(() -> this.globalEntityManager.displayAsm(rule2Value, this.mmsiEntity));
+				CompletableFuture.runAsync(() -> this.globalEntityManager.displayAsm(rule2Value, this.mmsiEntity, this.asmEntity));
 			}else {
 				if(rule3Value.size() >= 8) {
 					//
-					CompletableFuture.runAsync(() -> this.globalEntityManager.displayAsm(rule3Value, this.mmsiEntity));
+					CompletableFuture.runAsync(() -> this.globalEntityManager.displayAsm(rule3Value, this.mmsiEntity, this.asmEntity));
 				}else {
 					
 				}
@@ -86,7 +110,8 @@ public class AsmEntityChangeStartDateQuartz implements Job {
 		this.addFuture();
 		if(this.mmsiEntity.getMmsi() == 336992171) {
 			//
-			log.info("mmsi : {} , {}", this.mmsiEntity.getMmsi(), LocalDateTime.now());
+			log.info("mmsi : {} , serviceId: {} , {}", this.mmsiEntity.getMmsi(), 
+					(this.asmEntity != null ? this.asmEntity.getServiceId() : "null"), LocalDateTime.now());
 		}
 	}
 	
@@ -94,13 +119,14 @@ public class AsmEntityChangeStartDateQuartz implements Job {
 		//
 		// destMMSI 리스트가 비어있으면 다음 스케줄 설정하지 않음
 		// (메시지 송신 후 이미 asmPeriod=0인 destMMSI가 제거되었으므로)
-		if (!this.mmsiEntity.getAsmEntity().hasDestMMSI()) {
-			System.out.println("[DEBUG] ✅ destMMSI 리스트가 비어있어 다음 스케줄 설정하지 않음 - MMSI: " + this.mmsiEntity.getMmsi());
+		if (!this.asmEntity.hasDestMMSI()) {
+			System.out.println("[DEBUG] ✅ destMMSI 리스트가 비어있어 다음 스케줄 설정하지 않음 - MMSI: " + this.mmsiEntity.getMmsi() + 
+					", ServiceId: " + this.asmEntity.getServiceId());
 			return; // 다음 스케줄 설정하지 않음
 		}
 		
 		// asmPeriod 값 가져오기 (전역 asmPeriod 우선, 없으면 destMMSI 리스트의 최소값 사용)
-		String asmPeriodStr = this.mmsiEntity.getAsmEntity().getAsmPeriod();
+		String asmPeriodStr = this.asmEntity.getAsmPeriod();
 		int periodSeconds = parseAsmPeriod(asmPeriodStr);
 		
 		// 전역 asmPeriod가 "0"이거나 유효하지 않은 경우, destMMSI 리스트의 최소값 확인
@@ -110,7 +136,8 @@ public class AsmEntityChangeStartDateQuartz implements Job {
 		
 		// asmPeriod가 "0"이면 다음 스케줄 설정하지 않음 (단발 메시지)
 		if (periodSeconds == 0) {
-			System.out.println("[DEBUG] ✅ ASM Period가 0이어서 다음 스케줄 설정하지 않음 (단발 메시지) - MMSI: " + this.mmsiEntity.getMmsi());
+			System.out.println("[DEBUG] ✅ ASM Period가 0이어서 다음 스케줄 설정하지 않음 (단발 메시지) - MMSI: " + this.mmsiEntity.getMmsi() + 
+					", ServiceId: " + this.asmEntity.getServiceId());
 			return;
 		}
 		
@@ -118,11 +145,12 @@ public class AsmEntityChangeStartDateQuartz implements Job {
 		// 가상 시간 기준으로 다음 시간 계산 (asmPeriod 값 사용)
 		LocalDateTime currentVirtualTime = virtualTimeManager.getCurrentVirtualTime();
 		LocalDateTime newLocalDateTime = currentVirtualTime.plusSeconds(periodSeconds);
-		this.mmsiEntity.getAsmEntity().setStartTime(newLocalDateTime, this.mmsiEntity);
+		this.asmEntity.setStartTime(newLocalDateTime, this.mmsiEntity);
 		
 		System.out.println("[DEBUG] 다음 ASM 메시지 가상 시간: " + newLocalDateTime + 
 				" (현재 가상 시간: " + currentVirtualTime + ", asmPeriod: " + periodSeconds + "초)" +
-				", 남은 destMMSI 리스트 크기: " + this.mmsiEntity.getAsmEntity().getDestMMSIList().size());
+				", MMSI: " + this.mmsiEntity.getMmsi() + ", ServiceId: " + this.asmEntity.getServiceId() +
+				", 남은 destMMSI 리스트 크기: " + this.asmEntity.getDestMMSIList().size());
 	}
 	
 	/**
@@ -162,8 +190,8 @@ public class AsmEntityChangeStartDateQuartz implements Job {
 		int minPeriod = Integer.MAX_VALUE;
 		boolean foundValidPeriod = false;
 		
-		for (Long destMMSI : this.mmsiEntity.getAsmEntity().getDestMMSIList()) {
-			String periodStr = this.mmsiEntity.getAsmEntity().getAsmPeriodForDestMMSI(destMMSI);
+		for (Long destMMSI : this.asmEntity.getDestMMSIList()) {
+			String periodStr = this.asmEntity.getAsmPeriodForDestMMSI(destMMSI);
 			if (periodStr != null) {
 				int period = parseAsmPeriod(periodStr);
 				if (period > 0) {

@@ -3,15 +3,19 @@ package com.all4land.generator.system.init;
 import org.quartz.Scheduler;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
 import com.all4land.generator.entity.GlobalEntityManager;
+import com.all4land.generator.system.component.TimeMapRangeCompnents;
 import com.all4land.generator.system.component.VirtualTimeManager;
 import com.all4land.generator.system.mqtt.MqttClientConfiguration;
 import com.all4land.generator.system.mqtt.MqttMessageProcessor;
 import com.all4land.generator.system.netty.send.config.NettyServerTCPConfiguration;
 import com.all4land.generator.system.schedule.QuartzCoreService;
 import com.all4land.generator.system.util.BeanUtils;
+import com.all4land.generator.ui.tab.ais.model.TcpServerTableModel;
+import com.all4land.generator.ui.tab.ais.model.UdpServerTableModel;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -28,6 +32,10 @@ public class ApplicationInitializer implements CommandLineRunner {
 	private final Scheduler scheduler;
 	private final QuartzCoreService quartzCoreService;
 	private final VirtualTimeManager virtualTimeManager;
+	private final ApplicationEventPublisher eventPublisher;
+	private final TcpServerTableModel tcpServerTableModel;
+	private final UdpServerTableModel udpServerTableModel;
+	private final TimeMapRangeCompnents timeMapRangeCompnents;
 	
 	// MQTT 설정 (application.properties에서 읽어옴)
 	@Value("${mqtt.broker.url:tcp://localhost:1883}")
@@ -42,11 +50,19 @@ public class ApplicationInitializer implements CommandLineRunner {
 	public ApplicationInitializer(GlobalEntityManager globalEntityManager, 
 			Scheduler scheduler, 
 			QuartzCoreService quartzCoreService,
-			VirtualTimeManager virtualTimeManager) {
+			VirtualTimeManager virtualTimeManager,
+			ApplicationEventPublisher eventPublisher,
+			TcpServerTableModel tcpServerTableModel,
+			UdpServerTableModel udpServerTableModel,
+			TimeMapRangeCompnents timeMapRangeCompnents) {
 		this.globalEntityManager = globalEntityManager;
 		this.scheduler = scheduler;
 		this.quartzCoreService = quartzCoreService;
 		this.virtualTimeManager = virtualTimeManager;
+		this.eventPublisher = eventPublisher;
+		this.tcpServerTableModel = tcpServerTableModel;
+		this.udpServerTableModel = udpServerTableModel;
+		this.timeMapRangeCompnents = timeMapRangeCompnents;
 	}
 
 	@Override
@@ -135,7 +151,11 @@ public class ApplicationInitializer implements CommandLineRunner {
 				globalEntityManager,
 				scheduler,
 				quartzCoreService,
-				virtualTimeManager
+				virtualTimeManager,
+				eventPublisher,
+				tcpServerTableModel,
+				udpServerTableModel,
+				timeMapRangeCompnents
 			);
 			
 			// MQTT 클라이언트 연결 및 구독

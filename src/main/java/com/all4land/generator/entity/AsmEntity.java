@@ -9,13 +9,11 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.quartz.JobDetail;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.stereotype.Component;
 
 import com.all4land.generator.entity.enums.AsmTdmaType;
 import com.all4land.generator.entity.event.AsmEntityChangeStartTimeEvent;
 import com.all4land.generator.util.RandomGenerator;
 
-@Component
 public class AsmEntity {
 	//
 	private final ApplicationEventPublisher eventPublisher;
@@ -36,10 +34,20 @@ public class AsmEntity {
 	// ASM 메시지 전송 주기: "0"=단발 메시지, "4"~"360"=초 단위 주기 (기본값 "0")
 	private String asmPeriod = "0";
 	
+	// ASM 서비스 고유 식별자 (예: "asm_440115678_0")
+	private String serviceId;
+	
 	public AsmEntity(ApplicationEventPublisher eventPublisher) {
 		//
 		this.eventPublisher = eventPublisher;
 		this.channel = RandomGenerator.generateRandomChannel();
+	}
+	
+	public AsmEntity(ApplicationEventPublisher eventPublisher, String serviceId) {
+		//
+		this.eventPublisher = eventPublisher;
+		this.channel = RandomGenerator.generateRandomChannel();
+		this.serviceId = serviceId;
 	}
 	
 	public LocalDateTime getStartTime() {
@@ -232,6 +240,22 @@ public class AsmEntity {
 			System.out.println("[DEBUG] ⚠️ ASM Period 형식 오류: " + asmPeriod + " (숫자여야 함), 기본값 0으로 설정");
 			return "0";
 		}
+	}
+	
+	/**
+	 * ASM 서비스 고유 식별자 반환
+	 * @return serviceId
+	 */
+	public String getServiceId() {
+		return serviceId;
+	}
+	
+	/**
+	 * ASM 서비스 고유 식별자 설정
+	 * @param serviceId 서비스 ID
+	 */
+	public void setServiceId(String serviceId) {
+		this.serviceId = serviceId;
 	}
 	
 }

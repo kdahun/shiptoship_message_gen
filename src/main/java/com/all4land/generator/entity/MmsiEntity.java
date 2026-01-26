@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 import com.google.gson.Gson;
@@ -96,7 +97,13 @@ public class MmsiEntity {
 	private int slotTimeOut_default;		// 테스트용 slotTimeOut testInit에서 초기화
 	private int slotTimeOut = RandomGenerator.generateRandomIntFromTo(0, 7);	// AIS 메시지 타임아웃 시작 시간
 
-	private AsmEntity asmEntity;	// ASM 메시지 관리 Entity
+	// ASM Entity Map (여러 개의 독립적인 ASM 서비스 지원)
+	private Map<String, AsmEntity> asmEntityMap = new ConcurrentHashMap<>();
+	
+	// 호환성을 위한 단일 AsmEntity 참조 (첫 번째 AsmEntity 또는 null)
+	@Deprecated
+	private AsmEntity asmEntity;	// ASM 메시지 관리 Entity (호환성 유지용)
+	
 	private VdeEntity vdeEntity;	// VDE 메시지 관리 Entity
 
 	// AIS 점유 슬롯 리스트
@@ -155,8 +162,11 @@ public class MmsiEntity {
 
 		this.NSS = -1;
 		
-		AsmEntity asmEntity = new AsmEntity(eventPublisher);
-		setAsmEntity(asmEntity);
+		// 초기 AsmEntity 생성 (호환성 유지)
+		String initialKey = "asm_" + System.currentTimeMillis() + "_0";
+		AsmEntity asmEntity = new AsmEntity(eventPublisher, initialKey);
+		addAsmEntity(initialKey, asmEntity);
+		this.asmEntity = asmEntity; // 호환성 유지
 	}
 
 	public void plusPositionCnt() {
@@ -412,12 +422,110 @@ public class MmsiEntity {
 
 	}
 
+	/**
+	 * 첫 번째 AsmEntity 반환 (호환성 유지)
+	 * @return 첫 번째 AsmEntity 또는 null
+	 */
 	public AsmEntity getAsmEntity() {
-		return this.asmEntity;
+		if (!this.asmEntityMap.isEmpty()) {
+			return this.asmEntityMap.values().iterator().next();
+		}
+		return this.asmEntity; // 호환성 유지
 	}
 
+	/**
+	 * AsmEntity 설정 (호환성 유지, 첫 번째 키에 설정)
+	 * @param asmEntity 설정할 AsmEntity
+	 */
 	public void setAsmEntity(AsmEntity asmEntity) {
-		this.asmEntity = asmEntity;
+		if (asmEntity != null && asmEntity.getServiceId() != null) {
+			this.asmEntityMap.put(asmEntity.getServiceId(), asmEntity);
+		} else if (!this.asmEntityMap.isEmpty()) {
+			// serviceId가 없으면 첫 번째 키에 설정
+			String firstKey = this.asmEntityMap.keySet().iterator().next();
+			this.asmEntityMap.put(firstKey, asmEntity);
+		} else {
+			// Map이 비어있으면 새 키 생성
+			String key = "asm_" + this.mmsi + "_0";
+			if (asmEntity != null && asmEntity.getServiceId() == null) {
+				asmEntity.setServiceId(key);
+			}
+			this.asmEntityMap.put(key, asmEntity);
+		}
+		this.asmEntity = asmEntity; // 호환성 유지
+	}
+	
+	/**
+	 * 특정 키의 AsmEntity 반환
+	 * @param key AsmEntity 키
+	 * @return AsmEntity 또는 null
+	 */
+	public AsmEntity getAsmEntity(String key) {
+		return this.asmEntityMap.get(key);
+	}
+	
+	/**
+	 * 새로운 AsmEntity 추가
+	 * @param key AsmEntity 키
+	 * @param asmEntity 추가할 AsmEntity
+	 */
+	public void addAsmEntity(String key, AsmEntity asmEntity) {
+		if (asmEntity != null) {
+			if (asmEntity.getServiceId() == null) {
+				asmEntity.setServiceId(key);
+			}
+			this.asmEntityMap.put(key, asmEntity);
+			// 첫 번째 AsmEntity인 경우 호환성 유지를 위해 설정
+			if (this.asmEntity == null && this.asmEntityMap.size() == 1) {
+				this.asmEntity = asmEntity;
+			}
+			System.out.println("[DEBUG] ASM Entity 추가 - MMSI: " + this.mmsi + ", Key: " + key + ", 총 개수: " + this.asmEntityMap.size());
+		}
+	}
+	
+	/**
+	 * AsmEntity 제거
+	 * @param key 제거할 AsmEntity 키
+	 * @return 제거된 AsmEntity 또는 null
+	 */
+	public AsmEntity removeAsmEntity(String key) {
+		AsmEntity removed = this.asmEntityMap.remove(key);
+		if (removed != null) {
+			// 제거된 것이 현재 참조 중인 경우 첫 번째로 변경
+			if (this.asmEntity == removed) {
+				this.asmEntity = this.asmEntityMap.isEmpty() ? null : this.asmEntityMap.values().iterator().next();
+			}
+			System.out.println("[DEBUG] ASM Entity 제거 - MMSI: " + this.mmsi + ", Key: " + key + ", 남은 개수: " + this.asmEntityMap.size());
+		}
+		return removed;
+	}
+	
+	/**
+	 * 모든 AsmEntity 반환
+	 * @return AsmEntity Map의 복사본
+	 */
+	public Map<String, AsmEntity> getAllAsmEntities() {
+		return new ConcurrentHashMap<>(this.asmEntityMap);
+	}
+	
+	/**
+	 * AsmEntity 개수 반환
+	 * @return AsmEntity 개수
+	 */
+	public int getAsmEntityCount() {
+		return this.asmEntityMap.size();
+	}
+	
+	/**
+	 * 모든 AsmEntity 제거
+	 * @return 제거된 AsmEntity 리스트
+	 */
+	public List<AsmEntity> removeAllAsmEntities() {
+		List<AsmEntity> removedEntities = new ArrayList<>(this.asmEntityMap.values());
+		this.asmEntityMap.clear();
+		this.asmEntity = null; // 호환성 유지를 위한 참조도 null로 설정
+		System.out.println("[DEBUG] ASM Entity 전체 제거 - MMSI: " + this.mmsi + ", 제거된 개수: " + removedEntities.size());
+		return removedEntities;
 	}
 
 	public List<TargetSlotEntity> getTargetSlotEntity() {
@@ -838,8 +946,13 @@ public class MmsiEntity {
 	}
 		
 	public void setAsmMessageList(List<String> asmMessageList, String slotNumber) {
+		// 호환성을 위해 첫 번째 AsmEntity 사용
+		setAsmMessageList(asmMessageList, slotNumber, this.asmEntity);
+	}
+	
+	public void setAsmMessageList(List<String> asmMessageList, String slotNumber, AsmEntity asmEntity) {
 		//
-		String vsiMessage = this.makeSendVsiMessage(Integer.parseInt(slotNumber), this.getAsmMessageSequence(), this.asmEntity.getStartTime());
+		String vsiMessage = this.makeSendVsiMessage(Integer.parseInt(slotNumber), this.getAsmMessageSequence(), asmEntity.getStartTime());
 		
 		this.asmMessageList = asmMessageList;
 		StringBuilder sb = new StringBuilder();
@@ -866,7 +979,7 @@ public class MmsiEntity {
 					//String aisMessage = this.message1.getEncoded();
 					
 					StringBuilder sbTime = new StringBuilder(SystemConstMessage.CRLF)
-							.append(TimeString.getLogDisplay(this.asmEntity.getStartTime()));
+							.append(TimeString.getLogDisplay(asmEntity.getStartTime()));
 					sbTime.append(" MMSI : ").append(this.mmsi);
 					sbTime.append(" ->");
 					sbTime.append(Formatter_61162_message);
@@ -891,7 +1004,7 @@ public class MmsiEntity {
 				Formatter_61162 Formatter_61162_VSI = new Formatter_61162(tagBlockVSI);
 				String Formatter_61162_VSI_message = Formatter_61162_VSI.getMessage();
 				
-				sb.append(SystemConstMessage.CRLF).append(TimeString.getLogDisplay(this.asmEntity.getStartTime()));
+				sb.append(SystemConstMessage.CRLF).append(TimeString.getLogDisplay(asmEntity.getStartTime()));
 				sb.append(" MMSI : ").append(this.mmsi);
 				sb.append(" ->");
 				sb.append(Formatter_61162_VSI_message);
@@ -932,7 +1045,7 @@ public class MmsiEntity {
 
 
 				// 메시지 송신 전에 destMMSI 리스트를 먼저 가져와서 저장 (송신 후 제거되기 전에 사용하기 위해)
-				List<Long> destMMSIListForSend = this.asmEntity.getDestMMSIList();
+				List<Long> destMMSIListForSend = asmEntity.getDestMMSIList();
 				
 				// MQTT로 ASM 메시지 전송
 				CompletableFuture.runAsync(() -> {
@@ -952,9 +1065,11 @@ public class MmsiEntity {
 										.collect(Collectors.toList());
 								nmeaObject.put("destMMSI", destMMSIStrList);
 								System.out.println("[DEBUG] ASM destMMSI 포함 - MMSI: " + this.mmsi + 
+										", ServiceId: " + (asmEntity.getServiceId() != null ? asmEntity.getServiceId() : "default") +
 										", destMMSI: " + destMMSIStrList);
 							} else {
-								System.out.println("[DEBUG] ⚠️ ASM destMMSI 리스트가 비어있음 - MMSI: " + this.mmsi);
+								System.out.println("[DEBUG] ⚠️ ASM destMMSI 리스트가 비어있음 - MMSI: " + this.mmsi + 
+										", ServiceId: " + (asmEntity.getServiceId() != null ? asmEntity.getServiceId() : "default"));
 							}
 							
 							List<Map<String, Object>> jsonArray = new ArrayList<>();
@@ -970,19 +1085,31 @@ public class MmsiEntity {
 							String topic = String.format("mg/ms/asm/%d/%s", this.mmsi, timestamp);
 							
 							mqttClient.publish(topic, jsonMessage, 0, false);
-							System.out.println("[DEBUG] ✅ MQTT로 ASM 메시지 전송 완료: MMSI=" + this.mmsi + ", Slot=" + slotNumber + ", Topic=" + topic);
+							System.out.println("[DEBUG] ✅ MQTT로 ASM 메시지 전송 완료: MMSI=" + this.mmsi + 
+									", ServiceId: " + (asmEntity.getServiceId() != null ? asmEntity.getServiceId() : "default") +
+									", Slot=" + slotNumber + ", Topic=" + topic);
 							
 							// 메시지 송신 완료 후 asmPeriod=0인 destMMSI 제거
-							int removedCount = this.asmEntity.removeDestMMSIWithAsmPeriod0();
+							int removedCount = asmEntity.removeDestMMSIWithAsmPeriod0();
 							if (removedCount > 0) {
 								System.out.println("[DEBUG] ✅ ASM 메시지 송신 후 asmPeriod=0인 destMMSI 제거 완료 - MMSI: " + this.mmsi + 
+										", ServiceId: " + (asmEntity.getServiceId() != null ? asmEntity.getServiceId() : "default") +
 										", 제거 개수: " + removedCount);
 							}
 							
-							// destMMSI 리스트가 비어있으면 ASM 비활성화
-							if (!this.asmEntity.hasDestMMSI()) {
-								System.out.println("[DEBUG] ✅ destMMSI 리스트가 비어있어 ASM 비활성화 - MMSI: " + this.mmsi);
-								this.setAsm(false);
+							// destMMSI 리스트가 비어있으면 해당 AsmEntity 제거 (다중 AsmEntity 지원)
+							if (!asmEntity.hasDestMMSI()) {
+								String serviceId = asmEntity.getServiceId();
+								if (serviceId != null) {
+									// 특정 AsmEntity만 제거
+									this.removeAsmEntity(serviceId);
+									System.out.println("[DEBUG] ✅ destMMSI 리스트가 비어있어 ASM 서비스 제거 - MMSI: " + this.mmsi + 
+											", ServiceId: " + serviceId);
+								} else {
+									// serviceId가 없으면 전체 ASM 비활성화 (호환성)
+									System.out.println("[DEBUG] ✅ destMMSI 리스트가 비어있어 ASM 비활성화 - MMSI: " + this.mmsi);
+									this.setAsm(false);
+								}
 							}
 						} else {
 							System.out.println("[DEBUG] ⚠️ MQTT 클라이언트가 연결되지 않았거나 사용할 수 없습니다.");
@@ -1021,16 +1148,15 @@ public class MmsiEntity {
 	 * destMMSI 리스트가 비어있으면 자동으로 setAsm(false) 호출하여 스케줄러 job 제거
 	 */
 	public boolean isAsm() {
-		// destMMSI 리스트가 비어있지 않을 때만 메시지 생성
-		if (!this.asmEntity.getDestMMSIList().isEmpty()) {
-			// destMMSI가 있고 asm이 true일 때만 true 반환
-			return this.asm;
+		// 여러 AsmEntity 중 하나라도 destMMSI가 있으면 true 반환
+		for (AsmEntity asmEntity : this.asmEntityMap.values()) {
+			if (asmEntity != null && !asmEntity.getDestMMSIList().isEmpty()) {
+				return true;
+			}
 		}
-		// destMMSI 리스트가 비어있으면 메시지 생성하지 않음
-		// asm이 true인 상태에서 destMMSI가 비어있으면 setAsm(false) 호출하여 스케줄러 job 제거
-		if (this.asm) {
-			System.out.println("[DEBUG] isAsm() 체크: destMMSI 리스트가 비어있어 setAsm(false) 호출 - MMSI: " + this.mmsi);
-			this.setAsm(false);
+		// 호환성을 위해 기존 asmEntity도 확인
+		if (this.asmEntity != null && !this.asmEntity.getDestMMSIList().isEmpty()) {
+			return true;
 		}
 		return false;
 	}

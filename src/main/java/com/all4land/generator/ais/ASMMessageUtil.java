@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.all4land.generator.system.schedule.SixbitEntityGenerator;
+import com.all4land.generator.entity.AsmEntity;
 import com.all4land.generator.entity.MmsiEntity;
 import com.all4land.generator.util.CRC16CCITT;
 
@@ -24,9 +25,14 @@ public class ASMMessageUtil {
 	
 	
 	public List<String> getMessage(String binaryData, MmsiEntity mmsiEntity) {
+		// 호환성을 위해 첫 번째 AsmEntity 사용
+		return getMessage(binaryData, mmsiEntity, mmsiEntity.getAsmEntity());
+	}
+	
+	public List<String> getMessage(String binaryData, MmsiEntity mmsiEntity, AsmEntity asmEntity) {
 		//
 		List<String> returnMessageList = new ArrayList<>();
-		List<String> sixBitDataList = this.sixbitEntityGenerator.makeSixbitMessage(mmsiEntity.getMmsi(), binaryData, mmsiEntity.getAsmEntity().getSlotCount());
+		List<String> sixBitDataList = this.sixbitEntityGenerator.makeSixbitMessage(mmsiEntity.getMmsi(), binaryData, asmEntity.getSlotCount());
 		
 		for(int i = 0; i < sixBitDataList.size() ; i++) {
 			//
@@ -36,7 +42,7 @@ public class ASMMessageUtil {
 			sbCrc.append(sixBitDataList.size()).append(",");
 			sbCrc.append(i+1).append(",");
 			sbCrc.append(mmsiEntity.getAsmMessageSequence()).append(",");
-			sbCrc.append(mmsiEntity.getAsmEntity().getChannel()).append(",");
+			sbCrc.append(asmEntity.getChannel()).append(",");
 			sbCrc.append(sixBitDataList.get(i));
 			
 			String crc = CRC16CCITT.calculateCRC16(sbCrc.toString());
@@ -48,7 +54,7 @@ public class ASMMessageUtil {
 			sb.append(sixBitDataList.size()).append(",");
 			sb.append(i+1).append(",");
 			sb.append(mmsiEntity.getAsmMessageSequence()).append(",");
-			sb.append(mmsiEntity.getAsmEntity().getChannel()).append(",");
+			sb.append(asmEntity.getChannel()).append(",");
 			sb.append(sixBitDataList.get(i)).append(",0*").append(crc);
 			
 			returnMessageList.add(sb.toString());

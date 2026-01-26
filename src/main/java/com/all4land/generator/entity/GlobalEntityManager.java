@@ -1211,6 +1211,11 @@ public class GlobalEntityManager {
 	// }
 
 	public void displayAsm(List<TargetCellInfoEntity> targetCellInfoEntitys, MmsiEntity mmsiEntity) {
+		// 호환성을 위해 첫 번째 AsmEntity 사용
+		displayAsm(targetCellInfoEntitys, mmsiEntity, mmsiEntity.getAsmEntity());
+	}
+	
+	public void displayAsm(List<TargetCellInfoEntity> targetCellInfoEntitys, MmsiEntity mmsiEntity, AsmEntity asmEntity) {
 		//
 		// UI 제거로 인해 주석 처리
 		// CustomTableCellRenderer renderer = (CustomTableCellRenderer) this.currentFrameJTableNameUpper
@@ -1218,13 +1223,15 @@ public class GlobalEntityManager {
 		// 마킹
 		String strValue = "";
 
+		String serviceId = asmEntity.getServiceId() != null ? asmEntity.getServiceId() : "default";
 		System.out.println("=================================");
-		System.out.println("[ASM Slot Count] : " + mmsiEntity.getAsmEntity().getSlotCount());
-		System.out.println("[ASM    Channel] : " + mmsiEntity.getAsmEntity().getChannel());
+		System.out.println("[ASM Slot Count] : " + asmEntity.getSlotCount());
+		System.out.println("[ASM    Channel] : " + asmEntity.getChannel());
+		System.out.println("[ASM ServiceId] : " + serviceId);
 		System.out.println("=================================");
-		if (mmsiEntity.getAsmEntity().getChannel() == 'A') {
+		if (asmEntity.getChannel() == 'A') {
 			//
-			switch (mmsiEntity.getAsmEntity().getSlotCount()) {
+			switch (asmEntity.getSlotCount()) {
 				case 1 -> {
 					strValue = "NSONESOFTNSONESOFTNSONESOFT1";
 					// UI 제거로 인해 주석 처리
@@ -1252,12 +1259,12 @@ public class GlobalEntityManager {
 				default -> {}
 			}
 
-			List<String> message = this.aSMMessageUtil.getMessage(strValue, mmsiEntity);
-			mmsiEntity.setAsmMessageList(message, targetCellInfoEntitys.get(0).getSlotNumber());
-			mmsiEntity.getAsmEntity().setChannel('B');
+			List<String> message = this.aSMMessageUtil.getMessage(strValue, mmsiEntity, asmEntity);
+			mmsiEntity.setAsmMessageList(message, targetCellInfoEntitys.get(0).getSlotNumber(), asmEntity);
+			asmEntity.setChannel('B');
 			mmsiEntity.setAsmMessageSequence(mmsiEntity.getAsmMessageSequence() + 1);
 		} else {
-			switch (mmsiEntity.getAsmEntity().getSlotCount()) {
+			switch (asmEntity.getSlotCount()) {
 				case 1 -> {
 					strValue = "NSONESOFTNSONESOFTNSONESOFT1";
 					// UI 제거로 인해 주석 처리
@@ -1285,9 +1292,9 @@ public class GlobalEntityManager {
 				default -> {
                         }
 			}
-			List<String> message = this.aSMMessageUtil.getMessage(strValue, mmsiEntity);
-			mmsiEntity.setAsmMessageList(message, targetCellInfoEntitys.get(0).getSlotNumber());
-			mmsiEntity.getAsmEntity().setChannel('A');
+			List<String> message = this.aSMMessageUtil.getMessage(strValue, mmsiEntity, asmEntity);
+			mmsiEntity.setAsmMessageList(message, targetCellInfoEntitys.get(0).getSlotNumber(), asmEntity);
+			asmEntity.setChannel('A');
 			mmsiEntity.setAsmMessageSequence(mmsiEntity.getAsmMessageSequence() + 1);
 		}
 		// UI 제거로 인해 주석 처리
