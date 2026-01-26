@@ -7,11 +7,13 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
 import com.all4land.generator.entity.GlobalEntityManager;
+import com.all4land.generator.entity.SlotStateManager;
 import com.all4land.generator.system.component.TimeMapRangeCompnents;
 import com.all4land.generator.system.component.VirtualTimeManager;
 import com.all4land.generator.system.mqtt.MqttClientConfiguration;
 import com.all4land.generator.system.mqtt.MqttMessageProcessor;
 import com.all4land.generator.system.netty.send.config.NettyServerTCPConfiguration;
+import com.all4land.generator.system.queue.TsqMessageQueue;
 import com.all4land.generator.system.schedule.QuartzCoreService;
 import com.all4land.generator.system.util.BeanUtils;
 import com.all4land.generator.ui.tab.ais.model.TcpServerTableModel;
@@ -36,6 +38,8 @@ public class ApplicationInitializer implements CommandLineRunner {
 	private final TcpServerTableModel tcpServerTableModel;
 	private final UdpServerTableModel udpServerTableModel;
 	private final TimeMapRangeCompnents timeMapRangeCompnents;
+	private final SlotStateManager slotStateManager;
+	private final TsqMessageQueue tsqMessageQueue;
 	
 	// MQTT 설정 (application.properties에서 읽어옴)
 	@Value("${mqtt.broker.url:tcp://localhost:1883}")
@@ -54,7 +58,9 @@ public class ApplicationInitializer implements CommandLineRunner {
 			ApplicationEventPublisher eventPublisher,
 			TcpServerTableModel tcpServerTableModel,
 			UdpServerTableModel udpServerTableModel,
-			TimeMapRangeCompnents timeMapRangeCompnents) {
+			TimeMapRangeCompnents timeMapRangeCompnents,
+			SlotStateManager slotStateManager,
+			TsqMessageQueue tsqMessageQueue) {
 		this.globalEntityManager = globalEntityManager;
 		this.scheduler = scheduler;
 		this.quartzCoreService = quartzCoreService;
@@ -63,6 +69,8 @@ public class ApplicationInitializer implements CommandLineRunner {
 		this.tcpServerTableModel = tcpServerTableModel;
 		this.udpServerTableModel = udpServerTableModel;
 		this.timeMapRangeCompnents = timeMapRangeCompnents;
+		this.slotStateManager = slotStateManager;
+		this.tsqMessageQueue = tsqMessageQueue;
 	}
 
 	@Override
@@ -155,7 +163,10 @@ public class ApplicationInitializer implements CommandLineRunner {
 				eventPublisher,
 				tcpServerTableModel,
 				udpServerTableModel,
-				timeMapRangeCompnents
+				timeMapRangeCompnents,
+				slotStateManager,
+				tsqMessageQueue,
+				mqttClient
 			);
 			
 			// MQTT 클라이언트 연결 및 구독

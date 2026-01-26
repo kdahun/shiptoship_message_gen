@@ -79,7 +79,6 @@ public class TerrestrialSlotResourceRequest {
 	 */
 	public static String getTerrestrialSlotResourceRequestNewFormat(String seq, String sourceMmsi, String destMmsi, 
 			String physicalChannelNumber, String linkId) {
-		//
 		String delimiter = "$";
 		String talker = "VA";
 		String formatter = "TSQ";

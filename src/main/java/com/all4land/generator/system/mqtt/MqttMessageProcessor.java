@@ -6,6 +6,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import java.util.List;
 
 import com.all4land.generator.entity.GlobalEntityManager;
+import com.all4land.generator.entity.SlotStateManager;
 import com.all4land.generator.system.component.TimeMapRangeCompnents;
 import com.all4land.generator.system.component.VirtualTimeManager;
 import com.all4land.generator.system.netty.dto.CreateMmsiRequest;
@@ -16,9 +17,12 @@ import com.google.gson.reflect.TypeToken;
 import com.all4land.generator.system.netty.dto.AsmControlMessage.AsmShipControl;
 import com.all4land.generator.system.netty.dto.AsmControlMessage;
 import com.all4land.generator.system.netty.dto.TsqResourceRequestMessage;
+import com.all4land.generator.system.netty.dto.TsqMqttResponseMessage;
+import com.all4land.generator.system.queue.TsqMessageQueue;
 import com.all4land.generator.ui.tab.ais.model.TcpServerTableModel;
 import com.all4land.generator.ui.tab.ais.model.UdpServerTableModel;
 import com.all4land.generator.ais.ESIMessageUtil;
+import com.all4land.generator.ais.TerrestrialSlotResourceRequest;
 import com.all4land.generator.system.constant.SystemConstMessage;
 import com.all4land.generator.ui.tab.ais.entity.TcpServerTableEntity;
 import com.all4land.generator.ui.tab.ais.entity.TcpTargetClientInfoEntity;
@@ -27,6 +31,9 @@ import com.all4land.generator.system.netty.send.config.NettyServerTCPConfigurati
 import com.all4land.generator.system.netty.send.config.NettyServerUDPConfiguration;
 import io.netty.channel.Channel;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 /**
  * MQTT 메시지를 처리하는 클래스
@@ -42,6 +49,9 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 	private final TcpServerTableModel tcpServerTableModel;
 	private final UdpServerTableModel udpServerTableModel;
 	private final TimeMapRangeCompnents timeMapRangeCompnents;
+	private final SlotStateManager slotStateManager;
+	private final TsqMessageQueue tsqMessageQueue;
+	private final MqttClientConfiguration mqttClient;
 	private final Gson gson = new Gson();
 	private final AtomicInteger tsqSeq = new AtomicInteger(1);
 	
@@ -52,7 +62,10 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 			ApplicationEventPublisher eventPublisher,
 			TcpServerTableModel tcpServerTableModel,
 			UdpServerTableModel udpServerTableModel,
-			TimeMapRangeCompnents timeMapRangeCompnents) {
+			TimeMapRangeCompnents timeMapRangeCompnents,
+			SlotStateManager slotStateManager,
+			TsqMessageQueue tsqMessageQueue,
+			MqttClientConfiguration mqttClient) {
 		this.globalEntityManager = globalEntityManager;
 		this.scheduler = scheduler;
 		this.quartzCoreService = quartzCoreService;
@@ -61,19 +74,17 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 		this.tcpServerTableModel = tcpServerTableModel;
 		this.udpServerTableModel = udpServerTableModel;
 		this.timeMapRangeCompnents = timeMapRangeCompnents;
+		this.slotStateManager = slotStateManager;
+		this.tsqMessageQueue = tsqMessageQueue;
+		this.mqttClient = mqttClient;
 	}
 	
 	@Override
 	public void onMessage(String topic, String message) {
-		System.out.println("[DEBUG] ========== MQTT 메시지 수신 ==========");
-		System.out.println("[DEBUG] 토픽: " + topic);
-		System.out.println("[DEBUG] 메시지: " + message);
 		
 		// 토픽에서 정보 추출
-		// 형식 1: {송신 식별자}/{수신 식별자}/{카테고리}/{액션}/{timestamp}
+		// 형식: {송신 식별자}/{수신 식별자}/{카테고리}/{액션}/{timestamp}
 		//   예시: mt/mg/traffic-ships/create/20260116112354
-		// 형식 2: mg/ms/tsq/{mmsi}/{timestamp}/
-		//   예시: mg/ms/tsq/440115678/20260122123456.1234/
 		String normalizedTopic = topic.startsWith("/") ? topic.substring(1) : topic;
 		String[] topicParts = normalizedTopic.split("/");
 		
@@ -82,19 +93,8 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 		String category = null;
 		String action = null;
 		String timestamp = null;
-		String mmsi = null;
 		
-		// 새로운 TSQ 토픽 형식 체크: mg/ms/tsq/{mmsi}/{timestamp}/
-		if (topicParts.length >= 4 && "mg".equals(topicParts[0]) && "ms".equals(topicParts[1]) && "tsq".equals(topicParts[2])) {
-			mmsi = topicParts[3];
-			timestamp = topicParts.length >= 5 ? topicParts[4] : null;
-			action = "tsq";
-			
-			System.out.println("[DEBUG] TSQ 토픽 형식 감지:");
-			System.out.println("[DEBUG]   - MMSI: " + mmsi);
-			System.out.println("[DEBUG]   - Timestamp: " + timestamp);
-			System.out.println("[DEBUG]   - 액션: " + action);
-		} else if (topicParts.length >= 5) {
+		if (topicParts.length >= 5) {
 			// 기존 형식: split("/") 결과: ["mt", "mg", "traffic-ships", "create", "20260116112354"]
 			int offset = topicParts[0].isEmpty() ? 1 : 0; // 앞에 /가 있으면 offset=1
 			senderId = topicParts[offset];         // 송신 식별자 (예: mt)
@@ -129,9 +129,9 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 						// ASM 상태 제어: traffic-ships/asm-state
 						processAsmStateMessage(message);
 						break;
-					case "tsq":
-						// TSQ 메시지 전송: mg/ms/tsq/{mmsi}/{timestamp}/
-						processTsqMessage(message, mmsi);
+					case "tsq-state":
+						// TSQ 상태 제어: traffic-ships/tsq-state/{timestamp}
+						processTsqStateMessage(message);
 						break;
 					case "sim-state":
 						// 시뮬레이터 배속 제어: simulator/sim-state
@@ -729,15 +729,13 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 	}
 	
 	/**
-	 * TSQ 메시지를 처리합니다.
-	 * 토픽: mg/ms/tsq/{mmsi}/{yyyyMMddhhmmss.SSSS}/
+	 * TSQ 상태 메시지를 처리하고 큐에 저장합니다.
+	 * 토픽: mt/mg/traffic-ships/tsq-state/{timestamp}
 	 * 
-	 * @param message JSON 메시지
-	 * @param sourceMmsi 토픽에서 추출한 MMSI
+	 * @param message JSON 메시지 (TSQ 요청 리스트)
 	 */
-	private void processTsqMessage(String message, String sourceMmsi) {
-		System.out.println("[DEBUG] ========== TSQ 메시지 처리 시작 ==========");
-		System.out.println("[DEBUG] Source MMSI: " + sourceMmsi);
+	private void processTsqStateMessage(String message) {
+		System.out.println("[DEBUG] ========== TSQ 상태 메시지 처리 시작 ==========");
 		
 		try {
 			String trimmedMessage = message.trim();
@@ -754,158 +752,204 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 			}
 			
 			if (tsqRequests != null && !tsqRequests.isEmpty()) {
-				handleTsqResourceRequest(tsqRequests, sourceMmsi);
+				// 각 TSQ 요청을 큐에 저장
+				for (TsqResourceRequestMessage request : tsqRequests) {
+					tsqMessageQueue.offer(request);
+				}
+				System.out.println("[DEBUG] ✅ TSQ 요청 " + tsqRequests.size() + "개를 큐에 저장 완료");
+				
+				// 큐에 메시지가 추가되었으므로 처리 시작
+				processTsqQueue();
 			} else {
 				System.out.println("[DEBUG] ⚠️ TSQ 메시지가 비어있습니다.");
 			}
 		} catch (JsonSyntaxException e) {
-			System.out.println("[DEBUG] ❌ TSQ 메시지 JSON 파싱 오류: " + e.getMessage());
+			System.out.println("[DEBUG] ❌ TSQ 상태 메시지 JSON 파싱 오류: " + e.getMessage());
 			e.printStackTrace();
 		} catch (Exception e) {
-			System.out.println("[DEBUG] ❌ TSQ 메시지 처리 중 오류 발생: " + e.getMessage());
+			System.out.println("[DEBUG] ❌ TSQ 상태 메시지 처리 중 오류 발생: " + e.getMessage());
 			e.printStackTrace();
 		}
 	}
 	
 	/**
-	 * TSQ 리소스 요청 메시지를 처리합니다.
-	 * 각 요청에 대해 TSQ 메시지를 생성하고 전송합니다.
-	 * 
-	 * 메시지 형식:
-	 * $VATSQ,111,seq,sourceMmsi,sourceMmsi,destMmsi,destMmsi,physicalChannelNumber,linkId*CRC
-	 * \r\n ESI 메시지
-	 * \r\n 용량,serviceType
-	 * 
-	 * @param tsqRequests TSQ 요청 리스트
-	 * @param sourceMmsi 송신 MMSI (토픽에서 추출)
+	 * TSQ 큐에 있는 메시지들을 처리합니다.
+	 * TSQ_TEST_SLOT_NUMBER_ALL 세트에서 비어있는 슬롯을 찾아 메시지를 전송합니다.
 	 */
-	private void handleTsqResourceRequest(List<TsqResourceRequestMessage> tsqRequests, String sourceMmsi) {
-		System.out.println("[DEBUG] ========== TSQ 리소스 요청 처리 시작 ==========");
-		System.out.println("[DEBUG] 요청 개수: " + tsqRequests.size());
+	private void processTsqQueue() {
+		// 큐가 비어있지 않으면 계속 처리
+		while (!tsqMessageQueue.isEmpty()) {
+			// 큐에서 하나의 요청 확인 (peek로 확인, 처리 성공 시에만 poll)
+			TsqResourceRequestMessage request = tsqMessageQueue.peek();
+			if (request == null) {
+				break;
+			}
+			
+			// TSQ_TEST_SLOT_NUMBER_ALL 세트에서 비어있는 슬롯 찾기
+			int availableSlot = findAvailableTsqSlot();
+			
+			if (availableSlot == -1) {
+				// 전송 가능한 슬롯이 없으면 대기 (다음에 다시 시도)
+				System.out.println("[DEBUG] ⚠️ 전송 가능한 TSQ 슬롯이 없습니다. 큐에 " + tsqMessageQueue.size() + "개 메시지 대기 중...");
+				break; // 나중에 다시 시도하도록 큐에 유지
+			}
+			
+			// 슬롯을 찾았으면 큐에서 제거하고 전송
+			tsqMessageQueue.poll();
+			sendTsqMessage(request, availableSlot);
+		}
+	}
+	
+	/**
+	 * TSQ_TEST_SLOT_NUMBER_ALL 세트에서 비어있는 슬롯을 찾습니다.
+	 * @return 비어있는 슬롯 번호, 없으면 -1
+	 */
+	private int findAvailableTsqSlot() {
+		// TSQ_TEST_SLOT_NUMBER_ALL 세트의 슬롯 중 비어있는 슬롯 찾기
+		Set<Integer> tsqSlots = SystemConstMessage.TSQ_TEST_SLOT_NUMBER_ALL;
+		for (Integer slotNumber : tsqSlots) {
+			if (!slotStateManager.isSlotOccupied(slotNumber)) {
+				System.out.println("[DEBUG] 전송 가능한 TSQ 슬롯 발견: " + slotNumber);
+				return slotNumber;
+			}
+		}
+		return -1; // 전송 가능한 슬롯 없음
+	}
+	
+	/**
+	 * TSQ 메시지를 생성하고 MQTT로 전송합니다.
+	 * @param request TSQ 리소스 요청 메시지
+	 * @param slotNumber 전송할 슬롯 번호
+	 */
+	private void sendTsqMessage(TsqResourceRequestMessage request, int slotNumber) {
+		System.out.println("[DEBUG] ========== TSQ 메시지 전송 시작 ==========");
+		System.out.println("[DEBUG] Service: " + request.getService() + 
+				", Type: " + request.getType() + 
+				", Size: " + request.getSize() + 
+				", SourceMMSI: " + request.getSourceMmsi() + 
+				", DestMMSI: " + request.getDestMmsi() +
+				", SlotNumber: " + slotNumber);
 		
-		if (tsqRequests == null || tsqRequests.isEmpty()) {
-			System.out.println("[DEBUG] ⚠️ TSQ 리소스 요청이 비어있습니다.");
+		// 필수 필드 검증
+		if (request.getService() == null || request.getService().trim().isEmpty()) {
+			System.out.println("[DEBUG] ⚠️ service가 비어있습니다.");
+			return;
+		}
+		if (request.getType() == null || request.getType().trim().isEmpty()) {
+			System.out.println("[DEBUG] ⚠️ type이 비어있습니다.");
+			return;
+		}
+		if (request.getSize() == null || request.getSize().trim().isEmpty()) {
+			System.out.println("[DEBUG] ⚠️ size가 비어있습니다.");
+			return;
+		}
+		if (request.getSourceMmsi() == null || request.getSourceMmsi().trim().isEmpty()) {
+			System.out.println("[DEBUG] ⚠️ sourceMmsi가 비어있습니다.");
+			return;
+		}
+		if (request.getDestMmsi() == null || request.getDestMmsi().trim().isEmpty()) {
+			System.out.println("[DEBUG] ⚠️ destMmsi가 비어있습니다.");
 			return;
 		}
 		
-		// 현재 시간 기반 slotNumber 계산
-		LocalDateTime now = LocalDateTime.now();
-		String formatNow = now.format(SystemConstMessage.formatterForStartIndex);
-		int slotNumber = timeMapRangeCompnents.findSlotNumber(formatNow);
+		// 가상 시간 사용
+		LocalDateTime virtualTime = virtualTimeManager.getCurrentVirtualTime();
 		
-		if (slotNumber == -1) {
-			System.out.println("[DEBUG] ❌ 현재 시간에 대한 슬롯 번호를 찾을 수 없습니다: " + formatNow);
+		// 슬롯 점유 처리
+		try {
+			Long sourceMmsiLong = Long.parseLong(request.getSourceMmsi());
+			boolean occupied = slotStateManager.occupySlot(slotNumber, sourceMmsiLong, 
+					virtualTime, null, "TSQ");
+			if (!occupied) {
+				System.out.println("[DEBUG] ⚠️ 슬롯 " + slotNumber + " 점유 실패 (이미 점유됨)");
+				// 큐에 다시 넣기
+				tsqMessageQueue.offer(request);
+				return;
+			}
+			System.out.println("[DEBUG] ✅ 슬롯 " + slotNumber + " 점유 완료");
+		} catch (NumberFormatException e) {
+			System.out.println("[DEBUG] ❌ sourceMmsi 파싱 오류: " + request.getSourceMmsi());
 			return;
 		}
 		
 		// TDMA 프레임 계산 (slotNumber / 90)
 		int tdmaFrame = slotNumber / 90;
 		
-		System.out.println("[DEBUG] 현재 시간: " + formatNow + ", 슬롯 번호: " + slotNumber + ", TDMA 프레임: " + tdmaFrame);
-		
 		// GlobalEntityManager에서 UUID 값 가져오기
 		String shoreStationId = globalEntityManager.getUuid();
 		
-		// 각 TSQ 요청 처리
-		for (TsqResourceRequestMessage request : tsqRequests) {
-			try {
-				String service = request.getService();
-				String serviceSize = request.getServiceSize();
-				List<String> destMMSIList = request.getDestMMSI();
-				String nmeaMessage = request.getNmea();
-				
-				if (destMMSIList == null || destMMSIList.isEmpty()) {
-					System.out.println("[DEBUG] ⚠️ destMMSI 리스트가 비어있습니다. Service: " + service);
-					continue;
-				}
-				
-				if (nmeaMessage == null || nmeaMessage.trim().isEmpty()) {
-					System.out.println("[DEBUG] ⚠️ NMEA 메시지가 비어있습니다. Service: " + service);
-					continue;
-				}
-				
-				System.out.println("[DEBUG] TSQ 요청 처리 - Service: " + service + ", ServiceSize: " + serviceSize + 
-						", SourceMMSI: " + sourceMmsi + ", DestMMSI 개수: " + destMMSIList.size());
-				
-				// 각 destMMSI에 대해 메시지 전송
-				for (String destMmsi : destMMSIList) {
-					try {
-						// 시퀀스 번호 증가
-						int seq = tsqSeq.getAndIncrement();
-						if (seq >= 1000) {
-							tsqSeq.set(1);
-							seq = 1;
-						}
-						
-						// ESI 메시지 생성
-						String linkId = "19";
-						String channelLeg = "0";
-						String tdmachannel = "0";
-						String totalAccountSlot = "14";
-						String firstSlotNumber = String.valueOf(slotNumber);
-						
-						ESIMessageUtil esi = new ESIMessageUtil(shoreStationId, channelLeg, String.valueOf(tdmaFrame), 
-								tdmachannel, totalAccountSlot, firstSlotNumber, linkId);
-						String esiMessage = esi.getMessage();
-						
-						// 전체 메시지 조립
-						// 형식: NMEA (TSQ) + CRLF + ESI 메시지 + CRLF + 용량,serviceType
-						StringBuilder sb = new StringBuilder();
-						sb.append(nmeaMessage).append(SystemConstMessage.CRLF);
-						sb.append(esiMessage).append(SystemConstMessage.CRLF);
-						sb.append(serviceSize).append(",").append(service).append(SystemConstMessage.CRLF);
-						
-						String fullMessage = sb.toString();
-						System.out.println("[DEBUG] 생성된 TSQ 메시지 (DestMMSI: " + destMmsi + "):\n" + fullMessage);
-						
-						// TCP 클라이언트로 전송
-						if (tcpServerTableModel != null) {
-							for (TcpServerTableEntity tcpServerTableEntity : tcpServerTableModel.getTcpServerTableEntitys()) {
-								if (tcpServerTableEntity.isStatus() && tcpServerTableEntity.getNettyServerTCPConfiguration() != null) {
-									for (TcpTargetClientInfoEntity tcpTargetClientInfoEntity : tcpServerTableEntity.getTcpTargetClientInfoEntitys()) {
-										if (tcpTargetClientInfoEntity.isTsq()) {
-											Channel clientChannel = tcpTargetClientInfoEntity.getClientChannel();
-											String ip = tcpTargetClientInfoEntity.getIp();
-											int port = tcpTargetClientInfoEntity.getPort();
-											
-											NettyServerTCPConfiguration nettyServerTCPConfiguration = 
-													tcpServerTableEntity.getNettyServerTCPConfiguration();
-											nettyServerTCPConfiguration.sendToClient(clientChannel, ip, port, fullMessage);
-											
-											System.out.println("[DEBUG] ✅ TSQ 메시지 TCP 전송 완료 - DestMMSI: " + destMmsi + 
-													", IP: " + ip + ", Port: " + port);
-										}
-									}
-								}
-							}
-						}
-						
-						// UDP 클라이언트로 전송
-						if (udpServerTableModel != null) {
-							for (UdpServerTableEntity udpServerTableEntity : udpServerTableModel.getUdpServerTableEntitys()) {
-								if (udpServerTableEntity.isStatus() && udpServerTableEntity.getNettyServerUDPConfiguration() != null) {
-									NettyServerUDPConfiguration nettyServerUDPConfiguration = 
-											udpServerTableEntity.getNettyServerUDPConfiguration();
-									nettyServerUDPConfiguration.sendToClient(fullMessage);
-									
-									System.out.println("[DEBUG] ✅ TSQ 메시지 UDP 전송 완료 - DestMMSI: " + destMmsi);
-								}
-							}
-						}
-						
-					} catch (Exception e) {
-						System.out.println("[DEBUG] ❌ DestMMSI " + destMmsi + "에 대한 TSQ 메시지 전송 중 오류: " + e.getMessage());
-						e.printStackTrace();
-					}
-				}
-				
-			} catch (Exception e) {
-				System.out.println("[DEBUG] ❌ TSQ 리소스 요청 처리 중 오류 발생: " + e.getMessage());
-				e.printStackTrace();
-			}
+		// 시퀀스 번호 증가
+		int seq = tsqSeq.getAndIncrement();
+		if (seq >= 1000) {
+			tsqSeq.set(1);
+			seq = 1;
 		}
 		
-		System.out.println("[DEBUG] ========== TSQ 리소스 요청 처리 완료 ==========");
+		// ESI 메시지 생성에 필요한 파라미터
+		String linkId = "19";
+		String channelLeg = "0";
+		String tdmachannel = "0";
+		String totalAccountSlot = "14";
+		String firstSlotNumber = String.valueOf(slotNumber);
+		String physicalChannelNumber = "0"; // TSQ 메시지 생성에 사용
+		
+		// ESI 메시지 생성
+		ESIMessageUtil esi = new ESIMessageUtil(shoreStationId, channelLeg, String.valueOf(tdmaFrame), 
+				tdmachannel, totalAccountSlot, firstSlotNumber, linkId);
+		String esiMessage = esi.getMessage();
+		
+		// TSQ NMEA 메시지 생성
+		String tsqNmeaMessage = TerrestrialSlotResourceRequest.getTerrestrialSlotResourceRequestNewFormat(
+				String.valueOf(seq), request.getSourceMmsi(), request.getDestMmsi(), physicalChannelNumber, linkId);
+		
+		// NMEA 필드에 TSQ 메시지 + CRLF + ESI 메시지 조립
+		StringBuilder nmeaBuilder = new StringBuilder();
+		nmeaBuilder.append(tsqNmeaMessage).append(SystemConstMessage.CRLF);
+		nmeaBuilder.append(esiMessage);
+		String nmeaWithEsi = nmeaBuilder.toString();
+		
+		// MQTT로 전송
+		if (mqttClient != null && mqttClient.isConnected()) {
+			try {
+				// MQTT 토픽 형식: mg/ms/tsq/{sourceMmsi}/{yyyyMMddhhmmss.SSSS}/
+				// 가상 시간 사용
+				String timestamp = virtualTime.format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")) + 
+						String.format("%04d", virtualTime.getNano() / 100000);
+				String mqttTopic = "mg/ms/tsq/" + request.getSourceMmsi() + "/" + timestamp + "/";
+				
+				// MQTT 송신용 DTO 생성
+				TsqMqttResponseMessage mqttResponse = new TsqMqttResponseMessage();
+				mqttResponse.setService(request.getService());
+				mqttResponse.setServiceSize(request.getSize());
+				mqttResponse.setDestMMSI(Arrays.asList(request.getDestMmsi()));
+				mqttResponse.setNMEA(nmeaWithEsi); // TSQ + CRLF + ESI 포함
+				
+				// JSON 배열로 변환
+				List<TsqMqttResponseMessage> mqttResponseList = Arrays.asList(mqttResponse);
+				String mqttMessage = gson.toJson(mqttResponseList);
+				
+				mqttClient.publish(mqttTopic, mqttMessage, 1, false);
+				
+				System.out.println("[DEBUG] ✅ TSQ 메시지 MQTT 전송 완료 - Service: " + request.getService() + 
+						", Topic: " + mqttTopic + ", SlotNumber: " + slotNumber);
+				System.out.println("[DEBUG] 전송된 메시지:\n" + mqttMessage);
+			} catch (Exception e) {
+				System.out.println("[DEBUG] ❌ TSQ 메시지 MQTT 전송 중 오류: " + e.getMessage());
+				e.printStackTrace();
+				// 전송 실패 시 슬롯 해제
+				slotStateManager.releaseSlot(slotNumber);
+				// 큐에 다시 넣기
+				tsqMessageQueue.offer(request);
+			}
+		} else {
+			System.out.println("[DEBUG] ⚠️ MQTT 클라이언트가 연결되지 않았거나 사용할 수 없습니다.");
+			// MQTT 클라이언트가 없으면 슬롯 해제
+			slotStateManager.releaseSlot(slotNumber);
+			// 큐에 다시 넣기
+			tsqMessageQueue.offer(request);
+		}
+		
+		System.out.println("[DEBUG] ========== TSQ 메시지 전송 완료 ==========");
 	}
 }
 
