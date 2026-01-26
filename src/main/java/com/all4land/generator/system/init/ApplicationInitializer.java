@@ -15,9 +15,12 @@ import com.all4land.generator.system.mqtt.MqttMessageProcessor;
 import com.all4land.generator.system.netty.send.config.NettyServerTCPConfiguration;
 import com.all4land.generator.system.queue.TsqMessageQueue;
 import com.all4land.generator.system.schedule.QuartzCoreService;
+import com.all4land.generator.system.component.ApplicationContextProvider;
 import com.all4land.generator.system.util.BeanUtils;
 import com.all4land.generator.ui.tab.ais.model.TcpServerTableModel;
 import com.all4land.generator.ui.tab.ais.model.UdpServerTableModel;
+
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -154,7 +157,7 @@ public class ApplicationInitializer implements CommandLineRunner {
 			// MQTT 클라이언트 초기화
 			mqttClient.initialize(brokerUrl, clientId, mqttTopics, mqttQos);
 			
-			// 메시지 처리 콜백 생성
+			// 메시지 처리 콜백 생성 및 Bean 등록
 			MqttMessageProcessor messageProcessor = new MqttMessageProcessor(
 				globalEntityManager,
 				scheduler,
@@ -168,6 +171,13 @@ public class ApplicationInitializer implements CommandLineRunner {
 				tsqMessageQueue,
 				mqttClient
 			);
+			// MqttMessageProcessor를 Spring Bean으로 등록 (TsqEntityChangeStartDateQuartz에서 사용)
+			BeanUtils.registerBean("mqttMessageProcessor", MqttMessageProcessor.class);
+			// 등록된 Bean에 인스턴스 설정
+			DefaultListableBeanFactory beanFactory = ApplicationContextProvider.getDefaultListableBeanFactory();
+			if (beanFactory != null) {
+				beanFactory.registerSingleton("mqttMessageProcessor", messageProcessor);
+			}
 			
 			// MQTT 클라이언트 연결 및 구독
 			boolean connected = mqttClient.connect(messageProcessor);

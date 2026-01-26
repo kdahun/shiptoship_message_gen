@@ -11,6 +11,7 @@ import com.all4land.generator.system.component.TimeMapRangeCompnents;
 import com.all4land.generator.system.component.VirtualTimeManager;
 import com.all4land.generator.system.netty.dto.CreateMmsiRequest;
 import com.all4land.generator.system.schedule.QuartzCoreService;
+import com.all4land.generator.system.schedule.job.TsqEntityChangeStartDateQuartz;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
@@ -31,14 +32,30 @@ import com.all4land.generator.system.netty.send.config.NettyServerTCPConfigurati
 import com.all4land.generator.system.netty.send.config.NettyServerUDPConfiguration;
 import io.netty.channel.Channel;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.quartz.JobBuilder;
+import org.quartz.JobDataMap;
+import org.quartz.JobDetail;
+import org.quartz.SchedulerException;
+import org.quartz.Trigger;
+import org.quartz.TriggerBuilder;
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * MQTT 메시지를 처리하는 클래스
  * TCP 서버와 동일한 방식으로 메시지를 처리합니다.
  */
+@Slf4j
 public class MqttMessageProcessor implements MqttMessageCallback {
 	
 	private final GlobalEntityManager globalEntityManager;
@@ -54,6 +71,7 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 	private final MqttClientConfiguration mqttClient;
 	private final Gson gson = new Gson();
 	private final AtomicInteger tsqSeq = new AtomicInteger(1);
+	private final AtomicBoolean isProcessingQueue = new AtomicBoolean(false);
 	
 	public MqttMessageProcessor(GlobalEntityManager globalEntityManager,
 			Scheduler scheduler,
@@ -775,45 +793,131 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 	/**
 	 * TSQ 큐에 있는 메시지들을 처리합니다.
 	 * TSQ_TEST_SLOT_NUMBER_ALL 세트에서 비어있는 슬롯을 찾아 메시지를 전송합니다.
+	 * 동시성 제어를 위해 AtomicBoolean을 사용하여 한 번에 하나의 스레드만 실행됩니다.
 	 */
-	private void processTsqQueue() {
-		// 큐가 비어있지 않으면 계속 처리
-		while (!tsqMessageQueue.isEmpty()) {
-			// 큐에서 하나의 요청 확인 (peek로 확인, 처리 성공 시에만 poll)
-			TsqResourceRequestMessage request = tsqMessageQueue.peek();
-			if (request == null) {
-				break;
+	public void processTsqQueue() {
+		// 이미 처리 중이면 스킵
+		if (!isProcessingQueue.compareAndSet(false, true)) {
+			System.out.println("[DEBUG] ⚠️ processTsqQueue()가 이미 실행 중입니다. 스킵합니다.");
+			return;
+		}
+		
+		try {
+			// 큐가 비어있지 않으면 계속 처리
+			while (!tsqMessageQueue.isEmpty()) {
+				// 큐에서 하나의 요청 확인 (peek로 확인, 처리 성공 시에만 poll)
+				TsqResourceRequestMessage request = tsqMessageQueue.peek();
+				if (request == null) {
+					break;
+				}
+				
+				// TSQ_TEST_SLOT_NUMBER_ALL 세트에서 비어있는 슬롯 찾기
+				int availableSlot = findAvailableTsqSlot();
+				
+				if (availableSlot == -1) {
+					// 전송 가능한 슬롯이 없으면 대기 (다음에 다시 시도)
+					System.out.println("[DEBUG] ⚠️ 전송 가능한 TSQ 슬롯이 없습니다. 큐에 " + tsqMessageQueue.size() + "개 메시지 대기 중...");
+					break; // 나중에 다시 시도하도록 큐에 유지
+				}
+				
+				// 슬롯을 찾았으면 큐에서 제거하고 전송
+				tsqMessageQueue.poll();
+				sendTsqMessage(request, availableSlot);
 			}
-			
-			// TSQ_TEST_SLOT_NUMBER_ALL 세트에서 비어있는 슬롯 찾기
-			int availableSlot = findAvailableTsqSlot();
-			
-			if (availableSlot == -1) {
-				// 전송 가능한 슬롯이 없으면 대기 (다음에 다시 시도)
-				System.out.println("[DEBUG] ⚠️ 전송 가능한 TSQ 슬롯이 없습니다. 큐에 " + tsqMessageQueue.size() + "개 메시지 대기 중...");
-				break; // 나중에 다시 시도하도록 큐에 유지
-			}
-			
-			// 슬롯을 찾았으면 큐에서 제거하고 전송
-			tsqMessageQueue.poll();
-			sendTsqMessage(request, availableSlot);
+		} finally {
+			isProcessingQueue.set(false);
 		}
 	}
 	
 	/**
 	 * TSQ_TEST_SLOT_NUMBER_ALL 세트에서 비어있는 슬롯을 찾습니다.
+	 * 가상 시간의 현재 슬롯 번호 이후부터 검색합니다.
 	 * @return 비어있는 슬롯 번호, 없으면 -1
 	 */
 	private int findAvailableTsqSlot() {
-		// TSQ_TEST_SLOT_NUMBER_ALL 세트의 슬롯 중 비어있는 슬롯 찾기
+		// 가상 시간 기반 현재 슬롯 번호 계산
+		LocalDateTime virtualTime = virtualTimeManager.getCurrentVirtualTime();
+		String formatNow = virtualTime.format(SystemConstMessage.formatterForStartIndex);
+		int currentSlotNumber = timeMapRangeCompnents.findSlotNumber(formatNow);
+
+		log.info("currentSlotNumber: {}", currentSlotNumber);
+
+		if (currentSlotNumber == -1) {
+			log.warn("현재 시간에 대한 슬롯 번호를 찾을 수 없습니다: {}", formatNow);
+			// 슬롯 번호를 찾을 수 없으면 처음부터 검색
+			currentSlotNumber = 0;
+		}
+		
+		// TSQ_TEST_SLOT_NUMBER_ALL 세트를 정렬된 리스트로 변환
 		Set<Integer> tsqSlots = SystemConstMessage.TSQ_TEST_SLOT_NUMBER_ALL;
-		for (Integer slotNumber : tsqSlots) {
+		List<Integer> sortedSlots = new ArrayList<>(tsqSlots);
+		
+		//Collections.sort(sortedSlots);
+		
+		// 현재 슬롯 번호 이후부터 검색
+		int startIndex = -1;
+		for (int i = 0; i < sortedSlots.size(); i++) {
+			if (sortedSlots.get(i) >= currentSlotNumber) {
+				startIndex = i;
+				break;
+			}
+		}
+		
+		// 현재 슬롯 이후부터 끝까지 검색
+		if (startIndex != -1) {
+			for (int i = startIndex; i < sortedSlots.size(); i++) {
+				Integer slotNumber = sortedSlots.get(i);
+				if (!slotStateManager.isSlotOccupied(slotNumber)) {
+					System.out.println("[DEBUG] 전송 가능한 TSQ 슬롯 발견 (현재 슬롯 " + currentSlotNumber + " 이후): " + slotNumber);
+					return slotNumber;
+				}
+			}
+		}
+		
+		// 현재 슬롯 이후에 사용 가능한 슬롯이 없으면 처음부터 현재 슬롯 전까지 검색 (순환)
+		int endIndex = (startIndex != -1) ? startIndex : sortedSlots.size();
+		for (int i = 0; i < endIndex; i++) {
+			Integer slotNumber = sortedSlots.get(i);
 			if (!slotStateManager.isSlotOccupied(slotNumber)) {
-				System.out.println("[DEBUG] 전송 가능한 TSQ 슬롯 발견: " + slotNumber);
+				System.out.println("[DEBUG] 전송 가능한 TSQ 슬롯 발견 (순환, 현재 슬롯 " + currentSlotNumber + " 이전): " + slotNumber);
 				return slotNumber;
 			}
 		}
+		
 		return -1; // 전송 가능한 슬롯 없음
+	}
+	
+	/**
+	 * 슬롯 번호를 가상 시간으로 변환합니다.
+	 * @param slotNumber 슬롯 번호
+	 * @return 해당 슬롯의 시작 시간 (가상 시간)
+	 */
+	private LocalDateTime convertSlotNumberToVirtualTime(int slotNumber) {
+		com.all4land.generator.ui.tab.ais.entity.Range range = timeMapRangeCompnents.getRange(slotNumber);
+		if (range == null) {
+			System.out.println("[DEBUG] ⚠️ 슬롯 번호에 대한 Range를 찾을 수 없습니다: " + slotNumber);
+			return virtualTimeManager.getCurrentVirtualTime();
+		}
+		
+		// 현재 가상 시간의 분, 시, 일 등을 가져옴
+		LocalDateTime currentVirtualTime = virtualTimeManager.getCurrentVirtualTime();
+		
+		// 슬롯의 시작 시간 (ss.SSSS 형식)을 초 단위로 변환
+		double slotStartSecond = range.getFrom();
+		int seconds = (int) slotStartSecond;
+		int nanos = (int) ((slotStartSecond - seconds) * 1_000_000_000);
+		
+		// 현재 시간의 초 부분을 슬롯 시작 시간으로 교체
+		LocalDateTime slotTime = currentVirtualTime
+				.withSecond(seconds)
+				.withNano(nanos);
+		
+		// 만약 슬롯 시간이 현재 시간보다 이전이면 다음 분으로 설정
+		if (slotTime.isBefore(currentVirtualTime)) {
+			slotTime = slotTime.plusMinutes(1);
+		}
+		
+		return slotTime;
 	}
 	
 	/**
@@ -823,12 +927,6 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 	 */
 	private void sendTsqMessage(TsqResourceRequestMessage request, int slotNumber) {
 		System.out.println("[DEBUG] ========== TSQ 메시지 전송 시작 ==========");
-		System.out.println("[DEBUG] Service: " + request.getService() + 
-				", Type: " + request.getType() + 
-				", Size: " + request.getSize() + 
-				", SourceMMSI: " + request.getSourceMmsi() + 
-				", DestMMSI: " + request.getDestMmsi() +
-				", SlotNumber: " + slotNumber);
 		
 		// 필수 필드 검증
 		if (request.getService() == null || request.getService().trim().isEmpty()) {
@@ -852,14 +950,22 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 			return;
 		}
 		
-		// 가상 시간 사용
-		LocalDateTime virtualTime = virtualTimeManager.getCurrentVirtualTime();
+		// 슬롯 번호를 가상 시간으로 변환
+		LocalDateTime slotVirtualTime = convertSlotNumberToVirtualTime(slotNumber);
 		
-		// 슬롯 점유 처리
+		// 가상 시간을 실제 시간으로 변환 (Quartz는 실제 시간을 사용)
+		LocalDateTime slotRealTime = virtualTimeManager.convertVirtualToRealTime(slotVirtualTime);
+		
+		System.out.println("[DEBUG] TSQ 메시지 스케줄링 - Service: " + request.getService() + 
+				", SlotNumber: " + slotNumber + 
+				", 가상 시간: " + slotVirtualTime + 
+				", 실제 시간: " + slotRealTime);
+		
+		// 슬롯 점유 처리 (즉시 점유)
 		try {
 			Long sourceMmsiLong = Long.parseLong(request.getSourceMmsi());
 			boolean occupied = slotStateManager.occupySlot(slotNumber, sourceMmsiLong, 
-					virtualTime, null, "TSQ");
+					slotVirtualTime, null, "TSQ");
 			if (!occupied) {
 				System.out.println("[DEBUG] ⚠️ 슬롯 " + slotNumber + " 점유 실패 (이미 점유됨)");
 				// 큐에 다시 넣기
@@ -872,84 +978,44 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 			return;
 		}
 		
-		// TDMA 프레임 계산 (slotNumber / 90)
-		int tdmaFrame = slotNumber / 90;
-		
-		// GlobalEntityManager에서 UUID 값 가져오기
-		String shoreStationId = globalEntityManager.getUuid();
-		
-		// 시퀀스 번호 증가
-		int seq = tsqSeq.getAndIncrement();
-		if (seq >= 1000) {
-			tsqSeq.set(1);
-			seq = 1;
-		}
-		
-		// ESI 메시지 생성에 필요한 파라미터
-		String linkId = "19";
-		String channelLeg = "0";
-		String tdmachannel = "0";
-		String totalAccountSlot = "14";
-		String firstSlotNumber = String.valueOf(slotNumber);
-		String physicalChannelNumber = "0"; // TSQ 메시지 생성에 사용
-		
-		// ESI 메시지 생성
-		ESIMessageUtil esi = new ESIMessageUtil(shoreStationId, channelLeg, String.valueOf(tdmaFrame), 
-				tdmachannel, totalAccountSlot, firstSlotNumber, linkId);
-		String esiMessage = esi.getMessage();
-		
-		// TSQ NMEA 메시지 생성
-		String tsqNmeaMessage = TerrestrialSlotResourceRequest.getTerrestrialSlotResourceRequestNewFormat(
-				String.valueOf(seq), request.getSourceMmsi(), request.getDestMmsi(), physicalChannelNumber, linkId);
-		
-		// NMEA 필드에 TSQ 메시지 + CRLF + ESI 메시지 조립
-		StringBuilder nmeaBuilder = new StringBuilder();
-		nmeaBuilder.append(tsqNmeaMessage).append(SystemConstMessage.CRLF);
-		nmeaBuilder.append(esiMessage);
-		String nmeaWithEsi = nmeaBuilder.toString();
-		
-		// MQTT로 전송
-		if (mqttClient != null && mqttClient.isConnected()) {
-			try {
-				// MQTT 토픽 형식: mg/ms/tsq/{sourceMmsi}/{yyyyMMddhhmmss.SSSS}/
-				// 가상 시간 사용
-				String timestamp = virtualTime.format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")) + 
-						String.format("%04d", virtualTime.getNano() / 100000);
-				String mqttTopic = "mg/ms/tsq/" + request.getSourceMmsi() + "/" + timestamp + "/";
-				
-				// MQTT 송신용 DTO 생성
-				TsqMqttResponseMessage mqttResponse = new TsqMqttResponseMessage();
-				mqttResponse.setService(request.getService());
-				mqttResponse.setServiceSize(request.getSize());
-				mqttResponse.setDestMMSI(Arrays.asList(request.getDestMmsi()));
-				mqttResponse.setNMEA(nmeaWithEsi); // TSQ + CRLF + ESI 포함
-				
-				// JSON 배열로 변환
-				List<TsqMqttResponseMessage> mqttResponseList = Arrays.asList(mqttResponse);
-				String mqttMessage = gson.toJson(mqttResponseList);
-				
-				mqttClient.publish(mqttTopic, mqttMessage, 1, false);
-				
-				System.out.println("[DEBUG] ✅ TSQ 메시지 MQTT 전송 완료 - Service: " + request.getService() + 
-						", Topic: " + mqttTopic + ", SlotNumber: " + slotNumber);
-				System.out.println("[DEBUG] 전송된 메시지:\n" + mqttMessage);
-			} catch (Exception e) {
-				System.out.println("[DEBUG] ❌ TSQ 메시지 MQTT 전송 중 오류: " + e.getMessage());
-				e.printStackTrace();
-				// 전송 실패 시 슬롯 해제
-				slotStateManager.releaseSlot(slotNumber);
-				// 큐에 다시 넣기
-				tsqMessageQueue.offer(request);
-			}
-		} else {
-			System.out.println("[DEBUG] ⚠️ MQTT 클라이언트가 연결되지 않았거나 사용할 수 없습니다.");
-			// MQTT 클라이언트가 없으면 슬롯 해제
+		// Quartz Job 스케줄링
+		try {
+			JobDataMap jobDataMap = new JobDataMap();
+			jobDataMap.put("tsqRequest", request);
+			jobDataMap.put("slotNumber", slotNumber);
+			
+			String jobKey = "tsq_" + request.getService() + "_" + slotNumber + "_" + slotVirtualTime.toString();
+			
+			Trigger trigger = TriggerBuilder.newTrigger()
+					.withIdentity(jobKey, "tsqGroup")
+					.startAt(Date.from(slotRealTime.atZone(ZoneId.systemDefault()).toInstant()))
+					.build();
+			
+			JobDetail job = JobBuilder.newJob(TsqEntityChangeStartDateQuartz.class)
+					.withIdentity(jobKey, "tsqGroup")
+					.storeDurably(true)
+					.setJobData(jobDataMap)
+					.build();
+			
+			scheduler.scheduleJob(job, trigger);
+			
+			System.out.println("[DEBUG] ✅ TSQ 메시지 스케줄링 완료 - Service: " + request.getService() + 
+					", SlotNumber: " + slotNumber + 
+					", 실행 시간: " + slotRealTime);
+			
+			// 전송 후 다음 큐 메시지 처리
+			processTsqQueue();
+			
+		} catch (SchedulerException e) {
+			System.out.println("[DEBUG] ❌ TSQ 메시지 스케줄링 중 오류: " + e.getMessage());
+			e.printStackTrace();
+			// 스케줄링 실패 시 슬롯 해제
 			slotStateManager.releaseSlot(slotNumber);
 			// 큐에 다시 넣기
 			tsqMessageQueue.offer(request);
 		}
 		
-		System.out.println("[DEBUG] ========== TSQ 메시지 전송 완료 ==========");
+		System.out.println("[DEBUG] ========== TSQ 메시지 스케줄링 완료 ==========");
 	}
 }
 

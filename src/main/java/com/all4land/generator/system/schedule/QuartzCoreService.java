@@ -23,7 +23,9 @@ import com.all4land.generator.entity.MmsiEntity;
 import com.all4land.generator.system.schedule.job.AsmEntityChangeStartDateQuartz;
 import com.all4land.generator.system.schedule.job.MmsiEntityChangeStartDate;
 import com.all4land.generator.system.schedule.job.MmsiEntitySlotTimeChangeQuartz;
+import com.all4land.generator.system.schedule.job.TsqEntityChangeStartDateQuartz;
 import com.all4land.generator.system.schedule.job.VdeEntityChangeStartDateQuartz;
+import com.all4land.generator.system.netty.dto.TsqResourceRequestMessage;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -419,5 +421,28 @@ public class QuartzCoreService {
 		
     }
 	
+	/**
+	 * TSQ 메시지 전송을 위한 스케줄링
+	 * @param trigger Quartz Trigger
+	 * @param request TSQ 리소스 요청 메시지
+	 * @throws SchedulerException
+	 */
+	public void addScheduleJobForTsq(Trigger trigger, TsqResourceRequestMessage request) throws SchedulerException {
+		JobDataMap jobDataMap = new JobDataMap();
+		jobDataMap.put("tsqRequest", request);
+		jobDataMap.put("slotNumber", request.getSourceMmsi()); // 실제로는 slotNumber가 필요하지만, 여기서는 request만 전달
+		
+		String serviceId = request.getService();
+		String jobKey = "tsq_" + serviceId + "_" + System.currentTimeMillis();
+		
+		JobDetail job = JobBuilder.newJob(TsqEntityChangeStartDateQuartz.class)
+				.withIdentity(jobKey, "tsqGroup")
+				.storeDurably(true)
+				.setJobData(jobDataMap)
+				.build();
+		
+		this.scheduler.scheduleJob(job, trigger);
+		System.out.println("[DEBUG] TSQ Job 생성 완료 - Service: " + serviceId + ", JobKey: " + jobKey);
+	}
 	
 }
