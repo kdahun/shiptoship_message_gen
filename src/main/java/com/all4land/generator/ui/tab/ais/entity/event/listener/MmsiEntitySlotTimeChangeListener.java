@@ -62,9 +62,6 @@ public class MmsiEntitySlotTimeChangeListener {
 			
 			String localDateTimeString = localDateTime.toString();
 			Date date = Date.from(realDateTime.atZone(ZoneId.systemDefault()).toInstant());
-			
-			System.out.println("[DEBUG] SlotTimeOut 가상 시간: " + localDateTime + " -> 실제 시간: " + realDateTime);
-			
 			Trigger trigger;
 			if(mmsiEntity.getSlotTimeOutJob() == null) {
 				// Quartz Trigger 생성 (실제 시간 사용)

@@ -46,11 +46,8 @@ public class VdeEntityChangeStartDateQuartz implements Job {
 		// 가상 시간 기준으로 다음 시간 계산 (60초 후)
 		LocalDateTime currentVirtualTime = virtualTimeManager.getCurrentVirtualTime();
 		LocalDateTime newLocalDateTime = currentVirtualTime.plusSeconds(60);
-		this.mmsiEntity.getVdeEntity().setStartTime(newLocalDateTime, this.mmsiEntity);
-		
-		System.out.println("[DEBUG] 다음 VDE 메시지 가상 시간: " + newLocalDateTime + 
-				" (현재 가상 시간: " + currentVirtualTime + ", +60초)");
-	}
+	this.mmsiEntity.getVdeEntity().setStartTime(newLocalDateTime, this.mmsiEntity);
+}
 	
 	
 	

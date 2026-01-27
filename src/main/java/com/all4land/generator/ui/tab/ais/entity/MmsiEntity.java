@@ -751,7 +751,7 @@ public class MmsiEntity {
 				
 				this.format450_ASM = this.format450_ASM + 1;
 				
-				CompletableFuture.runAsync(() -> this.printConsoleLog(sb.toString()));
+				//CompletableFuture.runAsync(() -> this.printConsoleLog(sb.toString()));
 				
 //				StringBuilder sbForSend = new StringBuilder();
 //				for(String asmMessage : asmMessageList) {

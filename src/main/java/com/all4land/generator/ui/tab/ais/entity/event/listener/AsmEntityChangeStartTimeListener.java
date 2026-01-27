@@ -45,14 +45,12 @@ public class AsmEntityChangeStartTimeListener {
 		String mmsi = String.valueOf(mmsiEntity.getMmsi());
 		LocalDateTime localDateTime = newValue; // 가상 시간
 
-		// 가상 시간을 실제 시간으로 변환 (Quartz는 실제 시간을 사용)
-		LocalDateTime realDateTime = virtualTimeManager.convertVirtualToRealTime(localDateTime);
+	// 가상 시간을 실제 시간으로 변환 (Quartz는 실제 시간을 사용)
+	LocalDateTime realDateTime = virtualTimeManager.convertVirtualToRealTime(localDateTime);
 
-		String localDateTimeString = localDateTime.toString();
-		
-		System.out.println("[DEBUG] ASM 가상 시간: " + localDateTime + " -> 실제 시간: " + realDateTime);
+	String localDateTimeString = localDateTime.toString();
 
-		Trigger trigger = null;
+	Trigger trigger = null;
 		if (asmEntity.getAsmStartTimeJob() == null) {
 			// Quartz Trigger 생성 (실제 시간 사용)
 			trigger = TriggerBuilder.newTrigger().withIdentity(localDateTimeString, mmsi)

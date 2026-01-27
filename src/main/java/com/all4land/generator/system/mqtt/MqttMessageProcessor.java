@@ -188,11 +188,9 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 			// 배열 형식인지 확인 (첫 문자가 '[')
 			if (trimmedMessage.startsWith("[")) {
 				// 배열 형식: 직접 MmsiData 배열로 파싱
-				System.out.println("[DEBUG] 배열 형식 JSON 메시지 감지");
 				handleArrayFormat(trimmedMessage);
 			} else if (trimmedMessage.startsWith("{")) {
 				// 객체 형식: CreateMmsiRequest로 파싱
-				System.out.println("[DEBUG] 객체 형식 JSON 메시지 감지");
 				CreateMmsiRequest request = gson.fromJson(trimmedMessage, CreateMmsiRequest.class);
 				
 				if (request == null || request.getType() == null) {
@@ -233,8 +231,6 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 				return;
 			}
 			
-			System.out.println("[DEBUG] 배열에서 " + mmsiDataList.size() + "개의 선박 데이터 발견");
-			
 			// CreateMmsiRequest 객체로 변환하여 기존 로직 재사용
 			CreateMmsiRequest request = new CreateMmsiRequest();
 			request.setType("CREATE_MMSI");
@@ -262,8 +258,6 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 		
 		for (CreateMmsiRequest.MmsiData mmsiData : request.getData()) {
 			try {
-				System.out.println("[DEBUG] 선박 생성 시도 - MMSI: " + mmsiData.getMmsi() + 
-						", Lat: " + mmsiData.getLat() + ", Lon: " + mmsiData.getLon());
 				
 				globalEntityManager.createMmsiFromJson(
 					scheduler,
@@ -324,7 +318,6 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 				
 				if (trimmedMessage.startsWith("[")) {
 					// 배열 형식: [{"mmsi": "...", "state": "..."}, ...]
-					System.out.println("[DEBUG] 배열 형식 AIS 상태 제어 메시지 감지");
 					java.lang.reflect.Type listType = new TypeToken<List<com.all4land.generator.system.netty.dto.ControlMessage.ShipControl>>(){}.getType();
 					List<com.all4land.generator.system.netty.dto.ControlMessage.ShipControl> ships = gson.fromJson(trimmedMessage, listType);
 					
@@ -367,15 +360,12 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 				
 				// destMMSI 리스트 추출 및 변환
 				List<Long> destMMSIList = null;
-				System.out.println("[DEBUG] destMMSI 파싱 시작 - MMSI: " + mmsi + ", getDestMMSI(): " + ship.getDestMMSI());
 				if (ship.getDestMMSI() != null && !ship.getDestMMSI().isEmpty()) {
-					System.out.println("[DEBUG] destMMSI 리스트 발견 - MMSI: " + mmsi + ", 크기: " + ship.getDestMMSI().size());
 					destMMSIList = new java.util.ArrayList<>();
 					for (String destMMSIStr : ship.getDestMMSI()) {
 						try {
 							long destMMSI = Long.parseLong(destMMSIStr);
 							destMMSIList.add(destMMSI);
-							System.out.println("[DEBUG] destMMSI 추가됨 - MMSI: " + mmsi + ", destMMSI: " + destMMSI);
 						} catch (NumberFormatException e) {
 							System.out.println("[DEBUG] ⚠️ 유효하지 않은 destMMSI 값 무시: " + destMMSIStr + " (MMSI: " + mmsi + ")");
 						}
@@ -384,7 +374,7 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 						System.out.println("[DEBUG] ⚠️ destMMSI 리스트가 비어있음 - MMSI: " + mmsi);
 						destMMSIList = null; // 빈 리스트는 null로 처리하여 기존 동작 사용
 					} else {
-						System.out.println("[DEBUG] ✅ destMMSI 리스트 파싱 완료 - MMSI: " + mmsi + ", 크기: " + destMMSIList.size());
+						System.out.println("[DEBUG] ✅ destMMSI 리스트 파싱 완료 - MMSI: " + mmsi +", state: "+ state + ", 피시험 선박: " + destMMSIList);
 					}
 				} else {
 					System.out.println("[DEBUG] ⚠️ destMMSI 필드가 null이거나 비어있음 - MMSI: " + mmsi);
@@ -840,8 +830,6 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 		String formatNow = virtualTime.format(SystemConstMessage.formatterForStartIndex);
 		int currentSlotNumber = timeMapRangeCompnents.findSlotNumber(formatNow);
 
-		log.info("currentSlotNumber: {}", currentSlotNumber);
-
 		if (currentSlotNumber == -1) {
 			log.warn("현재 시간에 대한 슬롯 번호를 찾을 수 없습니다: {}", formatNow);
 			// 슬롯 번호를 찾을 수 없으면 처음부터 검색
@@ -852,12 +840,12 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 		Set<Integer> tsqSlots = SystemConstMessage.TSQ_TEST_SLOT_NUMBER_ALL;
 		List<Integer> sortedSlots = new ArrayList<>(tsqSlots);
 		
-		//Collections.sort(sortedSlots);
+		Collections.sort(sortedSlots);
 		
 		// 현재 슬롯 번호 이후부터 검색
 		int startIndex = -1;
 		for (int i = 0; i < sortedSlots.size(); i++) {
-			if (sortedSlots.get(i) >= currentSlotNumber) {
+			if (sortedSlots.get(i) > currentSlotNumber) {
 				startIndex = i;
 				break;
 			}
@@ -956,10 +944,10 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 		// 가상 시간을 실제 시간으로 변환 (Quartz는 실제 시간을 사용)
 		LocalDateTime slotRealTime = virtualTimeManager.convertVirtualToRealTime(slotVirtualTime);
 		
-		System.out.println("[DEBUG] TSQ 메시지 스케줄링 - Service: " + request.getService() + 
-				", SlotNumber: " + slotNumber + 
-				", 가상 시간: " + slotVirtualTime + 
-				", 실제 시간: " + slotRealTime);
+		// System.out.println("[DEBUG] TSQ 메시지 스케줄링 - Service: " + request.getService() + 
+		// 		", SlotNumber: " + slotNumber + 
+		// 		", 가상 시간: " + slotVirtualTime + 
+		// 		", 실제 시간: " + slotRealTime);
 		
 		// 슬롯 점유 처리 (즉시 점유)
 		try {
@@ -1015,7 +1003,7 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 			tsqMessageQueue.offer(request);
 		}
 		
-		System.out.println("[DEBUG] ========== TSQ 메시지 스케줄링 완료 ==========");
+		System.out.println("[DEBUG] ========== TSQ 메시지 스케줄링 완료 ==========\n");
 	}
 }
 

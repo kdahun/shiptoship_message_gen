@@ -653,7 +653,6 @@ public class MmsiEntity {
 //			int randomDelay = RandomGenerator.generateRandomIntFromTo(3, 10);
 //			this.setStartTime(LocalDateTime.now().plusSeconds(randomDelay));
 			this.resetRRAndNI();
-			System.out.println("[DEBUG] RR, NI 초기화 완료 - MMSI: " + this.mmsi + ", RR: " + this.RR + ", NI: " + this.NI);
 		}
 	}
 
@@ -664,8 +663,6 @@ public class MmsiEntity {
 	public void addDestMMSI(long destMMSI) {
 		if (!this.destMMSIList.contains(destMMSI)) {
 			this.destMMSIList.add(destMMSI);
-			System.out.println("[DEBUG] destMMSI 추가 - MMSI: " + this.mmsi + ", destMMSI: " + destMMSI + 
-					", 리스트 크기: " + this.destMMSIList.size());
 		} else {
 			System.out.println("[DEBUG] destMMSI 중복 - MMSI: " + this.mmsi + ", destMMSI: " + destMMSI);
 		}
@@ -782,15 +779,11 @@ public class MmsiEntity {
 	 */
 	public void setStartTime(LocalDateTime startTime) {
 		//
-		System.out.println("[DEBUG] MmsiEntity.setStartTime() 호출 - MMSI: " + this.mmsi + 
-				", startTime: " + startTime);
 		this.startTime = startTime;
 
 		MmsiEntityChangeStartTimeEvent event = new MmsiEntityChangeStartTimeEvent(this, "startTime", this.startTime,
 				startTime, this);
-		System.out.println("[DEBUG] MmsiEntityChangeStartTimeEvent 발행 - MMSI: " + this.mmsi);
 		eventPublisher.publishEvent(event);
-		System.out.println("[DEBUG] 이벤트 발행 완료 - MMSI: " + this.mmsi);
 	}
 
 	public void setSelectionInterval() {
@@ -872,32 +865,27 @@ public class MmsiEntity {
 				System.out.println(sbTime.toString());
 			}
 			
-			CompletableFuture.runAsync(() -> this.printConsoleLog(sbTime.toString()));
+			//CompletableFuture.runAsync(() -> this.printConsoleLog(sbTime.toString()));
 
-			// TCP로 전송하는 메시지
-			CompletableFuture.runAsync(() -> {
-				System.out.println("[DEBUG] AIS message sending - MMSI: " + this.mmsi + ", Slot: " + slotNumber);
-				System.out.println("[DEBUG] AIS message sending: " + Formatter_61162_message+aisMessage);
-				System.out.println("[DEBUG] VSI message sending: " + Formatter_61162_VSI_message+vsiMessage);
+			// TCP로 전송하는 메시지 - 주석 처리리
+			// CompletableFuture.runAsync(() -> {
 				
-				// TcpServerTableModel을 통한 전송 (UI 모드)
-				if (this.sendTableModel != null) {
-					System.out.println("[DEBUG] TcpServerTableModel을 통한 전송 시도");
-					this.sendTableModel.sendAISMessage(
-							Formatter_61162_message+aisMessage, Formatter_61162_VSI_message+vsiMessage);
-				}
-				// SimpleTcpServerHandler를 통한 직접 전송 (headless 모드)
-				System.out.println("[DEBUG] SimpleTcpServerHandler를 통한 전송 시도");
-				this.sendAISMessageToSimpleTcpClients(
-						Formatter_61162_message+aisMessage, Formatter_61162_VSI_message+vsiMessage);
-			});
+			// 	// TcpServerTableModel을 통한 전송 (UI 모드)
+			// 	if (this.sendTableModel != null) {
+			// 		this.sendTableModel.sendAISMessage(
+			// 				Formatter_61162_message+aisMessage, Formatter_61162_VSI_message+vsiMessage);
+			// 	}
+			// 	// SimpleTcpServerHandler를 통한 직접 전송 (headless 모드)
+			// 	this.sendAISMessageToSimpleTcpClients(
+			// 			Formatter_61162_message+aisMessage, Formatter_61162_VSI_message+vsiMessage);
+			// });
 			
-			CompletableFuture.runAsync(() -> {
-				if (this.udpServerTableModel != null) {
-					this.udpServerTableModel.sendAISMessage(
-							Formatter_61162_message+aisMessage, Formatter_61162_VSI_message+vsiMessage);
-				}
-			});
+			// CompletableFuture.runAsync(() -> {
+			// 	if (this.udpServerTableModel != null) {
+			// 		this.udpServerTableModel.sendAISMessage(
+			// 				Formatter_61162_message+aisMessage, Formatter_61162_VSI_message+vsiMessage);
+			// 	}
+			// });
 
 			// MQTT로 AIS 메시지 전송
 			CompletableFuture.runAsync(() -> {
@@ -929,14 +917,13 @@ public class MmsiEntity {
 
 						// 동적 토픽 생성: mg/ms/ais/{mmsi}/{yyyyMMddHHmmss.ssss}
 						DateTimeFormatter topicFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss.SSSS");
-						String timestamp = LocalDateTime.now().format(topicFormatter);
-						String topic = String.format("mg/ms/ais/%d/%s", this.mmsi, timestamp);
-						
-						mqttClient.publish(topic, jsonMessage, 0, false);
-						System.out.println("[DEBUG] ✅ MQTT로 AIS 메시지 전송 완료: MMSI=" + this.mmsi + ", Topic=" + topic);
-					} else {
-						System.out.println("[DEBUG] ⚠️ MQTT 클라이언트가 연결되지 않았거나 사용할 수 없습니다.");
-					}
+					String timestamp = LocalDateTime.now().format(topicFormatter);
+					String topic = String.format("mg/ms/ais/%d/%s", this.mmsi, timestamp);
+					
+					mqttClient.publish(topic, jsonMessage, 0, false);
+				} else {
+					System.out.println("[DEBUG] ⚠️ MQTT 클라이언트가 연결되지 않았거나 사용할 수 없습니다.");
+				}
 				} catch (Exception e) {
 					System.out.println("[DEBUG] ❌ MQTT AIS 메시지 전송 실패: " + e.getMessage());
 					e.printStackTrace();
@@ -1012,7 +999,7 @@ public class MmsiEntity {
 				
 				this.format450_ASM = this.format450_ASM + 1;
 				
-				CompletableFuture.runAsync(() -> this.printConsoleLog(sb.toString()));
+				//CompletableFuture.runAsync(() -> this.printConsoleLog(sb.toString()));
 				
 //				StringBuilder sbForSend = new StringBuilder();
 //				for(String asmMessage : asmMessageList) {
@@ -1023,19 +1010,19 @@ public class MmsiEntity {
 				sbForSend.append(Formatter_61162_VSI_message+vsiMessage).append(SystemConstMessage.CRLF);
 				sbForSendMqtt.append(vsiMessage).append(SystemConstMessage.CRLF);
 
-				CompletableFuture.runAsync(() -> {
-					System.out.println("[DEBUG] ASM message sending - MMSI: " + this.mmsi + ", Slot: " + slotNumber);
-					System.out.println("[DEBUG] ASM message sending: " + sbForSend.toString());
+				// TCP 전송 - 주석 처리
+				
+				// CompletableFuture.runAsync(() -> {
+				// 	System.out.println("[DEBUG] ASM message sending - MMSI: " + this.mmsi + ", Slot: " + slotNumber);
+				// 	System.out.println("[DEBUG] ASM message sending: " + sbForSend.toString());
 					
-					// TcpServerTableModel을 통한 전송 (UI 모드)
-					if (this.sendTableModel != null) {
-						System.out.println("[DEBUG] TcpServerTableModel을 통한 ASM 전송 시도");
-						this.sendTableModel.sendASMMessage(sbForSend.toString());
-					}
-					// SimpleTcpServerHandler를 통한 직접 전송 (headless 모드)
-					System.out.println("[DEBUG] SimpleTcpServerHandler를 통한 ASM 전송 시도");
-					this.sendASMMessageToSimpleTcpClients(sbForSend.toString());
-				});
+				// // TcpServerTableModel을 통한 전송 (UI 모드)
+				// if (this.sendTableModel != null) {
+				// 	this.sendTableModel.sendASMMessage(sbForSend.toString());
+				// }
+				// // SimpleTcpServerHandler를 통한 직접 전송 (headless 모드)
+				// this.sendASMMessageToSimpleTcpClients(sbForSend.toString());
+				// });
 				
 				CompletableFuture.runAsync(() -> {
 					if (this.udpServerTableModel != null) {
@@ -1064,9 +1051,9 @@ public class MmsiEntity {
 										.map(String::valueOf)
 										.collect(Collectors.toList());
 								nmeaObject.put("destMMSI", destMMSIStrList);
-								System.out.println("[DEBUG] ASM destMMSI 포함 - MMSI: " + this.mmsi + 
-										", ServiceId: " + (asmEntity.getServiceId() != null ? asmEntity.getServiceId() : "default") +
-										", destMMSI: " + destMMSIStrList);
+								// System.out.println("[DEBUG] ASM destMMSI 포함 - MMSI: " + this.mmsi + 
+								// 		", ServiceId: " + (asmEntity.getServiceId() != null ? asmEntity.getServiceId() : "default") +
+								// 		", destMMSI: " + destMMSIStrList);
 							} else {
 								System.out.println("[DEBUG] ⚠️ ASM destMMSI 리스트가 비어있음 - MMSI: " + this.mmsi + 
 										", ServiceId: " + (asmEntity.getServiceId() != null ? asmEntity.getServiceId() : "default"));
@@ -1082,20 +1069,17 @@ public class MmsiEntity {
 							// 동적 토픽 생성: mg/ms/asm/{mmsi}/{yyyyMMddHHmmss.ssss}/{sbForSendMqtt 내용}
 							DateTimeFormatter topicFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss.SSSS");
 							String timestamp = LocalDateTime.now().format(topicFormatter);
-							String topic = String.format("mg/ms/asm/%d/%s", this.mmsi, timestamp);
-							
-							mqttClient.publish(topic, jsonMessage, 0, false);
-							System.out.println("[DEBUG] ✅ MQTT로 ASM 메시지 전송 완료: MMSI=" + this.mmsi + 
+						String topic = String.format("mg/ms/asm/%d/%s", this.mmsi, timestamp);
+						
+						mqttClient.publish(topic, jsonMessage, 0, false);
+						
+						// 메시지 송신 완료 후 asmPeriod=0인 destMMSI 제거
+						int removedCount = asmEntity.removeDestMMSIWithAsmPeriod0();
+						if (removedCount > 0) {
+							System.out.println("[DEBUG] ✅ ASM 메시지 송신 후 asmPeriod=0인 destMMSI 제거 완료 - MMSI: " + this.mmsi + 
 									", ServiceId: " + (asmEntity.getServiceId() != null ? asmEntity.getServiceId() : "default") +
-									", Slot=" + slotNumber + ", Topic=" + topic);
-							
-							// 메시지 송신 완료 후 asmPeriod=0인 destMMSI 제거
-							int removedCount = asmEntity.removeDestMMSIWithAsmPeriod0();
-							if (removedCount > 0) {
-								System.out.println("[DEBUG] ✅ ASM 메시지 송신 후 asmPeriod=0인 destMMSI 제거 완료 - MMSI: " + this.mmsi + 
-										", ServiceId: " + (asmEntity.getServiceId() != null ? asmEntity.getServiceId() : "default") +
-										", 제거 개수: " + removedCount);
-							}
+									", 제거 개수: " + removedCount);
+						}
 							
 							// destMMSI 리스트가 비어있으면 해당 AsmEntity 제거 (다중 AsmEntity 지원)
 							if (!asmEntity.hasDestMMSI()) {
@@ -1324,21 +1308,16 @@ public class MmsiEntity {
 			int tcpPort = 10110;
 			String beanName = tcpPort + "_TcpServer";
 			
-			System.out.println("[DEBUG] sendAISMessageToSimpleTcpClients 시작 - 포트: " + tcpPort);
 			
 			// TCP 서버 설정 가져오기
 			NettyServerTCPConfiguration tcpServer = (NettyServerTCPConfiguration) BeanUtils.getBean(beanName);
 			if (tcpServer == null) {
-				System.out.println("[DEBUG] TCP 서버를 찾을 수 없음: " + beanName);
 				return;
 			}
-			System.out.println("[DEBUG] TCP 서버 찾음: " + beanName);
 			
 			// 연결된 클라이언트 확인
 			ConcurrentMap<String, Channel> clients = SimpleTcpServerHandler.getAllClients();
-			System.out.println("[DEBUG] 연결된 클라이언트 수: " + clients.size());
 			if (clients.isEmpty()) {
-				System.out.println("[DEBUG] 연결된 클라이언트가 없습니다!");
 				return;
 			}
 			
@@ -1348,35 +1327,26 @@ public class MmsiEntity {
 			String aisMsg = aisMessage.endsWith(SystemConstMessage.CRLF) ? aisMessage : aisMessage + SystemConstMessage.CRLF;
 			sb.append(aisMsg);
 			// VSI 메시지에 CRLF가 없으면 추가
-			String vsiMsg = vsiMessage.endsWith(SystemConstMessage.CRLF) ? vsiMessage : vsiMessage + SystemConstMessage.CRLF;
-			sb.append(vsiMsg);
-			String message = sb.toString();
-			System.out.println("[DEBUG] 전송할 메시지 길이: " + message.length() + " bytes");
-			
-			// 연결된 모든 클라이언트에게 메시지 전송
-			clients.forEach((clientKey, channel) -> {
-				System.out.println("[DEBUG] 클라이언트 처리 시작: " + clientKey);
-				if (channel != null && channel.isActive()) {
-					System.out.println("[DEBUG] 채널 활성 상태 확인: " + clientKey + " - isActive: " + channel.isActive());
-					try {
-						String[] parts = clientKey.split(":");
-						if (parts.length == 2) {
-							String clientIP = parts[0];
-							int clientPort = Integer.parseInt(parts[1]);
-							System.out.println("[DEBUG] 메시지 전송 시도: " + clientIP + ":" + clientPort);
-							tcpServer.sendToClient(channel, clientIP, clientPort, message);
-							System.out.println("[DEBUG] ✅ AIS 메시지 전송 완료: " + clientIP + ":" + clientPort);
-						} else {
-							System.out.println("[DEBUG] 잘못된 클라이언트 키 형식: " + clientKey);
-						}
-					} catch (Exception e) {
-						System.out.println("[DEBUG] ❌ AIS 메시지 전송 실패: " + clientKey + " - " + e.getMessage());
-						e.printStackTrace();
+		String vsiMsg = vsiMessage.endsWith(SystemConstMessage.CRLF) ? vsiMessage : vsiMessage + SystemConstMessage.CRLF;
+		sb.append(vsiMsg);
+		String message = sb.toString();
+		
+		// 연결된 모든 클라이언트에게 메시지 전송
+		clients.forEach((clientKey, channel) -> {
+			if (channel != null && channel.isActive()) {
+				try {
+					String[] parts = clientKey.split(":");
+					if (parts.length == 2) {
+						String clientIP = parts[0];
+						int clientPort = Integer.parseInt(parts[1]);
+						tcpServer.sendToClient(channel, clientIP, clientPort, message);
 					}
-				} else {
-					System.out.println("[DEBUG] 채널이 null이거나 비활성 상태: " + clientKey + " - channel: " + (channel != null) + ", isActive: " + (channel != null ? channel.isActive() : false));
+				} catch (Exception e) {
+					System.out.println("[DEBUG] ❌ AIS 메시지 전송 실패: " + clientKey + " - " + e.getMessage());
+					e.printStackTrace();
 				}
-			});
+			}
+		});
 		} catch (Exception e) {
 			System.out.println("[DEBUG] ❌ AIS 메시지 전송 중 오류: " + e.getMessage());
 			e.printStackTrace();
@@ -1404,38 +1374,26 @@ public class MmsiEntity {
 			
 			// 연결된 클라이언트 확인
 			ConcurrentMap<String, Channel> clients = SimpleTcpServerHandler.getAllClients();
-			System.out.println("[DEBUG] 연결된 클라이언트 수: " + clients.size());
-			if (clients.isEmpty()) {
-				System.out.println("[DEBUG] 연결된 클라이언트가 없습니다!");
-				return;
-			}
-			
-			System.out.println("[DEBUG] 전송할 ASM 메시지 길이: " + asmMessageAndVsiMessage.length() + " bytes");
-			
-			// 연결된 모든 클라이언트에게 메시지 전송
-			clients.forEach((clientKey, channel) -> {
-				System.out.println("[DEBUG] ASM 클라이언트 처리 시작: " + clientKey);
-				if (channel != null && channel.isActive()) {
-					System.out.println("[DEBUG] ASM 채널 활성 상태 확인: " + clientKey + " - isActive: " + channel.isActive());
-					try {
-						String[] parts = clientKey.split(":");
-						if (parts.length == 2) {
-							String clientIP = parts[0];
-							int clientPort = Integer.parseInt(parts[1]);
-							System.out.println("[DEBUG] ASM 메시지 전송 시도: " + clientIP + ":" + clientPort);
-							tcpServer.sendToClient(channel, clientIP, clientPort, asmMessageAndVsiMessage);
-							System.out.println("[DEBUG] ✅ ASM 메시지 전송 완료: " + clientIP + ":" + clientPort);
-						} else {
-							System.out.println("[DEBUG] 잘못된 클라이언트 키 형식: " + clientKey);
-						}
-					} catch (Exception e) {
-						System.out.println("[DEBUG] ❌ ASM 메시지 전송 실패: " + clientKey + " - " + e.getMessage());
-						e.printStackTrace();
+		if (clients.isEmpty()) {
+			return;
+		}
+		
+		// 연결된 모든 클라이언트에게 메시지 전송
+		clients.forEach((clientKey, channel) -> {
+			if (channel != null && channel.isActive()) {
+				try {
+					String[] parts = clientKey.split(":");
+					if (parts.length == 2) {
+						String clientIP = parts[0];
+						int clientPort = Integer.parseInt(parts[1]);
+						tcpServer.sendToClient(channel, clientIP, clientPort, asmMessageAndVsiMessage);
 					}
-				} else {
-					System.out.println("[DEBUG] ⚠️ ASM 채널이 비활성 상태: " + clientKey);
+				} catch (Exception e) {
+					System.out.println("[DEBUG] ❌ ASM 메시지 전송 실패: " + clientKey + " - " + e.getMessage());
+					e.printStackTrace();
 				}
-			});
+			}
+		});
 		} catch (Exception e) {
 			System.out.println("[DEBUG] ❌ ASM 메시지 전송 중 오류 발생: " + e.getMessage());
 			e.printStackTrace();

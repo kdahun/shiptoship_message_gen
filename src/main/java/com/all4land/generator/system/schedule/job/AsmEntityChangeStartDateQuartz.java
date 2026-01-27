@@ -46,11 +46,10 @@ public class AsmEntityChangeStartDateQuartz implements Job {
 		this.mmsiEntity = (MmsiEntity) jobDataMap.get("mmsiEntity");
 		this.asmEntity = (AsmEntity) jobDataMap.get("asmEntity");
 		
-		// AsmEntity가 JobDataMap에 없으면 기존 방식으로 가져오기 (호환성)
-		if (this.asmEntity == null) {
-			this.asmEntity = this.mmsiEntity.getAsmEntity();
-			System.out.println("[DEBUG] ⚠️ JobDataMap에서 AsmEntity를 찾을 수 없어 기존 방식으로 가져옴 - MMSI: " + this.mmsiEntity.getMmsi());
-		}
+	// AsmEntity가 JobDataMap에 없으면 기존 방식으로 가져오기 (호환성)
+	if (this.asmEntity == null) {
+		this.asmEntity = this.mmsiEntity.getAsmEntity();
+	}
 
 		// ASM 메시지 생성 여부 확인 (destMMSI 리스트 체크)
 		if (this.asmEntity == null || !this.asmEntity.hasDestMMSI()) {
@@ -117,13 +116,11 @@ public class AsmEntityChangeStartDateQuartz implements Job {
 	
 	private void addFuture() {
 		//
-		// destMMSI 리스트가 비어있으면 다음 스케줄 설정하지 않음
-		// (메시지 송신 후 이미 asmPeriod=0인 destMMSI가 제거되었으므로)
-		if (!this.asmEntity.hasDestMMSI()) {
-			System.out.println("[DEBUG] ✅ destMMSI 리스트가 비어있어 다음 스케줄 설정하지 않음 - MMSI: " + this.mmsiEntity.getMmsi() + 
-					", ServiceId: " + this.asmEntity.getServiceId());
-			return; // 다음 스케줄 설정하지 않음
-		}
+	// destMMSI 리스트가 비어있으면 다음 스케줄 설정하지 않음
+	// (메시지 송신 후 이미 asmPeriod=0인 destMMSI가 제거되었으므로)
+	if (!this.asmEntity.hasDestMMSI()) {
+		return; // 다음 스케줄 설정하지 않음
+	}
 		
 		// asmPeriod 값 가져오기 (전역 asmPeriod 우선, 없으면 destMMSI 리스트의 최소값 사용)
 		String asmPeriodStr = this.asmEntity.getAsmPeriod();
@@ -134,23 +131,16 @@ public class AsmEntityChangeStartDateQuartz implements Job {
 			periodSeconds = getMinAsmPeriodFromDestMMSI();
 		}
 		
-		// asmPeriod가 "0"이면 다음 스케줄 설정하지 않음 (단발 메시지)
-		if (periodSeconds == 0) {
-			System.out.println("[DEBUG] ✅ ASM Period가 0이어서 다음 스케줄 설정하지 않음 (단발 메시지) - MMSI: " + this.mmsiEntity.getMmsi() + 
-					", ServiceId: " + this.asmEntity.getServiceId());
-			return;
-		}
-		
-		// destMMSI 리스트가 비어있지 않으면 다음 스케줄 설정
-		// 가상 시간 기준으로 다음 시간 계산 (asmPeriod 값 사용)
-		LocalDateTime currentVirtualTime = virtualTimeManager.getCurrentVirtualTime();
-		LocalDateTime newLocalDateTime = currentVirtualTime.plusSeconds(periodSeconds);
-		this.asmEntity.setStartTime(newLocalDateTime, this.mmsiEntity);
-		
-		System.out.println("[DEBUG] 다음 ASM 메시지 가상 시간: " + newLocalDateTime + 
-				" (현재 가상 시간: " + currentVirtualTime + ", asmPeriod: " + periodSeconds + "초)" +
-				", MMSI: " + this.mmsiEntity.getMmsi() + ", ServiceId: " + this.asmEntity.getServiceId() +
-				", 남은 destMMSI 리스트 크기: " + this.asmEntity.getDestMMSIList().size());
+	// asmPeriod가 "0"이면 다음 스케줄 설정하지 않음 (단발 메시지)
+	if (periodSeconds == 0) {
+		return;
+	}
+	
+	// destMMSI 리스트가 비어있지 않으면 다음 스케줄 설정
+	// 가상 시간 기준으로 다음 시간 계산 (asmPeriod 값 사용)
+	LocalDateTime currentVirtualTime = virtualTimeManager.getCurrentVirtualTime();
+	LocalDateTime newLocalDateTime = currentVirtualTime.plusSeconds(periodSeconds);
+	this.asmEntity.setStartTime(newLocalDateTime, this.mmsiEntity);
 	}
 	
 	/**
@@ -171,15 +161,13 @@ public class AsmEntityChangeStartDateQuartz implements Job {
 			}
 			// 4~360 범위 검증
 			if (period >= 4 && period <= 360) {
-				return period;
-			} else {
-				System.out.println("[DEBUG] ⚠️ ASM Period 범위 초과: " + period + " (4~360 범위여야 함)");
-				return 0;
-			}
-		} catch (NumberFormatException e) {
-			System.out.println("[DEBUG] ⚠️ ASM Period 파싱 실패: " + asmPeriodStr + " (숫자여야 함)");
+			return period;
+		} else {
 			return 0;
 		}
+	} catch (NumberFormatException e) {
+		return 0;
+	}
 	}
 	
 	/**

@@ -145,13 +145,10 @@ public class GlobalEntityManager {
 		
 		// destMMSI 리스트가 제공된 경우 destMMSI 기능 사용
 		boolean useDestMMSI = (destMMSIList != null && !destMMSIList.isEmpty());
-		System.out.println("[DEBUG] controlMmsiState - MMSI: " + mmsi + ", state: " + state + 
-				", useDestMMSI: " + useDestMMSI + ", destMMSIList: " + destMMSIList);
 		
 		if ("1".equals(state)) {
 			// ON: 메시지 생성 시작/재개
 			if (useDestMMSI) {
-				System.out.println("[DEBUG] destMMSI 사용 모드 - MMSI: " + mmsi);
 				// destMMSI 리스트에 추가
 				for (Long destMMSI : destMMSIList) {
 					if (destMMSI != null) {
@@ -160,11 +157,8 @@ public class GlobalEntityManager {
 				}
 				// destMMSI 리스트가 비어있지 않으면 메시지 생성 시작
 				boolean hasDestMMSI = mmsiEntity.hasDestMMSI();
-				System.out.println("[DEBUG] addDestMMSI 후 hasDestMMSI 체크 - MMSI: " + mmsi + 
-						", hasDestMMSI: " + hasDestMMSI + ", 리스트 크기: " + mmsiEntity.getDestMMSIList().size());
 				if (hasDestMMSI) {
 					if (!mmsiEntity.isChk()) {
-						System.out.println("[DEBUG] AIS 활성화 시작 (destMMSI 사용) - MMSI: " + mmsi);
 						mmsiEntity.setChk(true);
 						System.out.println("[DEBUG] ✅ AIS 활성화 완료 - MMSI: " + mmsi + 
 								", destMMSI 리스트 크기: " + mmsiEntity.getDestMMSIList().size());
@@ -177,7 +171,6 @@ public class GlobalEntityManager {
 			} else {
 				// 기존 동작: destMMSI 없이 state만으로 제어
 				if (!mmsiEntity.isChk()) {
-					System.out.println("[DEBUG] AIS 활성화 시작 - MMSI: " + mmsi);
 					mmsiEntity.setChk(true);
 					System.out.println("[DEBUG] ✅ AIS 활성화 완료 - MMSI: " + mmsi);
 				} else {
@@ -197,7 +190,6 @@ public class GlobalEntityManager {
 				// destMMSI 리스트가 비어있으면 메시지 생성 중단
 				if (!mmsiEntity.hasDestMMSI()) {
 					if (mmsiEntity.isChk()) {
-						System.out.println("[DEBUG] AIS 비활성화 시작 (destMMSI 리스트 비어있음) - MMSI: " + mmsi);
 						mmsiEntity.setChk(false);
 						System.out.println("[DEBUG] ✅ AIS 비활성화 완료 - MMSI: " + mmsi);
 					} else {
@@ -210,7 +202,6 @@ public class GlobalEntityManager {
 			} else {
 				// 기존 동작: destMMSI 없이 state만으로 제어
 				if (mmsiEntity.isChk()) {
-					System.out.println("[DEBUG] AIS 비활성화 시작 - MMSI: " + mmsi);
 					mmsiEntity.setChk(false);
 					System.out.println("[DEBUG] ✅ AIS 비활성화 완료 - MMSI: " + mmsi);
 				} else {
@@ -530,9 +521,6 @@ public class GlobalEntityManager {
 	 */
 	public void createMmsiFromJson(Scheduler scheduler, QuartzCoreService quartzCoreService,
 			String mmsiStr, double lat, double lon, int aisPeriod, String regionId) {
-		System.out.println("[DEBUG] ========== GlobalEntityManager.createMmsiFromJson() 시작 ==========");
-		System.out.println("[DEBUG] MMSI: " + mmsiStr + ", Lat: " + lat + ", Lon: " + lon + 
-				", AIS Period: " + aisPeriod + ", Region: " + regionId);
 		
 		if (this.mmsiEntityLists == null) {
 			this.mmsiEntityLists = new ArrayList<>();
@@ -556,7 +544,6 @@ public class GlobalEntityManager {
 		// MmsiEntity Bean 등록 및 생성
 		BeanUtils.registerBean(mmsi + "", MmsiEntity.class);
 		MmsiEntity mmsiEntity = (MmsiEntity) BeanUtils.getBean(mmsi + "");
-		System.out.println("[DEBUG] MmsiEntity Bean 생성 완료 - MMSI: " + mmsiEntity.getMmsi());
 		
 		// 기본 설정
 		mmsiEntity.setSfiValue(this.sfiValue);
@@ -582,20 +569,16 @@ public class GlobalEntityManager {
 		
 		// testInit 메서드를 사용하여 위치 정보 설정
 		mmsiEntity.testInit(speed, slotTimeOut, positions);
-		System.out.println("[DEBUG] 위치 정보 설정 완료 - Lat: " + lat + ", Lon: " + lon);
 		
 		// 리스트에 추가
 		this.mmsiEntityLists.add(mmsiEntity);
 		
 		// 선박 생성과 메시지 생성 시작을 분리
 		// AIS는 제어 메시지(STG-02)로 별도 활성화해야 함
-		System.out.println("[DEBUG] 선박 생성 완료 - MMSI: " + mmsi + " (메시지 생성은 제어 메시지로 활성화 필요)");
 		
 		// ASM 활성화 (선택사항)
 		//mmsiEntity.setAsm(true);
-		System.out.println("[DEBUG] ASM 활성화 완료 - MMSI: " + mmsi);
 		
-		System.out.println("[DEBUG] ========== GlobalEntityManager.createMmsiFromJson() 완료 - MMSI: " + mmsi + " ==========");
 	}
 	
 	public void addMmsiEntity6(Scheduler scheduler, QuartzCoreService quartzCoreService) {
@@ -1307,7 +1290,7 @@ public class GlobalEntityManager {
 	 */
 	public List<TargetCellInfoEntity> findAsmRule1(int startIndex, MmsiEntity mmsiEntity) {
 		//
-		System.out.println("[DEBUG] findAsmRule1 시작 - MMSI: " + mmsiEntity.getMmsi() + ", startIndex: " + startIndex);
+		// System.out.println("[DEBUG] findAsmRule1 시작 - MMSI: " + mmsiEntity.getMmsi() + ", startIndex: " + startIndex);
 		List<TargetCellInfoEntity> targetInfoList = new ArrayList<>();
 		
 		int consecutiveCount = 0;
@@ -1354,7 +1337,7 @@ public class GlobalEntityManager {
 	 */
 	public List<TargetCellInfoEntity> findAsmRule2(int startIndex, MmsiEntity mmsiEntity) {
 		//
-		System.out.println("[DEBUG] findAsmRule2 시작 - MMSI: " + mmsiEntity.getMmsi() + ", startIndex: " + startIndex);
+		// System.out.println("[DEBUG] findAsmRule2 시작 - MMSI: " + mmsiEntity.getMmsi() + ", startIndex: " + startIndex);
 		List<TargetCellInfoEntity> targetInfoList = new ArrayList<>();
 		
 		int consecutiveCount = 0;
@@ -1397,8 +1380,8 @@ public class GlobalEntityManager {
 	 */
 	public List<TargetCellInfoEntity> findAsmRule3(int startIndex, MmsiEntity mmsiEntity) {
 		//
-		System.out.println("[DEBUG] findAsmRule3 시작 - MMSI: " + mmsiEntity.getMmsi() + 
-				", startIndex: " + startIndex + ", Channel: " + mmsiEntity.getAsmEntity().getChannel());
+		// System.out.println("[DEBUG] findAsmRule3 시작 - MMSI: " + mmsiEntity.getMmsi() + 
+		// 		", startIndex: " + startIndex + ", Channel: " + mmsiEntity.getAsmEntity().getChannel());
 		List<TargetCellInfoEntity> targetInfoList = new ArrayList<>();
 		
 		int consecutiveCount = 0;

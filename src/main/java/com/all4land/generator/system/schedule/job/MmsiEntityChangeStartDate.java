@@ -43,12 +43,8 @@ public class MmsiEntityChangeStartDate implements Job {
 	@Override
 	public void execute(JobExecutionContext context) throws JobExecutionException {
 		// TODO Auto-generated method stub
-		System.out.println("[DEBUG] ========== MmsiEntityChangeStartDate.execute() 시작 ==========");
 		JobDataMap jobDataMap = context.getMergedJobDataMap();
 		this.mmsiEntity = (MmsiEntity) jobDataMap.get("mmsiEntity");
-		System.out.println("[DEBUG] Quartz Job 실행 - MMSI: " + 
-				(this.mmsiEntity != null ? this.mmsiEntity.getMmsi() : "null") + 
-				", StartTime: " + (this.mmsiEntity != null ? this.mmsiEntity.getStartTime() : "null"));
 		try {
 			this.mainProcess();
 		}catch (Exception e) {
@@ -57,7 +53,6 @@ public class MmsiEntityChangeStartDate implements Job {
 			e.printStackTrace();
 		}
 		this.addFuture();
-		System.out.println("[DEBUG] ========== MmsiEntityChangeStartDate.execute() 종료 ==========");
 	}
 
 	/**
@@ -69,55 +64,34 @@ public class MmsiEntityChangeStartDate implements Job {
 	 * 4. 마킹, 전송
 	 */
 	private void mainProcess() {
-		//
-		System.out.println("[DEBUG] mainProcess() 시작 - MMSI: " + this.mmsiEntity.getMmsi());
 		/**
 		 * mmsiEntity가 활성화되어 있는지 확인
 		 * 화면상에서의 CheckBox
 		 */
 		if (this.mmsiEntity.isChk()) {
-			System.out.println("[DEBUG] ✅ MmsiEntity 활성화 확인 - MMSI: " + this.mmsiEntity.getMmsi());
-			//
 			/** 
 			 * 이전에 전송된 슬롯 확인
 			 */ 
 			TargetSlotEntity rtnValue = this.checkHistorySlot();
-			System.out.println("[DEBUG] checkHistorySlot() 결과 - MMSI: " + this.mmsiEntity.getMmsi() + 
-					", rtnValue: " + (rtnValue != null ? "있음 (slotNumber: " + rtnValue.getSlotNumber() + ")" : "없음"));
 			
 			if (rtnValue != null) {
 				// 
-				System.out.println("[DEBUG] 이전 슬롯 사용 - MMSI: " + this.mmsiEntity.getMmsi() + 
-						", SlotNumber: " + rtnValue.getSlotNumber());
 				Vdm vdm = AisMessage1Util.create(this.mmsiEntity, rtnValue.getSlotNumber());
-				System.out.println("[DEBUG] ✅ AIS 메시지 생성 완료 (이전 슬롯) - MMSI: " + this.mmsiEntity.getMmsi() + 
-						", SlotNumber: " + rtnValue.getSlotNumber());
 				this.mmsiEntity.setMessage1(vdm, rtnValue.getSlotNumber());
 				this.mmsiEntity.setAisMessageSequence(mmsiEntity.getAisMessageSequence()+1);
 				
 			} else {
 				//
-				System.out.println("[DEBUG] 새 슬롯 찾기 시작 - MMSI: " + this.mmsiEntity.getMmsi());
 				// SI 계산
 				this.mmsiEntity.setSelectionInterval();
-				System.out.println("[DEBUG] SI 계산 완료 - MMSI: " + this.mmsiEntity.getMmsi() + 
-						", SI: " + this.mmsiEntity.getSI());
 				// 마킹 및 전송
 				// int successSlotNumber = 
 				int result = this.globalEntityManager.findSlotAndMarking(mmsiEntity);
-				System.out.println("[DEBUG] findSlotAndMarking() 결과 - MMSI: " + this.mmsiEntity.getMmsi() + 
-						", result: " + result);
 				if (result <= -1) {
 					System.out.println("[DEBUG] ❌ 슬롯 찾기 실패 - MMSI: " + this.mmsiEntity.getMmsi() + 
 							", result: " + result);
-				} else {
-					System.out.println("[DEBUG] ✅ 슬롯 찾기 성공 - MMSI: " + this.mmsiEntity.getMmsi() + 
-							", slotNumber: " + result);
 				}
 			}
-		} else {
-			System.out.println("[DEBUG] ❌ MmsiEntity 비활성화 상태 - MMSI: " + this.mmsiEntity.getMmsi() + 
-					", chk: " + this.mmsiEntity.isChk());
 		}
 	}
 
@@ -138,9 +112,6 @@ public class MmsiEntityChangeStartDate implements Job {
 		LocalDateTime currentVirtualTime = virtualTimeManager.getCurrentVirtualTime();
 		LocalDateTime nextStartTime = currentVirtualTime.plusSeconds(this.mmsiEntity.getSpeed());
 		this.mmsiEntity.setStartTime(nextStartTime);
-		
-		System.out.println("[DEBUG] 다음 AIS 메시지 가상 시간: " + nextStartTime + 
-				" (현재 가상 시간: " + currentVirtualTime + ", speed: " + this.mmsiEntity.getSpeed() + "초)");
 
 		/**
 		 * 전송 카운트 업

@@ -48,8 +48,6 @@ public class QuartzCoreService {
 	 */
 	public void addScheduleJob(Trigger trigger, MmsiEntity mmsiEntity) throws SchedulerException, ParseException {
 		//
-		System.out.println("[DEBUG] QuartzCoreService.addScheduleJob() 호출 - MMSI: " + mmsiEntity.getMmsi() + 
-				", StartTime: " + mmsiEntity.getStartTime());
         // Quartz JobDetail 생성
 		JobDataMap jobDataMap = new JobDataMap();
 		jobDataMap.put("mmsiEntity", mmsiEntity);
@@ -59,7 +57,6 @@ public class QuartzCoreService {
 			String mmsi = String.valueOf(mmsiEntity.getMmsi());
 			String startDate = mmsiEntity.getStartTime().toString();
 			
-			System.out.println("[DEBUG] 새 Quartz Job 생성 - MMSI: " + mmsi + ", StartDate: " + startDate);
 			JobDetail job = JobBuilder.newJob(MmsiEntityChangeStartDate.class)
 	                .withIdentity(startDate, mmsi) //"myJob", "group1"
 	                .storeDurably(true)

@@ -42,13 +42,10 @@ public class MmsiEntityChangeStartTimeListener {
 	@EventListener
 	public void onMyPojoChange(MmsiEntityChangeStartTimeEvent event) {
 		//
-		System.out.println("[DEBUG] ========== MmsiEntityChangeStartTimeListener.onMyPojoChange() 호출 ==========");
-		System.out.println("[DEBUG] 이벤트 수신 - 이벤트 타입: " + event.getClass().getName());
 		String propertyName = event.getPropertyName();
 		Object oldValue = event.getOldValue();
 		Object newValue = event.getNewValue();
 		MmsiEntity mmsiEntity = (MmsiEntity) event.getClazz();
-		System.out.println("[DEBUG] MmsiEntity 추출 - MMSI: " + (mmsiEntity != null ? mmsiEntity.getMmsi() : "null"));
 
 		JobDataMap jobDataMap = new JobDataMap();
 		jobDataMap.put("mmsiEntity", mmsiEntity);
@@ -61,9 +58,6 @@ public class MmsiEntityChangeStartTimeListener {
 		
 		String localDateTimeString = localDateTime.toString();
 		
-		System.out.println("[DEBUG] 가상 시간: " + localDateTime + " -> 실제 시간: " + realDateTime);
-		
-//		System.out.println(">>"+localDateTimeString);
 		Trigger trigger = null;
 		if(mmsiEntity.getJob() == null) {
 			// Quartz Trigger 생성 (실제 시간 사용)
@@ -81,14 +75,10 @@ public class MmsiEntityChangeStartTimeListener {
 		}
 		
 		try {
-			System.out.println("[DEBUG] Quartz Job 등록 시도 - MMSI: " + mmsiEntity.getMmsi() + 
-					", startTime: " + localDateTime);
 			this.quartzCoreService.addScheduleJob(trigger, mmsiEntity);
-			System.out.println("[DEBUG] Quartz Job 등록 완료 - MMSI: " + mmsiEntity.getMmsi());
 		} catch (SchedulerException | ParseException e) {
 			System.out.println("[DEBUG] ❌ Quartz Job 등록 실패 - MMSI: " + mmsiEntity.getMmsi());
 			e.printStackTrace();
 		}
-		System.out.println("[DEBUG] ========== MmsiEntityChangeStartTimeListener.onMyPojoChange() 종료 ==========");
 	}
 }

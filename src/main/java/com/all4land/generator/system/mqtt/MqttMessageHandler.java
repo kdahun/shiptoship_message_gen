@@ -24,7 +24,6 @@ public class MqttMessageHandler implements MqttCallback {
 	@Override
 	public void messageArrived(String topic, MqttMessage message) throws Exception {
 		String payload = new String(message.getPayload());
-		System.out.println("[DEBUG] MQTT 메시지 수신 - 토픽: " + topic + ", 메시지: " + payload);
 		callback.onMessage(topic, payload);
 	}
 	
