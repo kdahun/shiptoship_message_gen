@@ -113,11 +113,11 @@ public class TsqEntityChangeStartDateQuartz implements Job {
 			// MQTT로 전송
 			if (mqttClient != null && mqttClient.isConnected()) {
 				try {
-					// MQTT 토픽 형식: mg/ms/tsq/{testMmsi}/{yyyyMMddhhmmss.SSSS}/
+					// MQTT 토픽 형식: mg/ms/tsq/{testMmsi}/{yyyyMMddHHmmss.SSSS}/ (AIS/ASM과 동일하게 ms 단위에 . 포함)
 					// 가상 시간 사용
-					String timestamp = virtualTime.format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")) + 
-							String.format("%04d", virtualTime.getNano() / 100000);
-					String mqttTopic = "mg/ms/tsq/" + request.getTestMmsi() + "/" + timestamp + "/";
+					DateTimeFormatter topicFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss.SSSS");
+					String timestamp = virtualTime.format(topicFormatter);
+					String mqttTopic = "mg/ms/tsq/" + request.getSourceMmsi() + "/" + timestamp + "/";
 					
 					// MQTT 송신용 DTO 생성
 					TsqMqttResponseMessage mqttResponse = new TsqMqttResponseMessage();
