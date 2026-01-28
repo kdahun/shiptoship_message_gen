@@ -21,7 +21,7 @@ public class TsqMessageQueue {
 	public void offer(TsqResourceRequestMessage message) {
 		if (message != null) {
 			queue.offer(message);
-			System.out.println("[DEBUG] TSQ 메시지 큐에 추가 - Service: " + message.getService() + 
+			System.out.println("[DEBUG] TSQ 메시지 큐에 추가 - Service: " + message.getServiceId() + 
 					", 큐 크기: " + queue.size());
 		}
 	}
@@ -41,7 +41,7 @@ public class TsqMessageQueue {
 	public TsqResourceRequestMessage poll() {
 		TsqResourceRequestMessage message = queue.poll();
 		if (message != null) {
-			System.out.println("[DEBUG] TSQ 메시지 큐에서 제거 - Service: " + message.getService() + 
+			System.out.println("[DEBUG] TSQ 메시지 큐에서 제거 - Service: " + message.getServiceId() + 
 					", 큐 크기: " + queue.size());
 		}
 		return message;

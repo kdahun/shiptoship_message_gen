@@ -917,8 +917,8 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 		System.out.println("[DEBUG] ========== TSQ 메시지 전송 시작 ==========");
 		
 		// 필수 필드 검증
-		if (request.getService() == null || request.getService().trim().isEmpty()) {
-			System.out.println("[DEBUG] ⚠️ service가 비어있습니다.");
+		if (request.getServiceId() == null || request.getServiceId().trim().isEmpty()) {
+			System.out.println("[DEBUG] ⚠️ serviceId가 비어있습니다.");
 			return;
 		}
 		if (request.getType() == null || request.getType().trim().isEmpty()) {
@@ -933,8 +933,9 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 			System.out.println("[DEBUG] ⚠️ sourceMmsi가 비어있습니다.");
 			return;
 		}
-		if (request.getDestMmsi() == null || request.getDestMmsi().trim().isEmpty()) {
-			System.out.println("[DEBUG] ⚠️ destMmsi가 비어있습니다.");
+		
+		if (request.getTestMmsi() == null || request.getTestMmsi().trim().isEmpty()) {
+			System.out.println("[DEBUG] ⚠️ testMmsi가 비어있습니다.");
 			return;
 		}
 		
@@ -944,7 +945,7 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 		// 가상 시간을 실제 시간으로 변환 (Quartz는 실제 시간을 사용)
 		LocalDateTime slotRealTime = virtualTimeManager.convertVirtualToRealTime(slotVirtualTime);
 		
-		// System.out.println("[DEBUG] TSQ 메시지 스케줄링 - Service: " + request.getService() + 
+		// System.out.println("[DEBUG] TSQ 메시지 스케줄링 - Service: " + request.getServiceId() + 
 		// 		", SlotNumber: " + slotNumber + 
 		// 		", 가상 시간: " + slotVirtualTime + 
 		// 		", 실제 시간: " + slotRealTime);
@@ -972,7 +973,7 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 			jobDataMap.put("tsqRequest", request);
 			jobDataMap.put("slotNumber", slotNumber);
 			
-			String jobKey = "tsq_" + request.getService() + "_" + slotNumber + "_" + slotVirtualTime.toString();
+			String jobKey = "tsq_" + request.getServiceId() + "_" + slotNumber + "_" + slotVirtualTime.toString();
 			
 			Trigger trigger = TriggerBuilder.newTrigger()
 					.withIdentity(jobKey, "tsqGroup")
@@ -987,7 +988,7 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 			
 			scheduler.scheduleJob(job, trigger);
 			
-			System.out.println("[DEBUG] ✅ TSQ 메시지 스케줄링 완료 - Service: " + request.getService() + 
+			System.out.println("[DEBUG] ✅ TSQ 메시지 스케줄링 완료 - Service: " + request.getServiceId() + 
 					", SlotNumber: " + slotNumber + 
 					", 실행 시간: " + slotRealTime);
 			

@@ -429,7 +429,7 @@ public class QuartzCoreService {
 		jobDataMap.put("tsqRequest", request);
 		jobDataMap.put("slotNumber", request.getSourceMmsi()); // 실제로는 slotNumber가 필요하지만, 여기서는 request만 전달
 		
-		String serviceId = request.getService();
+		String serviceId = request.getServiceId();
 		String jobKey = "tsq_" + serviceId + "_" + System.currentTimeMillis();
 		
 		JobDetail job = JobBuilder.newJob(TsqEntityChangeStartDateQuartz.class)

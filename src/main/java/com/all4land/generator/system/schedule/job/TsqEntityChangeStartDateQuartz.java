@@ -67,7 +67,7 @@ public class TsqEntityChangeStartDateQuartz implements Job {
 			return;
 		}
 		
-		System.out.println("[DEBUG] TSQ Job 실행 - Service: " + request.getService() + 
+		System.out.println("[DEBUG] TSQ Job 실행 - Service: " + request.getServiceId() + 
 				", SlotNumber: " + slotNumber);
 		
 		try {
@@ -113,17 +113,17 @@ public class TsqEntityChangeStartDateQuartz implements Job {
 			// MQTT로 전송
 			if (mqttClient != null && mqttClient.isConnected()) {
 				try {
-					// MQTT 토픽 형식: mg/ms/tsq/{sourceMmsi}/{yyyyMMddhhmmss.SSSS}/
+					// MQTT 토픽 형식: mg/ms/tsq/{testMmsi}/{yyyyMMddhhmmss.SSSS}/
 					// 가상 시간 사용
 					String timestamp = virtualTime.format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")) + 
 							String.format("%04d", virtualTime.getNano() / 100000);
-					String mqttTopic = "mg/ms/tsq/" + request.getSourceMmsi() + "/" + timestamp + "/";
+					String mqttTopic = "mg/ms/tsq/" + request.getTestMmsi() + "/" + timestamp + "/";
 					
 					// MQTT 송신용 DTO 생성
 					TsqMqttResponseMessage mqttResponse = new TsqMqttResponseMessage();
-					mqttResponse.setService(request.getService());
+					mqttResponse.setService(request.getServiceId());
 					mqttResponse.setServiceSize(request.getSize());
-					mqttResponse.setDestMMSI(Arrays.asList(request.getDestMmsi()));
+					mqttResponse.setDestMMSI(request.getTestMmsi());
 					mqttResponse.setNMEA(nmeaWithEsi); // TSQ + CRLF + ESI 포함
 					
 					// JSON 배열로 변환
@@ -132,7 +132,7 @@ public class TsqEntityChangeStartDateQuartz implements Job {
 					
 					mqttClient.publish(mqttTopic, mqttMessage, 1, false);
 					
-					System.out.println("[DEBUG] ✅ TSQ 메시지 MQTT 전송 완료 - Service: " + request.getService() + 
+					System.out.println("[DEBUG] ✅ TSQ 메시지 MQTT 전송 완료 - Service: " + request.getServiceId() + 
 							", Topic: " + mqttTopic + ", SlotNumber: " + slotNumber);
 					System.out.println("[DEBUG] 전송된 메시지:\n" + mqttMessage);
 					
