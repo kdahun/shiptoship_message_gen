@@ -91,8 +91,8 @@ public class MmsiEntity {
 	
 	private List<String> asmMessageList;	// ASM 메시지 리스트
 
-	// destMMSI 리스트 (thread-safe)
-	private List<Long> destMMSIList = new CopyOnWriteArrayList<>();
+	// testMMSI 리스트 (thread-safe)
+	private List<Long> testMMSIList = new CopyOnWriteArrayList<>();
 
 	private int slotTimeOut_default;		// 테스트용 slotTimeOut testInit에서 초기화
 	private int slotTimeOut = RandomGenerator.generateRandomIntFromTo(0, 7);	// AIS 메시지 타임아웃 시작 시간
@@ -599,19 +599,19 @@ public class MmsiEntity {
 
 	/**
 	 * AIS 메시지 생성 여부 확인
-	 * destMMSI 리스트가 비어있지 않을 때만 메시지 생성 (destMMSI가 있는 경우만 메시지 생성)
-	 * destMMSI 리스트가 비어있으면 자동으로 setChk(false) 호출하여 스케줄러 job 제거
+	 * testMMSI 리스트가 비어있지 않을 때만 메시지 생성 (testMMSI가 있는 경우만 메시지 생성)
+	 * testMMSI 리스트가 비어있으면 자동으로 setChk(false) 호출하여 스케줄러 job 제거
 	 */
 	public boolean isChk() {
-		// destMMSI 리스트가 비어있지 않을 때만 메시지 생성
-		if (!this.destMMSIList.isEmpty()) {
-			// destMMSI가 있고 chk가 true일 때만 true 반환
+		// testMMSI 리스트가 비어있지 않을 때만 메시지 생성
+		if (!this.testMMSIList.isEmpty()) {
+			// testMMSI가 있고 chk가 true일 때만 true 반환
 			return this.chk;
 		}
-		// destMMSI 리스트가 비어있으면 메시지 생성하지 않음
-		// chk가 true인 상태에서 destMMSI가 비어있으면 setChk(false) 호출하여 스케줄러 job 제거
+		// testMMSI 리스트가 비어있으면 메시지 생성하지 않음
+		// chk가 true인 상태에서 testMMSI가 비어있으면 setChk(false) 호출하여 스케줄러 job 제거
 		if (this.chk) {
-			System.out.println("[DEBUG] isChk() 체크: destMMSI 리스트가 비어있어 setChk(false) 호출 - MMSI: " + this.mmsi);
+			System.out.println("[DEBUG] isChk() 체크: testMMSI 리스트가 비어있어 setChk(false) 호출 - MMSI: " + this.mmsi);
 			this.setChk(false);
 		}
 		return false;
@@ -657,51 +657,51 @@ public class MmsiEntity {
 	}
 
 	/**
-	 * destMMSI를 리스트에 추가
-	 * @param destMMSI 추가할 목적지 MMSI
+	 * testMMSI를 리스트에 추가
+	 * @param testMMSI 추가할 목적지 MMSI
 	 */
-	public void addDestMMSI(long destMMSI) {
-		if (!this.destMMSIList.contains(destMMSI)) {
-			this.destMMSIList.add(destMMSI);
+	public void addTestMMSI(long testMMSI) {
+		if (!this.testMMSIList.contains(testMMSI)) {
+			this.testMMSIList.add(testMMSI);
 		} else {
-			System.out.println("[DEBUG] destMMSI 중복 - MMSI: " + this.mmsi + ", destMMSI: " + destMMSI);
+			System.out.println("[DEBUG] testMMSI 중복 - MMSI: " + this.mmsi + ", testMMSI: " + testMMSI);
 		}
 	}
 
 	/**
-	 * destMMSI를 리스트에서 제거
+	 * testMMSI를 리스트에서 제거
 	 * 리스트가 비어지면 자동으로 setChk(false) 호출하여 메시지 생성 중단
-	 * @param destMMSI 제거할 목적지 MMSI
+	 * @param testMMSI 제거할 목적지 MMSI
 	 */
-	public void removeDestMMSI(long destMMSI) {
-		if (this.destMMSIList.remove(destMMSI)) {
-			System.out.println("[DEBUG] destMMSI 제거 - MMSI: " + this.mmsi + ", destMMSI: " + destMMSI + 
-					", 리스트 크기: " + this.destMMSIList.size());
+	public void removeTestMMSI(long testMMSI) {
+		if (this.testMMSIList.remove(testMMSI)) {
+			System.out.println("[DEBUG] testMMSI 제거 - MMSI: " + this.mmsi + ", testMMSI: " + testMMSI + 
+					", 리스트 크기: " + this.testMMSIList.size());
 			
-			// destMMSI 리스트가 비어지면 메시지 생성 중단
-			if (this.destMMSIList.isEmpty() && this.chk) {
-				System.out.println("[DEBUG] destMMSI 리스트가 비어서 메시지 생성 중단 - MMSI: " + this.mmsi);
+			// testMMSI 리스트가 비어지면 메시지 생성 중단
+			if (this.testMMSIList.isEmpty() && this.chk) {
+				System.out.println("[DEBUG] testMMSI 리스트가 비어서 메시지 생성 중단 - MMSI: " + this.mmsi);
 				this.setChk(false);
 			}
 		} else {
-			System.out.println("[DEBUG] destMMSI 없음 - MMSI: " + this.mmsi + ", destMMSI: " + destMMSI);
+			System.out.println("[DEBUG] testMMSI 없음 - MMSI: " + this.mmsi + ", testMMSI: " + testMMSI);
 		}
 	}
 
 	/**
-	 * destMMSI 리스트 반환
-	 * @return destMMSI 리스트
+	 * testMMSI 리스트 반환
+	 * @return testMMSI 리스트
 	 */
-	public List<Long> getDestMMSIList() {
-		return new ArrayList<>(this.destMMSIList); // 방어적 복사
+	public List<Long> getTestMMSIList() {
+		return new ArrayList<>(this.testMMSIList); // 방어적 복사
 	}
 
 	/**
-	 * destMMSI 리스트가 비어있지 않은지 확인
+	 * testMMSI 리스트가 비어있지 않은지 확인
 	 * @return 리스트가 비어있지 않으면 true
 	 */
-	public boolean hasDestMMSI() {
-		return !this.destMMSIList.isEmpty();
+	public boolean hasTestMMSI() {
+		return !this.testMMSIList.isEmpty();
 	}
 
 	/**
@@ -894,19 +894,19 @@ public class MmsiEntity {
 					if (mqttClient != null && mqttClient.isConnected()) {
 						String aisMessageToSend = aisMessage + SystemConstMessage.CRLF + vsiMessage;
 						
-						// JSON 형태로 변환 : [{"destMMSI":["440123456", "440654321"], "NMEA":"!AIVDM..."}]
+						// JSON 형태로 변환 : [{"testMmsi":["440123456", "440654321"], "NMEA":"!AIVDM..."}]
 						Map<String, Object> nmeaObject = new HashMap<>();
 						nmeaObject.put("NMEA", aisMessageToSend);
 						
-						// destMMSI 리스트 추가
-						List<Long> destMMSIList = this.getDestMMSIList();
-						if (destMMSIList != null && !destMMSIList.isEmpty()) {
-							List<String> destMMSIStrList = destMMSIList.stream()
+						// testMmsi 리스트 추가
+						List<Long> testMMSIList = this.getTestMMSIList();
+						if (testMMSIList != null && !testMMSIList.isEmpty()) {
+							List<String> testMmsiStrList = testMMSIList.stream()
 									.map(String::valueOf)
 									.collect(Collectors.toList());
-							nmeaObject.put("destMMSI", destMMSIStrList);
-							System.out.println("[DEBUG] destMMSI 포함 - MMSI: " + this.mmsi + 
-									", destMMSI: " + destMMSIStrList);
+							nmeaObject.put("testMmsi", testMmsiStrList);
+							System.out.println("[DEBUG] testMmsi 포함 - MMSI: " + this.mmsi + 
+									", testMmsi: " + testMmsiStrList);
 						}
 						
 						List<Map<String, Object>> jsonArray = new ArrayList<>();
@@ -1031,8 +1031,8 @@ public class MmsiEntity {
 				});
 
 
-				// 메시지 송신 전에 destMMSI 리스트를 먼저 가져와서 저장 (송신 후 제거되기 전에 사용하기 위해)
-				List<Long> destMMSIListForSend = asmEntity.getDestMMSIList();
+				// 메시지 송신 전에 testMMSI 리스트를 먼저 가져와서 저장 (송신 후 제거되기 전에 사용하기 위해)
+				List<Long> testMMSIListForSend = asmEntity.getTestMMSIList();
 				
 				// MQTT로 ASM 메시지 전송
 				CompletableFuture.runAsync(() -> {
@@ -1040,23 +1040,31 @@ public class MmsiEntity {
 						MqttClientConfiguration mqttClient = (MqttClientConfiguration) BeanUtils.getBean("mqttClient");
 						if (mqttClient != null && mqttClient.isConnected()) {
 							
-							// JSON 형태로 변환 : [{"destMMSI":["440123456", "440654321"], "NMEA":"!AIVDM..."}]
+							// JSON 형태로 변환 : [{"serviceID":"s2234567","testMmsi":["440123456"], "NMEA":"!AIVDM..."}]
 							String mqttMessage = sbForSendMqtt.toString();
 							Map<String, Object> nmeaObject = new HashMap<>();
+							
+							// serviceID 추가
+							String serviceId = asmEntity.getServiceId();
+							if (serviceId != null && !serviceId.isEmpty()) {
+								nmeaObject.put("serviceID", serviceId);
+							}
+							
+							// NMEA 메시지 추가
 							nmeaObject.put("NMEA", mqttMessage);
 							
-							// 저장해둔 destMMSI 리스트 추가 (송신 전에 가져온 리스트 사용)
-							if (destMMSIListForSend != null && !destMMSIListForSend.isEmpty()) {
-								List<String> destMMSIStrList = destMMSIListForSend.stream()
+							// 저장해둔 testMmsi 리스트 추가 (송신 전에 가져온 리스트 사용)
+							if (testMMSIListForSend != null && !testMMSIListForSend.isEmpty()) {
+								List<String> testMmsiStrList = testMMSIListForSend.stream()
 										.map(String::valueOf)
 										.collect(Collectors.toList());
-								nmeaObject.put("destMMSI", destMMSIStrList);
-								// System.out.println("[DEBUG] ASM destMMSI 포함 - MMSI: " + this.mmsi + 
-								// 		", ServiceId: " + (asmEntity.getServiceId() != null ? asmEntity.getServiceId() : "default") +
-								// 		", destMMSI: " + destMMSIStrList);
+								nmeaObject.put("testMmsi", testMmsiStrList);
+								// System.out.println("[DEBUG] ASM testMmsi 포함 - MMSI: " + this.mmsi + 
+								// 		", ServiceId: " + serviceId +
+								// 		", testMmsi: " + testMmsiStrList);
 							} else {
-								System.out.println("[DEBUG] ⚠️ ASM destMMSI 리스트가 비어있음 - MMSI: " + this.mmsi + 
-										", ServiceId: " + (asmEntity.getServiceId() != null ? asmEntity.getServiceId() : "default"));
+								System.out.println("[DEBUG] ⚠️ ASM testMmsi 리스트가 비어있음 - MMSI: " + this.mmsi + 
+										", ServiceId: " + serviceId);
 							}
 							
 							List<Map<String, Object>> jsonArray = new ArrayList<>();
@@ -1073,25 +1081,24 @@ public class MmsiEntity {
 						
 						mqttClient.publish(topic, jsonMessage, 0, false);
 						
-						// 메시지 송신 완료 후 asmPeriod=0인 destMMSI 제거
-						int removedCount = asmEntity.removeDestMMSIWithAsmPeriod0();
+						// 메시지 송신 완료 후 asmPeriod=0인 testMMSI 제거
+						int removedCount = asmEntity.removeTestMMSIWithAsmPeriod0();
 						if (removedCount > 0) {
-							System.out.println("[DEBUG] ✅ ASM 메시지 송신 후 asmPeriod=0인 destMMSI 제거 완료 - MMSI: " + this.mmsi + 
-									", ServiceId: " + (asmEntity.getServiceId() != null ? asmEntity.getServiceId() : "default") +
+							System.out.println("[DEBUG] ✅ ASM 메시지 송신 후 asmPeriod=0인 testMmsi 제거 완료 - MMSI: " + this.mmsi + 
+									", ServiceId: " + serviceId +
 									", 제거 개수: " + removedCount);
 						}
 							
-							// destMMSI 리스트가 비어있으면 해당 AsmEntity 제거 (다중 AsmEntity 지원)
-							if (!asmEntity.hasDestMMSI()) {
-								String serviceId = asmEntity.getServiceId();
+							// testMmsi 리스트가 비어있으면 해당 AsmEntity 제거 (다중 AsmEntity 지원)
+							if (!asmEntity.hasTestMMSI()) {
 								if (serviceId != null) {
 									// 특정 AsmEntity만 제거
 									this.removeAsmEntity(serviceId);
-									System.out.println("[DEBUG] ✅ destMMSI 리스트가 비어있어 ASM 서비스 제거 - MMSI: " + this.mmsi + 
+									System.out.println("[DEBUG] ✅ testMmsi 리스트가 비어있어 ASM 서비스 제거 - MMSI: " + this.mmsi + 
 											", ServiceId: " + serviceId);
 								} else {
 									// serviceId가 없으면 전체 ASM 비활성화 (호환성)
-									System.out.println("[DEBUG] ✅ destMMSI 리스트가 비어있어 ASM 비활성화 - MMSI: " + this.mmsi);
+									System.out.println("[DEBUG] ✅ testMmsi 리스트가 비어있어 ASM 비활성화 - MMSI: " + this.mmsi);
 									this.setAsm(false);
 								}
 							}
@@ -1128,18 +1135,18 @@ public class MmsiEntity {
 
 	/**
 	 * ASM 메시지 생성 여부 확인
-	 * destMMSI 리스트가 비어있지 않을 때만 메시지 생성 (destMMSI가 있는 경우만 메시지 생성)
-	 * destMMSI 리스트가 비어있으면 자동으로 setAsm(false) 호출하여 스케줄러 job 제거
+	 * testMMSI 리스트가 비어있지 않을 때만 메시지 생성 (testMMSI가 있는 경우만 메시지 생성)
+	 * testMMSI 리스트가 비어있으면 자동으로 setAsm(false) 호출하여 스케줄러 job 제거
 	 */
 	public boolean isAsm() {
-		// 여러 AsmEntity 중 하나라도 destMMSI가 있으면 true 반환
+		// 여러 AsmEntity 중 하나라도 testMMSI가 있으면 true 반환
 		for (AsmEntity asmEntity : this.asmEntityMap.values()) {
-			if (asmEntity != null && !asmEntity.getDestMMSIList().isEmpty()) {
+			if (asmEntity != null && !asmEntity.getTestMMSIList().isEmpty()) {
 				return true;
 			}
 		}
 		// 호환성을 위해 기존 asmEntity도 확인
-		if (this.asmEntity != null && !this.asmEntity.getDestMMSIList().isEmpty()) {
+		if (this.asmEntity != null && !this.asmEntity.getTestMMSIList().isEmpty()) {
 			return true;
 		}
 		return false;

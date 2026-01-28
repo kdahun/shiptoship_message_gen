@@ -16,7 +16,7 @@ public class TsqMqttResponseMessage {
 	private String serviceSize;       // 서비스 크기
 	
 	@SerializedName("testMmsi")
-	private String destMMSI;          // 목적지 MMSI
+	private String testMmsi;          // 피시험 MMSI
 	
 	private String NMEA;              // NMEA 메시지
 }

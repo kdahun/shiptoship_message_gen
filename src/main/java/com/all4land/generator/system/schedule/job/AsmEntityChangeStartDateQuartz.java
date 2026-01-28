@@ -51,9 +51,9 @@ public class AsmEntityChangeStartDateQuartz implements Job {
 		this.asmEntity = this.mmsiEntity.getAsmEntity();
 	}
 
-		// ASM 메시지 생성 여부 확인 (destMMSI 리스트 체크)
-		if (this.asmEntity == null || !this.asmEntity.hasDestMMSI()) {
-			System.out.println("[DEBUG] ❌ ASM Entity가 없거나 destMMSI 리스트가 비어있음 - MMSI: " + 
+		// ASM 메시지 생성 여부 확인 (testMMSI 리스트 체크)
+		if (this.asmEntity == null || !this.asmEntity.hasTestMMSI()) {
+			System.out.println("[DEBUG] ❌ ASM Entity가 없거나 testMMSI 리스트가 비어있음 - MMSI: " + 
 					(this.mmsiEntity != null ? this.mmsiEntity.getMmsi() : "null") + 
 					", ServiceId: " + (this.asmEntity != null ? this.asmEntity.getServiceId() : "null"));
 			return; // 메시지 생성하지 않음
@@ -116,19 +116,19 @@ public class AsmEntityChangeStartDateQuartz implements Job {
 	
 	private void addFuture() {
 		//
-	// destMMSI 리스트가 비어있으면 다음 스케줄 설정하지 않음
-	// (메시지 송신 후 이미 asmPeriod=0인 destMMSI가 제거되었으므로)
-	if (!this.asmEntity.hasDestMMSI()) {
+	// testMMSI 리스트가 비어있으면 다음 스케줄 설정하지 않음
+	// (메시지 송신 후 이미 asmPeriod=0인 testMMSI가 제거되었으므로)
+	if (!this.asmEntity.hasTestMMSI()) {
 		return; // 다음 스케줄 설정하지 않음
 	}
 		
-		// asmPeriod 값 가져오기 (전역 asmPeriod 우선, 없으면 destMMSI 리스트의 최소값 사용)
+		// asmPeriod 값 가져오기 (전역 asmPeriod 우선, 없으면 testMMSI 리스트의 최소값 사용)
 		String asmPeriodStr = this.asmEntity.getAsmPeriod();
 		int periodSeconds = parseAsmPeriod(asmPeriodStr);
 		
-		// 전역 asmPeriod가 "0"이거나 유효하지 않은 경우, destMMSI 리스트의 최소값 확인
+		// 전역 asmPeriod가 "0"이거나 유효하지 않은 경우, testMMSI 리스트의 최소값 확인
 		if (periodSeconds == 0) {
-			periodSeconds = getMinAsmPeriodFromDestMMSI();
+			periodSeconds = getMinAsmPeriodFromTestMMSI();
 		}
 		
 	// asmPeriod가 "0"이면 다음 스케줄 설정하지 않음 (단발 메시지)
@@ -136,7 +136,7 @@ public class AsmEntityChangeStartDateQuartz implements Job {
 		return;
 	}
 	
-	// destMMSI 리스트가 비어있지 않으면 다음 스케줄 설정
+	// testMMSI 리스트가 비어있지 않으면 다음 스케줄 설정
 	// 가상 시간 기준으로 다음 시간 계산 (asmPeriod 값 사용)
 	LocalDateTime currentVirtualTime = virtualTimeManager.getCurrentVirtualTime();
 	LocalDateTime newLocalDateTime = currentVirtualTime.plusSeconds(periodSeconds);
@@ -171,15 +171,15 @@ public class AsmEntityChangeStartDateQuartz implements Job {
 	}
 	
 	/**
-	 * destMMSI 리스트에서 최소 asmPeriod 값 반환
+	 * testMMSI 리스트에서 최소 asmPeriod 값 반환
 	 * @return 최소 asmPeriod 값 (초 단위), 유효한 값이 없으면 0
 	 */
-	private int getMinAsmPeriodFromDestMMSI() {
+	private int getMinAsmPeriodFromTestMMSI() {
 		int minPeriod = Integer.MAX_VALUE;
 		boolean foundValidPeriod = false;
 		
-		for (Long destMMSI : this.asmEntity.getDestMMSIList()) {
-			String periodStr = this.asmEntity.getAsmPeriodForDestMMSI(destMMSI);
+		for (Long testMMSI : this.asmEntity.getTestMMSIList()) {
+			String periodStr = this.asmEntity.getAsmPeriodForTestMMSI(testMMSI);
 			if (periodStr != null) {
 				int period = parseAsmPeriod(periodStr);
 				if (period > 0) {

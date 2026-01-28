@@ -102,7 +102,7 @@ public class TsqEntityChangeStartDateQuartz implements Job {
 			
 			// TSQ NMEA 메시지 생성
 			String tsqNmeaMessage = TerrestrialSlotResourceRequest.getTerrestrialSlotResourceRequestNewFormat(
-					String.valueOf(seq), request.getSourceMmsi(), request.getDestMmsi(), physicalChannelNumber, linkId);
+					String.valueOf(seq), request.getSourceMmsi(), request.getTestMmsi(), physicalChannelNumber, linkId);
 			
 			// NMEA 필드에 TSQ 메시지 + CRLF + ESI 메시지 조립
 			StringBuilder nmeaBuilder = new StringBuilder();
@@ -123,7 +123,7 @@ public class TsqEntityChangeStartDateQuartz implements Job {
 					TsqMqttResponseMessage mqttResponse = new TsqMqttResponseMessage();
 					mqttResponse.setService(request.getServiceId());
 					mqttResponse.setServiceSize(request.getSize());
-					mqttResponse.setDestMMSI(request.getTestMmsi());
+					mqttResponse.setTestMmsi(request.getTestMmsi());
 					mqttResponse.setNMEA(nmeaWithEsi); // TSQ + CRLF + ESI 포함
 					
 					// JSON 배열로 변환

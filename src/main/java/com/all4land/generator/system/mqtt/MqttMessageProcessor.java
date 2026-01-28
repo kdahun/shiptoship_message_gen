@@ -358,29 +358,29 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 				long mmsi = Long.parseLong(ship.getMmsi());
 				String state = ship.getState(); // "0"=OFF, "1"=ON
 				
-				// destMMSI 리스트 추출 및 변환
-				List<Long> destMMSIList = null;
-				if (ship.getDestMMSI() != null && !ship.getDestMMSI().isEmpty()) {
-					destMMSIList = new java.util.ArrayList<>();
-					for (String destMMSIStr : ship.getDestMMSI()) {
+				// testMmsi 리스트 추출 및 변환
+				List<Long> testMMSIList = null;
+				if (ship.getTestMmsi() != null && !ship.getTestMmsi().isEmpty()) {
+					testMMSIList = new java.util.ArrayList<>();
+					for (String testMMSIStr : ship.getTestMmsi()) {
 						try {
-							long destMMSI = Long.parseLong(destMMSIStr);
-							destMMSIList.add(destMMSI);
+							long testMMSI = Long.parseLong(testMMSIStr);
+							testMMSIList.add(testMMSI);
 						} catch (NumberFormatException e) {
-							System.out.println("[DEBUG] ⚠️ 유효하지 않은 destMMSI 값 무시: " + destMMSIStr + " (MMSI: " + mmsi + ")");
+							System.out.println("[DEBUG] ⚠️ 유효하지 않은 testMmsi 값 무시: " + testMMSIStr + " (MMSI: " + mmsi + ")");
 						}
 					}
-					if (destMMSIList.isEmpty()) {
-						System.out.println("[DEBUG] ⚠️ destMMSI 리스트가 비어있음 - MMSI: " + mmsi);
-						destMMSIList = null; // 빈 리스트는 null로 처리하여 기존 동작 사용
+					if (testMMSIList.isEmpty()) {
+						System.out.println("[DEBUG] ⚠️ testMmsi 리스트가 비어있음 - MMSI: " + mmsi);
+						testMMSIList = null; // 빈 리스트는 null로 처리하여 기존 동작 사용
 					} else {
-						System.out.println("[DEBUG] ✅ destMMSI 리스트 파싱 완료 - MMSI: " + mmsi +", state: "+ state + ", 피시험 선박: " + destMMSIList);
+						System.out.println("[DEBUG] ✅ testMmsi 리스트 파싱 완료 - MMSI: " + mmsi +", state: "+ state + ", 피시험 선박: " + testMMSIList);
 					}
 				} else {
-					System.out.println("[DEBUG] ⚠️ destMMSI 필드가 null이거나 비어있음 - MMSI: " + mmsi);
+					System.out.println("[DEBUG] ⚠️ testMmsi 필드가 null이거나 비어있음 - MMSI: " + mmsi);
 				}
 				
-				boolean result = globalEntityManager.controlMmsiState(mmsi, state, destMMSIList);
+				boolean result = globalEntityManager.controlMmsiState(mmsi, state, testMMSIList);
 				if (result) {
 					successCount++;
 				} else {
@@ -402,7 +402,7 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 	/**
 	 * ASM 상태 제어 메시지를 처리합니다.
 	 * 토픽: mt/mg/traffic-ships/asm-state/{timestamp}
-	 * 형식: [{"mmsi": "440301234", "state": "1", "size": "3", "asmPeriod": "0"}, ...]
+	 * 형식: [{"serviceId":"s2234567","sourceMmsi":"440301234","testMmsi":["440123456"],"state":"1","size":"3","asmPeriod":"30"}, ...]
 	 * asmPeriod: "0"=단발 메시지, "4"~"360"=초 단위 주기
 	 */
 	private void processAsmStateMessage(String message) {
@@ -413,7 +413,7 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 			AsmControlMessage asmControlMessage;
 			
 			if (trimmedMessage.startsWith("[")) {
-				// 배열 형식: [{"mmsi": "...", "state": "...", "size": "...", "asmPeriod": "..."}, ...]
+				// 배열 형식: [{"serviceId":"...", "sourceMmsi":"...", "testMmsi":[...], "state": "...", "size": "...", "asmPeriod": "..."}, ...]
 				System.out.println("[DEBUG] 배열 형식 ASM 상태 제어 메시지 감지");
 				java.lang.reflect.Type listTypeAsm = new TypeToken<List<AsmShipControl>>(){}.getType();
 				List<AsmShipControl> ships = gson.fromJson(trimmedMessage, listTypeAsm);
@@ -439,7 +439,7 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 	
 	/**
 	 * ASM 제어 메시지를 처리하여 MMSI의 ASM 메시지 생성 상태를 변경합니다.
-	 * state에 따라 destMMSI 리스트를 관리하고, 리스트 상태에 따라 메시지 송신을 제어합니다.
+	 * state에 따라 testMmsi 리스트를 관리하고, 리스트 상태에 따라 메시지 송신을 제어합니다.
 	 */
 	private void handleAsmControlMessage(com.all4land.generator.system.netty.dto.AsmControlMessage asmControlMessage) {
 		if (asmControlMessage.getShips() == null || asmControlMessage.getShips().isEmpty()) {
@@ -450,92 +450,91 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 		int successCount = 0;
 		int failCount = 0;
 		
-		// state="0"인 MMSI들을 먼저 수집 (중복 제거)
-		java.util.Set<Long> mmsiToRemove = new java.util.HashSet<>();
+		// 각 항목별로 처리 (state="0" 또는 state="1")
 		for (com.all4land.generator.system.netty.dto.AsmControlMessage.AsmShipControl ship : asmControlMessage.getShips()) {
 			try {
-				if ("0".equals(ship.getState())) {
-					long mmsi = Long.parseLong(ship.getMmsi());
-					mmsiToRemove.add(mmsi);
-				}
-			} catch (NumberFormatException e) {
-				// 무시하고 계속 진행
-			}
-		}
-		
-		// state="0"인 MMSI들의 모든 AsmEntity 제거
-		for (Long mmsi : mmsiToRemove) {
-			try {
-				com.all4land.generator.entity.MmsiEntity mmsiEntity = globalEntityManager.findMmsiEntity(mmsi);
-				if (mmsiEntity == null) {
-					System.out.println("[DEBUG] ⚠️ MMSI를 찾을 수 없음 (제거): " + mmsi);
-					continue;
-				}
-				
-				// 모든 AsmEntity 제거
-				java.util.List<com.all4land.generator.entity.AsmEntity> removedEntities = mmsiEntity.removeAllAsmEntities();
-				
-				// 제거된 모든 AsmEntity의 스케줄러 Job 삭제
-				for (com.all4land.generator.entity.AsmEntity asmEntity : removedEntities) {
-					if (asmEntity != null && asmEntity.getAsmStartTimeJob() != null) {
-						try {
-							org.quartz.JobKey jobKey = asmEntity.getAsmStartTimeJob().getKey();
-							scheduler.deleteJob(jobKey);
-							System.out.println("[DEBUG] ✅ ASM 스케줄 제거 완료 - MMSI: " + mmsi + ", ServiceId: " + 
-									(asmEntity.getServiceId() != null ? asmEntity.getServiceId() : "null"));
-						} catch (Exception e) {
-							System.out.println("[DEBUG] ⚠️ MMSI: " + mmsi + " ASM 스케줄 삭제 중 오류: " + e.getMessage());
-						}
-					}
-				}
-				
-				System.out.println("[DEBUG] ✅ ASM 서비스 전체 제거 완료 - MMSI: " + mmsi + ", 제거된 개수: " + removedEntities.size());
-				successCount++;
-			} catch (Exception e) {
-				System.out.println("[DEBUG] ❌ MMSI ASM 전체 제거 실패: " + mmsi + ", 오류: " + e.getMessage());
-				e.printStackTrace();
-				failCount++;
-			}
-		}
-		
-		// 각 메시지마다 인덱스 추적 (MMSI별, state="1"만 처리)
-		java.util.Map<Long, Integer> mmsiIndexMap = new java.util.concurrent.ConcurrentHashMap<>();
-		
-		// state="1"인 메시지들 처리
-		for (com.all4land.generator.system.netty.dto.AsmControlMessage.AsmShipControl ship : asmControlMessage.getShips()) {
-			try {
-				long mmsi = Long.parseLong(ship.getMmsi());
+				String serviceId = ship.getServiceId();
+				String sourceMmsiStr = ship.getSourceMmsi();
 				String state = ship.getState(); // "0"=OFF, "1"=ON
 				
-				// state="0"인 경우는 이미 처리했으므로 건너뛰기
-				if ("0".equals(state)) {
+				// 필수 필드 검증
+				if (serviceId == null || serviceId.trim().isEmpty()) {
+					System.out.println("[DEBUG] ⚠️ serviceId가 비어있습니다.");
+					failCount++;
+					continue;
+				}
+				if (sourceMmsiStr == null || sourceMmsiStr.trim().isEmpty()) {
+					System.out.println("[DEBUG] ⚠️ sourceMmsi가 비어있습니다.");
+					failCount++;
 					continue;
 				}
 				
-				// state="1"만 처리
-				if ("1".equals(state)) {
-					String size = ship.getSize();   // "1"~"3" (슬롯 점유 개수)
-					String asmPeriod = ship.getAsmPeriod(); // "0"=단발, "4"~"360"=초 단위 주기
-					
-					// MMSI 엔티티 찾기
-					com.all4land.generator.entity.MmsiEntity mmsiEntity = globalEntityManager.findMmsiEntity(mmsi);
+				long sourceMmsi;
+				try {
+					sourceMmsi = Long.parseLong(sourceMmsiStr);
+				} catch (NumberFormatException e) {
+					System.out.println("[DEBUG] ❌ 유효하지 않은 sourceMmsi: " + sourceMmsiStr);
+					failCount++;
+					continue;
+				}
+				
+				if ("0".equals(state)) {
+					// state="0": 특정 serviceId의 AsmEntity만 제거
+					com.all4land.generator.entity.MmsiEntity mmsiEntity = globalEntityManager.findMmsiEntity(sourceMmsi);
 					if (mmsiEntity == null) {
-						System.out.println("[DEBUG] ❌ MMSI를 찾을 수 없음: " + mmsi);
+						System.out.println("[DEBUG] ⚠️ sourceMmsi를 찾을 수 없음 (제거): " + sourceMmsi);
 						failCount++;
 						continue;
 					}
 					
-					// 인덱스 가져오기 및 증가
-					int index = mmsiIndexMap.getOrDefault(mmsi, mmsiEntity.getAsmEntityCount());
-					mmsiIndexMap.put(mmsi, index + 1);
+					// serviceId로 특정 AsmEntity만 제거
+					com.all4land.generator.entity.AsmEntity removedEntity = mmsiEntity.removeAsmEntity(serviceId);
 					
-					// ASM Entity 키 생성 (형식: "asm_" + mmsi + "_" + index)
-					String asmEntityKey = "asm_" + mmsi + "_" + index;
+					if (removedEntity != null) {
+						// 스케줄러 Job 삭제
+						if (removedEntity.getAsmStartTimeJob() != null) {
+							try {
+								org.quartz.JobKey jobKey = removedEntity.getAsmStartTimeJob().getKey();
+								scheduler.deleteJob(jobKey);
+								System.out.println("[DEBUG] ✅ ASM 스케줄 제거 완료 - SourceMmsi: " + sourceMmsi + 
+										", ServiceId: " + serviceId);
+							} catch (Exception e) {
+								System.out.println("[DEBUG] ⚠️ SourceMmsi: " + sourceMmsi + ", ServiceId: " + serviceId + 
+										" ASM 스케줄 삭제 중 오류: " + e.getMessage());
+							}
+						}
+						System.out.println("[DEBUG] ✅ ASM 서비스 제거 완료 - SourceMmsi: " + sourceMmsi + 
+								", ServiceId: " + serviceId);
+						successCount++;
+					} else {
+						System.out.println("[DEBUG] ⚠️ ASM 서비스를 찾을 수 없음 - SourceMmsi: " + sourceMmsi + 
+								", ServiceId: " + serviceId);
+						failCount++;
+					}
 					
-					// 새로운 AsmEntity 생성
+				} else if ("1".equals(state)) {
+					// state="1": ASM 서비스 시작/추가
+					String size = ship.getSize();   // "1"~"3" (슬롯 점유 개수)
+					String asmPeriod = ship.getAsmPeriod(); // "0"=단발, "4"~"360"=초 단위 주기
+					
+					// sourceMmsi로 MmsiEntity 조회, 없으면 자동 생성
+					com.all4land.generator.entity.MmsiEntity mmsiEntity = globalEntityManager.findMmsiEntity(sourceMmsi);
+					if (mmsiEntity == null) {
+						System.out.println("[DEBUG] ⚠️ SourceMmsi를 찾을 수 없음, 자동 생성 시도: " + sourceMmsi);
+						try {
+							mmsiEntity = globalEntityManager.ensureMmsiEntity(sourceMmsi, scheduler, quartzCoreService);
+							System.out.println("[DEBUG] ✅ SourceMmsi 자동 생성 완료: " + sourceMmsi);
+						} catch (Exception e) {
+							System.out.println("[DEBUG] ❌ SourceMmsi 자동 생성 실패: " + sourceMmsi + ", 오류: " + e.getMessage());
+							failCount++;
+							continue;
+						}
+					}
+					
+					// 새로운 AsmEntity 생성 (serviceId를 키로 사용)
 					com.all4land.generator.entity.AsmEntity asmEntity = new com.all4land.generator.entity.AsmEntity(
 						eventPublisher,
-						asmEntityKey
+						serviceId
 					);
 					
 					// size 설정
@@ -544,10 +543,10 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 							int slotCount = Integer.parseInt(size);
 							if (slotCount >= 1 && slotCount <= 3) {
 								asmEntity.setSlotCount(slotCount);
-								System.out.println("[DEBUG] ✅ MMSI: " + mmsi + " ASM 슬롯 개수 설정: " + slotCount);
+								System.out.println("[DEBUG] ✅ SourceMmsi: " + sourceMmsi + " ASM 슬롯 개수 설정: " + slotCount);
 							}
 						} catch (NumberFormatException e) {
-							System.out.println("[DEBUG] ⚠️ MMSI: " + mmsi + " 슬롯 개수 파싱 실패: " + size);
+							System.out.println("[DEBUG] ⚠️ SourceMmsi: " + sourceMmsi + " 슬롯 개수 파싱 실패: " + size);
 						}
 					}
 					
@@ -555,41 +554,40 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 					String asmPeriodValue = validateAsmPeriod(asmPeriod);
 					asmEntity.setAsmPeriod(asmPeriodValue);
 					
-					// destMMSI 리스트 처리
-					if (ship.getDestMMSI() != null && !ship.getDestMMSI().isEmpty()) {
-						for (String destMMSIStr : ship.getDestMMSI()) {
+					// testMmsi 리스트 처리
+					if (ship.getTestMmsi() != null && !ship.getTestMmsi().isEmpty()) {
+						for (String testMmsiStr : ship.getTestMmsi()) {
 							try {
-								long destMMSI = Long.parseLong(destMMSIStr);
-								asmEntity.addDestMMSI(destMMSI, asmPeriodValue);
-								System.out.println("[DEBUG] ✅ ASM destMMSI 추가 - MMSI: " + mmsi + 
-										", ServiceId: " + asmEntityKey + ", destMMSI: " + destMMSI + ", asmPeriod: " + asmPeriodValue);
+								long testMmsi = Long.parseLong(testMmsiStr);
+								asmEntity.addTestMMSI(testMmsi, asmPeriodValue);
+								System.out.println("[DEBUG] ✅ ASM testMmsi 추가 - SourceMmsi: " + sourceMmsi + 
+										", ServiceId: " + serviceId + ", testMmsi: " + testMmsi + ", asmPeriod: " + asmPeriodValue);
 							} catch (NumberFormatException e) {
-								System.out.println("[DEBUG] ⚠️ 유효하지 않은 ASM destMMSI 값 무시: " + destMMSIStr + " (MMSI: " + mmsi + ")");
+								System.out.println("[DEBUG] ⚠️ 유효하지 않은 ASM testMmsi 값 무시: " + testMmsiStr + 
+										" (SourceMmsi: " + sourceMmsi + ")");
 							}
 						}
 					}
 					
-					// MmsiEntity에 AsmEntity 추가
-					mmsiEntity.addAsmEntity(asmEntityKey, asmEntity);
+					// MmsiEntity에 AsmEntity 추가 (serviceId를 키로 사용)
+					mmsiEntity.addAsmEntity(serviceId, asmEntity);
 					
-					// destMMSI가 있으면 ASM 활성화 및 스케줄러 시작
-					if (asmEntity.hasDestMMSI()) {
+					// testMmsi가 있으면 ASM 활성화 및 스케줄러 시작
+					if (asmEntity.hasTestMMSI()) {
 						// 첫 번째 시작 시간 설정
 						asmEntity.setStartTime(java.time.LocalDateTime.now().plusSeconds(1), mmsiEntity);
-						System.out.println("[DEBUG] ✅ 새로운 ASM 서비스 시작 - MMSI: " + mmsi + 
-								", ServiceId: " + asmEntityKey + ", destMMSI 리스트 크기: " + asmEntity.getDestMMSIList().size());
+						System.out.println("[DEBUG] ✅ 새로운 ASM 서비스 시작 - SourceMmsi: " + sourceMmsi + 
+								", ServiceId: " + serviceId + ", testMmsi 리스트 크기: " + asmEntity.getTestMMSIList().size());
 					}
 					
 					successCount++;
 				} else {
-					System.out.println("[DEBUG] ⚠️ 유효하지 않은 state 값: " + state + " (MMSI: " + mmsi + ")");
+					System.out.println("[DEBUG] ⚠️ 유효하지 않은 state 값: " + state + " (SourceMmsi: " + sourceMmsi + 
+							", ServiceId: " + serviceId + ")");
 					failCount++;
 				}
-			} catch (NumberFormatException e) {
-				System.out.println("[DEBUG] ❌ 유효하지 않은 MMSI: " + ship.getMmsi());
-				failCount++;
 			} catch (Exception e) {
-				System.out.println("[DEBUG] ❌ MMSI ASM 상태 변경 실패: " + ship.getMmsi() + ", 오류: " + e.getMessage());
+				System.out.println("[DEBUG] ❌ ASM 상태 변경 실패, 오류: " + e.getMessage());
 				e.printStackTrace();
 				failCount++;
 			}

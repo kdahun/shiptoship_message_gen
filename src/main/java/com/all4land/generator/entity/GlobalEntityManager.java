@@ -130,46 +130,46 @@ public class GlobalEntityManager {
 	}
 
 	/**
-	 * MMSI별로 메시지 생성 상태를 제어합니다 (destMMSI 포함).
+	 * MMSI별로 메시지 생성 상태를 제어합니다 (testMMSI 포함).
 	 * @param mmsi MMSI 번호
 	 * @param state "0"=OFF(중단), "1"=ON(시작/재개)
-	 * @param destMMSIList destMMSI 리스트 (null이면 기존 동작)
+	 * @param testMMSIList testMMSI 리스트 (null이면 기존 동작)
 	 * @return 제어 성공 여부
 	 */
-	public boolean controlMmsiState(long mmsi, String state, List<Long> destMMSIList) {
+	public boolean controlMmsiState(long mmsi, String state, List<Long> testMMSIList) {
 		MmsiEntity mmsiEntity = findMmsiEntity(mmsi);
 		if (mmsiEntity == null) {
 			System.out.println("[DEBUG] ⚠️ MMSI를 찾을 수 없음: " + mmsi);
 			return false;
 		}
 		
-		// destMMSI 리스트가 제공된 경우 destMMSI 기능 사용
-		boolean useDestMMSI = (destMMSIList != null && !destMMSIList.isEmpty());
+		// testMMSI 리스트가 제공된 경우 testMMSI 기능 사용
+		boolean useTestMMSI = (testMMSIList != null && !testMMSIList.isEmpty());
 		
 		if ("1".equals(state)) {
 			// ON: 메시지 생성 시작/재개
-			if (useDestMMSI) {
-				// destMMSI 리스트에 추가
-				for (Long destMMSI : destMMSIList) {
-					if (destMMSI != null) {
-						mmsiEntity.addDestMMSI(destMMSI);
+			if (useTestMMSI) {
+				// testMMSI 리스트에 추가
+				for (Long testMMSI : testMMSIList) {
+					if (testMMSI != null) {
+						mmsiEntity.addTestMMSI(testMMSI);
 					}
 				}
-				// destMMSI 리스트가 비어있지 않으면 메시지 생성 시작
-				boolean hasDestMMSI = mmsiEntity.hasDestMMSI();
-				if (hasDestMMSI) {
+				// testMMSI 리스트가 비어있지 않으면 메시지 생성 시작
+				boolean hasTestMMSIList = mmsiEntity.hasTestMMSI();
+				if (hasTestMMSIList) {
 					if (!mmsiEntity.isChk()) {
 						mmsiEntity.setChk(true);
 						System.out.println("[DEBUG] ✅ AIS 활성화 완료 - MMSI: " + mmsi + 
-								", destMMSI 리스트 크기: " + mmsiEntity.getDestMMSIList().size());
+								", testMMSI 리스트 크기: " + mmsiEntity.getTestMMSIList().size());
 					} else {
-						System.out.println("[DEBUG] ⚠️ AIS가 이미 활성화되어 있음 (destMMSI 사용) - MMSI: " + mmsi);
+						System.out.println("[DEBUG] ⚠️ AIS가 이미 활성화되어 있음 (testMMSI 사용) - MMSI: " + mmsi);
 					}
 				} else {
-					System.out.println("[DEBUG] ⚠️ destMMSI 리스트가 비어있어 메시지 생성하지 않음 - MMSI: " + mmsi);
+					System.out.println("[DEBUG] ⚠️ testMMSI 리스트가 비어있어 메시지 생성하지 않음 - MMSI: " + mmsi);
 				}
 			} else {
-				// 기존 동작: destMMSI 없이 state만으로 제어
+				// 기존 동작: testMMSI 없이 state만으로 제어
 				if (!mmsiEntity.isChk()) {
 					mmsiEntity.setChk(true);
 					System.out.println("[DEBUG] ✅ AIS 활성화 완료 - MMSI: " + mmsi);
@@ -180,15 +180,15 @@ public class GlobalEntityManager {
 			return true;
 		} else if ("0".equals(state)) {
 			// OFF: 메시지 생성 중단
-			if (useDestMMSI) {
-				// destMMSI 리스트에서 제거
-				for (Long destMMSI : destMMSIList) {
-					if (destMMSI != null) {
-						mmsiEntity.removeDestMMSI(destMMSI);
+			if (useTestMMSI) {
+				// testMMSI 리스트에서 제거
+				for (Long testMMSI : testMMSIList) {
+					if (testMMSI != null) {
+						mmsiEntity.removeTestMMSI(testMMSI);
 					}
 				}
-				// destMMSI 리스트가 비어있으면 메시지 생성 중단
-				if (!mmsiEntity.hasDestMMSI()) {
+				// testMMSI 리스트가 비어있으면 메시지 생성 중단
+				if (!mmsiEntity.hasTestMMSI()) {
 					if (mmsiEntity.isChk()) {
 						mmsiEntity.setChk(false);
 						System.out.println("[DEBUG] ✅ AIS 비활성화 완료 - MMSI: " + mmsi);
@@ -196,11 +196,11 @@ public class GlobalEntityManager {
 						System.out.println("[DEBUG] ⚠️ AIS가 이미 비활성화되어 있음 - MMSI: " + mmsi);
 					}
 				} else {
-					System.out.println("[DEBUG] ℹ️ destMMSI 리스트에 항목이 남아있어 메시지 생성 계속 - MMSI: " + mmsi + 
-							", 리스트 크기: " + mmsiEntity.getDestMMSIList().size());
+					System.out.println("[DEBUG] ℹ️ testMMSI 리스트에 항목이 남아있어 메시지 생성 계속 - MMSI: " + mmsi + 
+							", 리스트 크기: " + mmsiEntity.getTestMMSIList().size());
 				}
 			} else {
-				// 기존 동작: destMMSI 없이 state만으로 제어
+				// 기존 동작: testMMSI 없이 state만으로 제어
 				if (mmsiEntity.isChk()) {
 					mmsiEntity.setChk(false);
 					System.out.println("[DEBUG] ✅ AIS 비활성화 완료 - MMSI: " + mmsi);
@@ -229,26 +229,26 @@ public class GlobalEntityManager {
 	}
 
 	/**
-	 * ASM 메시지 생성 상태를 제어합니다 (destMMSI 포함).
+	 * ASM 메시지 생성 상태를 제어합니다 (testMMSI 포함).
 	 * @param mmsi 선박 MMSI
 	 * @param state "0"=OFF, "1"=ON
 	 * @param size 슬롯 점유 개수 (1~3)
 	 * @param asmPeriod "0"=단발 메시지, "4"~"360"=초 단위 주기
 	 * @param quartzCoreService QuartzCoreService (스케줄 삭제용)
-	 * @param destMMSIList destMMSI 리스트 (null이면 기존 동작)
+	 * @param testMMSIList testMMSI 리스트 (null이면 기존 동작)
 	 * @return 성공 여부
 	 */
-	public boolean controlAsmState(long mmsi, String state, String size, String asmPeriod, QuartzCoreService quartzCoreService, List<Long> destMMSIList) {
+	public boolean controlAsmState(long mmsi, String state, String size, String asmPeriod, QuartzCoreService quartzCoreService, List<Long> testMMSIList) {
 		MmsiEntity mmsiEntity = findMmsiEntity(mmsi);
 		if (mmsiEntity == null) {
 			System.out.println("[DEBUG] ❌ MMSI를 찾을 수 없음: " + mmsi);
 			return false;
 		}
 
-		// destMMSI 리스트가 제공된 경우 destMMSI 기능 사용
-		boolean useDestMMSI = (destMMSIList != null && !destMMSIList.isEmpty());
+		// testMMSI 리스트가 제공된 경우 testMMSI 기능 사용
+		boolean useTestMMSI = (testMMSIList != null && !testMMSIList.isEmpty());
 		System.out.println("[DEBUG] controlAsmState - MMSI: " + mmsi + ", state: " + state + 
-				", useDestMMSI: " + useDestMMSI + ", destMMSIList: " + destMMSIList);
+				", useTestMMSI: " + useTestMMSI + ", testMMSIList: " + testMMSIList);
 
 		boolean newState = "1".equals(state);
 		
@@ -276,32 +276,32 @@ public class GlobalEntityManager {
 		// ASM 상태 변경
 		if ("1".equals(state)) {
 			// ON: 메시지 생성 시작/재개
-			if (useDestMMSI) {
-				System.out.println("[DEBUG] ASM destMMSI 사용 모드 - MMSI: " + mmsi);
-				// destMMSI 리스트에 추가 (asmPeriod와 함께, mmsi는 추가하지 않음)
-				for (Long destMMSI : destMMSIList) {
-					if (destMMSI != null) {
-						mmsiEntity.getAsmEntity().addDestMMSI(destMMSI, asmPeriodValue);
+			if (useTestMMSI) {
+				System.out.println("[DEBUG] ASM testMMSI 사용 모드 - MMSI: " + mmsi);
+				// testMMSI 리스트에 추가 (asmPeriod와 함께, mmsi는 추가하지 않음)
+				for (Long testMMSI : testMMSIList) {
+					if (testMMSI != null) {
+						mmsiEntity.getAsmEntity().addTestMMSI(testMMSI, asmPeriodValue);
 					}
 				}
-				// destMMSI 리스트가 비어있지 않으면 메시지 생성 시작
-				boolean hasDestMMSI = mmsiEntity.getAsmEntity().hasDestMMSI();
-				System.out.println("[DEBUG] addDestMMSI 후 hasDestMMSI 체크 - MMSI: " + mmsi + 
-						", hasDestMMSI: " + hasDestMMSI + ", 리스트 크기: " + mmsiEntity.getAsmEntity().getDestMMSIList().size());
-				if (hasDestMMSI) {
+				// testMMSI 리스트가 비어있지 않으면 메시지 생성 시작
+				boolean hasTestMMSI = mmsiEntity.getAsmEntity().hasTestMMSI();
+				System.out.println("[DEBUG] addTestMMSI 후 hasTestMMSI 체크 - MMSI: " + mmsi + 
+						", hasTestMMSI: " + hasTestMMSI + ", 리스트 크기: " + mmsiEntity.getAsmEntity().getTestMMSIList().size());
+				if (hasTestMMSI) {
 					if (!mmsiEntity.isAsm()) {
-						System.out.println("[DEBUG] ASM 활성화 시작 (destMMSI 사용) - MMSI: " + mmsi);
+						System.out.println("[DEBUG] ASM 활성화 시작 (testMMSI 사용) - MMSI: " + mmsi);
 						mmsiEntity.setAsm(true);
 						System.out.println("[DEBUG] ✅ ASM 활성화 완료 - MMSI: " + mmsi + 
-								", destMMSI 리스트 크기: " + mmsiEntity.getAsmEntity().getDestMMSIList().size());
+								", testMMSI 리스트 크기: " + mmsiEntity.getAsmEntity().getTestMMSIList().size());
 					} else {
-						System.out.println("[DEBUG] ⚠️ ASM이 이미 활성화되어 있음 (destMMSI 사용) - MMSI: " + mmsi);
+						System.out.println("[DEBUG] ⚠️ ASM이 이미 활성화되어 있음 (testMMSI 사용) - MMSI: " + mmsi);
 					}
 				} else {
-					System.out.println("[DEBUG] ⚠️ destMMSI 리스트가 비어있어 ASM 메시지 생성하지 않음 - MMSI: " + mmsi);
+					System.out.println("[DEBUG] ⚠️ testMMSI 리스트가 비어있어 ASM 메시지 생성하지 않음 - MMSI: " + mmsi);
 				}
 			} else {
-				// 기존 동작: destMMSI 없이 state만으로 제어
+				// 기존 동작: testMMSI 없이 state만으로 제어
 				if (!mmsiEntity.isAsm()) {
 					System.out.println("[DEBUG] ASM 활성화 시작 - MMSI: " + mmsi);
 					mmsiEntity.setAsm(true);
@@ -312,17 +312,17 @@ public class GlobalEntityManager {
 			}
 		} else if ("0".equals(state)) {
 			// OFF: 메시지 생성 중단
-			if (useDestMMSI) {
-				// destMMSI 리스트에서 제거 (destMMSI 배열의 각 값만 제거, mmsi는 제거하지 않음)
-				for (Long destMMSI : destMMSIList) {
-					if (destMMSI != null) {
-						mmsiEntity.getAsmEntity().removeDestMMSI(destMMSI);
+			if (useTestMMSI) {
+				// testMMSI 리스트에서 제거 (testMMSI 배열의 각 값만 제거, mmsi는 제거하지 않음)
+				for (Long testMMSI : testMMSIList) {
+					if (testMMSI != null) {
+						mmsiEntity.getAsmEntity().removeTestMMSI(testMMSI);
 					}
 				}
-				// destMMSI 리스트가 비어있으면 메시지 생성 중단
-				if (!mmsiEntity.getAsmEntity().hasDestMMSI()) {
+				// testMMSI 리스트가 비어있으면 메시지 생성 중단
+				if (!mmsiEntity.getAsmEntity().hasTestMMSI()) {
 					if (mmsiEntity.isAsm()) {
-						System.out.println("[DEBUG] ASM 비활성화 시작 (destMMSI 리스트 비어있음) - MMSI: " + mmsi);
+						System.out.println("[DEBUG] ASM 비활성화 시작 (testMMSI 리스트 비어있음) - MMSI: " + mmsi);
 						// setAsm(false)가 내부에서 스케줄러 job을 제거하므로 별도 호출 불필요
 						mmsiEntity.setAsm(false);
 						System.out.println("[DEBUG] ✅ ASM 메시지 생성 중지 완료 - MMSI: " + mmsi);
@@ -330,11 +330,11 @@ public class GlobalEntityManager {
 						System.out.println("[DEBUG] ⚠️ ASM이 이미 비활성화되어 있음 - MMSI: " + mmsi);
 					}
 				} else {
-					System.out.println("[DEBUG] ℹ️ destMMSI 리스트에 항목이 남아있어 ASM 메시지 생성 계속 - MMSI: " + mmsi + 
-							", 리스트 크기: " + mmsiEntity.getAsmEntity().getDestMMSIList().size());
+					System.out.println("[DEBUG] ℹ️ testMMSI 리스트에 항목이 남아있어 ASM 메시지 생성 계속 - MMSI: " + mmsi + 
+							", 리스트 크기: " + mmsiEntity.getAsmEntity().getTestMMSIList().size());
 				}
 			} else {
-				// 기존 동작: destMMSI 없이 state만으로 제어
+				// 기존 동작: testMMSI 없이 state만으로 제어
 				if (mmsiEntity.isAsm()) {
 					System.out.println("[DEBUG] ASM 비활성화 시작 - MMSI: " + mmsi);
 					mmsiEntity.setAsm(false);
@@ -579,6 +579,68 @@ public class GlobalEntityManager {
 		// ASM 활성화 (선택사항)
 		//mmsiEntity.setAsm(true);
 		
+	}
+	
+	/**
+	 * sourceMmsi에 해당하는 MmsiEntity가 없으면 자동 생성하여 반환합니다.
+	 * ASM 메시지 처리를 위한 최소 설정으로 MmsiEntity를 생성합니다.
+	 * @param sourceMmsi 생성할 MMSI
+	 * @param scheduler Quartz Scheduler
+	 * @param quartzCoreService Quartz 코어 서비스
+	 * @return 찾았거나 새로 생성한 MmsiEntity
+	 */
+	public MmsiEntity ensureMmsiEntity(long sourceMmsi, Scheduler scheduler, QuartzCoreService quartzCoreService) {
+		// 먼저 존재하는지 확인
+		MmsiEntity existing = findMmsiEntity(sourceMmsi);
+		if (existing != null) {
+			return existing;
+		}
+		
+		System.out.println("[DEBUG] MmsiEntity 자동 생성 시작 - SourceMmsi: " + sourceMmsi);
+		
+		if (this.mmsiEntityLists == null) {
+			this.mmsiEntityLists = new ArrayList<>();
+		}
+		
+		// MMSI 중복 확인
+		if (!generatedMmsiSet.add(sourceMmsi)) {
+			System.out.println("[DEBUG] ⚠️ 중복된 MMSI - 이미 생성됨: " + sourceMmsi);
+			// 중복이면 다시 찾아서 반환
+			return findMmsiEntity(sourceMmsi);
+		}
+		
+		// MmsiEntity Bean 등록 및 생성
+		BeanUtils.registerBean(sourceMmsi + "", MmsiEntity.class);
+		MmsiEntity mmsiEntity = (MmsiEntity) BeanUtils.getBean(sourceMmsi + "");
+		
+		// 기본 설정
+		mmsiEntity.setSfiValue(this.sfiValue);
+		mmsiEntity.setMmsi(sourceMmsi);
+		mmsiEntity.setGlobalEntityManager(this);
+		
+		// ASM 전용이므로 기본 speed/slotTimeOut 설정
+		int speed = 180; // 기본값 (AIS 비활성화 상태)
+		int slotTimeOut = 3; // speed=180일 때 기본값
+		mmsiEntity.setSpeed(speed);
+		mmsiEntity.setSlotTimeOut(slotTimeOut);
+		
+		// 기본 위치 설정 (위도/경도 0,0)
+		Map<Integer, double[]> positions = new HashMap<>();
+		double[] position = new double[3];
+		position[0] = 0.0;  // 위도
+		position[1] = 0.0;  // 경도
+		position[2] = 0;    // COG
+		positions.put(0, position);
+		
+		// testInit 메서드를 사용하여 기본 설정 초기화
+		mmsiEntity.testInit(speed, slotTimeOut, positions);
+		
+		// 리스트에 추가
+		this.mmsiEntityLists.add(mmsiEntity);
+		
+		System.out.println("[DEBUG] ✅ MmsiEntity 자동 생성 완료 - SourceMmsi: " + sourceMmsi);
+		
+		return mmsiEntity;
 	}
 	
 	public void addMmsiEntity6(Scheduler scheduler, QuartzCoreService quartzCoreService) {

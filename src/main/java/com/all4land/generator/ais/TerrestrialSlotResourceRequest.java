@@ -69,15 +69,15 @@ public class TerrestrialSlotResourceRequest {
 	
 	/**
 	 * 새로운 형식의 TSQ 메시지 생성
-	 * 형식: $VATSQ,111,seq,sourceMmsi,sourceMmsi,destMmsi,destMmsi,physicalChannelNumber,linkId*CRC
+	 * 형식: $VATSQ,111,seq,sourceMmsi,sourceMmsi,testMmsi,testMmsi,physicalChannelNumber,linkId*CRC
 	 * @param seq 시퀀스 번호
 	 * @param sourceMmsi 송신 MMSI
-	 * @param destMmsi 수신 MMSI
+	 * @param testMmsi 피시험 MMSI
 	 * @param physicalChannelNumber 물리적 채널 번호
 	 * @param linkId 링크 ID
 	 * @return TSQ 메시지 문자열
 	 */
-	public static String getTerrestrialSlotResourceRequestNewFormat(String seq, String sourceMmsi, String destMmsi, 
+	public static String getTerrestrialSlotResourceRequestNewFormat(String seq, String sourceMmsi, String testMmsi, 
 			String physicalChannelNumber, String linkId) {
 		String delimiter = "$";
 		String talker = "VA";
@@ -101,10 +101,10 @@ public class TerrestrialSlotResourceRequest {
 		sbCrc.append(sourceMmsi); // field 4
 		sbCrc.append(seperator);
 		
-		sbCrc.append(destMmsi); // field 5
+		sbCrc.append(testMmsi); // field 5
 		sbCrc.append(seperator);
 		
-		sbCrc.append(destMmsi); // field 6
+		sbCrc.append(testMmsi); // field 6
 		sbCrc.append(seperator);
 		
 		sbCrc.append(physicalChannelNumber); // field 7
