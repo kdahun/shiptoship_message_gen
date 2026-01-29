@@ -537,15 +537,25 @@ public class GlobalEntityManager {
 			throw new IllegalArgumentException("Invalid MMSI format: " + mmsiStr, e);
 		}
 		
-		// MMSI 중복 확인
-		if (!generatedMmsiSet.add(mmsi)) {
-			System.out.println("[DEBUG] ⚠️ 중복된 MMSI - 선박 생성 건너뜀: " + mmsi);
-			return; // 예외를 throw하지 않고 경고만 출력하고 종료
+	// MMSI 중복 확인
+	if (!generatedMmsiSet.add(mmsi)) {
+		System.out.println("[DEBUG] ⚠️ 중복된 MMSI - 선박 생성 건너뜀: " + mmsi);
+		return; // 예외를 throw하지 않고 경고만 출력하고 종료
+	}
+	
+	// MmsiEntity Bean 등록 및 생성
+	// Bean이 이미 존재할 수 있으므로 먼저 제거 (Set/Bean 불일치 방지)
+	try {
+		if (BeanUtils.containsBean(mmsi + "")) {
+			System.out.println("[DEBUG] ⚠️ Bean이 이미 존재하여 제거 후 재등록: " + mmsi);
+			BeanUtils.removeBean(mmsi + "");
 		}
-		
-		// MmsiEntity Bean 등록 및 생성
-		BeanUtils.registerBean(mmsi + "", MmsiEntity.class);
-		MmsiEntity mmsiEntity = (MmsiEntity) BeanUtils.getBean(mmsi + "");
+	} catch (Exception e) {
+		System.out.println("[DEBUG] ⚠️ Bean 존재 확인/제거 중 오류 (무시): " + e.getMessage());
+	}
+	
+	BeanUtils.registerBean(mmsi + "", MmsiEntity.class);
+	MmsiEntity mmsiEntity = (MmsiEntity) BeanUtils.getBean(mmsi + "");
 		
 		// 기본 설정
 		mmsiEntity.setSfiValue(this.sfiValue);
@@ -604,16 +614,26 @@ public class GlobalEntityManager {
 			this.mmsiEntityLists = new ArrayList<>();
 		}
 		
-		// MMSI 중복 확인
-		if (!generatedMmsiSet.add(sourceMmsi)) {
-			System.out.println("[DEBUG] ⚠️ 중복된 MMSI - 이미 생성됨: " + sourceMmsi);
-			// 중복이면 다시 찾아서 반환
-			return findMmsiEntity(sourceMmsi);
+	// MMSI 중복 확인
+	if (!generatedMmsiSet.add(sourceMmsi)) {
+		System.out.println("[DEBUG] ⚠️ 중복된 MMSI - 이미 생성됨: " + sourceMmsi);
+		// 중복이면 다시 찾아서 반환
+		return findMmsiEntity(sourceMmsi);
+	}
+	
+	// MmsiEntity Bean 등록 및 생성
+	// Bean이 이미 존재할 수 있으므로 먼저 제거 (Set/Bean 불일치 방지)
+	try {
+		if (BeanUtils.containsBean(sourceMmsi + "")) {
+			System.out.println("[DEBUG] ⚠️ Bean이 이미 존재하여 제거 후 재등록: " + sourceMmsi);
+			BeanUtils.removeBean(sourceMmsi + "");
 		}
-		
-		// MmsiEntity Bean 등록 및 생성
-		BeanUtils.registerBean(sourceMmsi + "", MmsiEntity.class);
-		MmsiEntity mmsiEntity = (MmsiEntity) BeanUtils.getBean(sourceMmsi + "");
+	} catch (Exception e) {
+		System.out.println("[DEBUG] ⚠️ Bean 존재 확인/제거 중 오류 (무시): " + e.getMessage());
+	}
+	
+	BeanUtils.registerBean(sourceMmsi + "", MmsiEntity.class);
+	MmsiEntity mmsiEntity = (MmsiEntity) BeanUtils.getBean(sourceMmsi + "");
 		
 		// 기본 설정
 		mmsiEntity.setSfiValue(this.sfiValue);
@@ -1511,69 +1531,80 @@ public class GlobalEntityManager {
 		log.info("모든 엔티티 상태 초기화 시작 - 총 {} 개 엔티티", 
 			mmsiEntityLists != null ? mmsiEntityLists.size() : 0);
 		
-		if (mmsiEntityLists == null || mmsiEntityLists.isEmpty()) {
-			log.info("초기화할 엔티티가 없습니다.");
-			// 리스트가 비어있어도 Set과 슬롯은 정리
-			generatedMmsiSet.clear();
-			slotStateManager.clear();
-			return;
-		}
-		
 		int clearedCount = 0;
 		int beanRemovedCount = 0;
 		
-		for (MmsiEntity entity : mmsiEntityLists) {
+		// 1️⃣ 먼저 generatedMmsiSet에 있는 모든 MMSI Bean을 제거 (entity 상태와 무관하게 실행)
+		int setSize = generatedMmsiSet.size();
+		for (Long mmsi : new ArrayList<>(generatedMmsiSet)) {
 			try {
-				long mmsi = entity.getMmsi();
-				
-				// 슬롯 점유 해제
-				slotStateManager.releaseSlotsByMmsi(mmsi);
-				
-				// 타겟 슬롯 초기화
-				entity.clearTargetSlotEntity();
-				entity.setnIndex(0);
-				entity.setNSS(entity.getStartSlotNumber());
-				entity.clearShootCount(-1);
-				
-				// Job 참조 제거
-				entity.setJob(null);
-				entity.setSlotTimeOutJob(null);
-				
-				// ASM 엔티티 초기화
-				entity.removeAllAsmEntities();
-				
-				// VDE 엔티티가 있으면 초기화
-				if (entity.getVdeEntity() != null) {
-					// VDE Job 참조 제거 등 필요한 초기화
-					entity.getVdeEntity().setVdeStartTimeJob(null);
-				}
-				
-				// Spring Bean 제거 (등록된 MMSI Bean 삭제)
-				try {
-					BeanUtils.removeBean(String.valueOf(mmsi));
-					beanRemovedCount++;
-					log.debug("MMSI {} Bean 제거 완료", mmsi);
-				} catch (Exception e) {
-					log.warn("MMSI {} Bean 제거 중 오류: {}", mmsi, e.getMessage());
-				}
-				
-				clearedCount++;
-				
+				BeanUtils.removeBean(String.valueOf(mmsi));
+				beanRemovedCount++;
+				log.debug("MMSI {} Bean 제거 완료", mmsi);
 			} catch (Exception e) {
-				log.error("MMSI {} 상태 초기화 중 오류 발생: {}", entity.getMmsi(), e.getMessage());
+				log.warn("MMSI {} Bean 제거 중 오류: {}", mmsi, e.getMessage());
+			}
+		}
+		log.info("generatedMmsiSet 기반 Bean 제거 완료 - 제거 시도: {}, 성공: {}", setSize, beanRemovedCount);
+		
+		// 2️⃣ Entity 상태 초기화 (에러가 발생해도 Bean은 이미 제거됨)
+		if (mmsiEntityLists != null && !mmsiEntityLists.isEmpty()) {
+			for (MmsiEntity entity : mmsiEntityLists) {
+				try {
+					long mmsi = entity.getMmsi();
+					
+					// 슬롯 점유 해제
+					slotStateManager.releaseSlotsByMmsi(mmsi);
+					
+					// 타겟 슬롯 초기화
+					try {
+						entity.clearTargetSlotEntity();
+						entity.setnIndex(0);
+						entity.setNSS(entity.getStartSlotNumber());
+						entity.clearShootCount(-1);
+					} catch (Exception e) {
+						log.debug("MMSI {} 상태 초기화 중 일부 오류 (무시): {}", mmsi, e.getMessage());
+					}
+					
+					// Job 참조 제거
+					entity.setJob(null);
+					entity.setSlotTimeOutJob(null);
+					
+					// ASM 엔티티 초기화
+					try {
+						entity.removeAllAsmEntities();
+					} catch (Exception e) {
+						log.debug("MMSI {} ASM 엔티티 제거 중 오류 (무시): {}", mmsi, e.getMessage());
+					}
+					
+					// VDE 엔티티가 있으면 초기화
+					try {
+						if (entity.getVdeEntity() != null) {
+							entity.getVdeEntity().setVdeStartTimeJob(null);
+						}
+					} catch (Exception e) {
+						log.debug("MMSI {} VDE 엔티티 초기화 중 오류 (무시): {}", mmsi, e.getMessage());
+					}
+					
+					clearedCount++;
+					
+				} catch (Exception e) {
+					log.error("MMSI {} 상태 초기화 중 오류 발생: {}", entity.getMmsi(), e.getMessage());
+				}
 			}
 		}
 		
-		// 리스트 완전 제거 (중복 방지를 위해 필수)
-		mmsiEntityLists.clear();
-		log.info("mmsiEntityLists 리스트 초기화 완료 - 크기: {}", mmsiEntityLists.size());
+		// 3️⃣ 리스트 완전 제거 (중복 방지를 위해 필수)
+		if (mmsiEntityLists != null) {
+			mmsiEntityLists.clear();
+			log.info("mmsiEntityLists 리스트 초기화 완료 - 크기: {}", mmsiEntityLists.size());
+		}
 		
-		// 중복 방지 Set 초기화 (중복 방지를 위해 필수)
-		int setSize = generatedMmsiSet.size();
+		// 4️⃣ 중복 방지 Set 초기화 (중복 방지를 위해 필수)
 		generatedMmsiSet.clear();
 		log.info("generatedMmsiSet 초기화 완료 - 제거된 MMSI 개수: {}", setSize);
 		
-		// 모든 슬롯 상태 초기화
+		// 5️⃣ 모든 슬롯 상태 초기화
 		slotStateManager.clear();
 		log.info("SlotStateManager 초기화 완료");
 		

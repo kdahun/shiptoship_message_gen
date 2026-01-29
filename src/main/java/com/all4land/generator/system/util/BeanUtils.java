@@ -75,4 +75,10 @@ public class BeanUtils {
 	        log.warn("ApplicationContext에서 이름이 '{}'인 빈을 찾을 수 없습니다.", beanName);
 	    }
 	}
+	
+	public static boolean containsBean(String beanName) {
+		//
+		DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory) ApplicationContextProvider.getApplicationContext().getAutowireCapableBeanFactory();
+		return beanFactory.containsBeanDefinition(beanName);
+	}
 }
