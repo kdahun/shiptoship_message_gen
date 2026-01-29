@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 
 import com.all4land.generator.entity.GlobalEntityManager;
 import com.all4land.generator.entity.SlotStateManager;
+import com.all4land.generator.system.component.SimulationStateManager;
 import com.all4land.generator.system.component.TimeMapRangeCompnents;
 import com.all4land.generator.system.component.VirtualTimeManager;
 import com.all4land.generator.system.mqtt.MqttClientConfiguration;
@@ -43,6 +44,7 @@ public class ApplicationInitializer implements CommandLineRunner {
 	private final TimeMapRangeCompnents timeMapRangeCompnents;
 	private final SlotStateManager slotStateManager;
 	private final TsqMessageQueue tsqMessageQueue;
+	private final SimulationStateManager simulationStateManager;
 	
 	// MQTT 설정 (application.properties에서 읽어옴)
 	@Value("${mqtt.broker.url:tcp://localhost:1883}")
@@ -63,7 +65,8 @@ public class ApplicationInitializer implements CommandLineRunner {
 			UdpServerTableModel udpServerTableModel,
 			TimeMapRangeCompnents timeMapRangeCompnents,
 			SlotStateManager slotStateManager,
-			TsqMessageQueue tsqMessageQueue) {
+			TsqMessageQueue tsqMessageQueue,
+			SimulationStateManager simulationStateManager) {
 		this.globalEntityManager = globalEntityManager;
 		this.scheduler = scheduler;
 		this.quartzCoreService = quartzCoreService;
@@ -74,6 +77,7 @@ public class ApplicationInitializer implements CommandLineRunner {
 		this.timeMapRangeCompnents = timeMapRangeCompnents;
 		this.slotStateManager = slotStateManager;
 		this.tsqMessageQueue = tsqMessageQueue;
+		this.simulationStateManager = simulationStateManager;
 	}
 
 	@Override
@@ -169,7 +173,8 @@ public class ApplicationInitializer implements CommandLineRunner {
 				timeMapRangeCompnents,
 				slotStateManager,
 				tsqMessageQueue,
-				mqttClient
+				mqttClient,
+				simulationStateManager
 			);
 			// MqttMessageProcessor를 Spring Bean으로 등록 (TsqEntityChangeStartDateQuartz에서 사용)
 			BeanUtils.registerBean("mqttMessageProcessor", MqttMessageProcessor.class);

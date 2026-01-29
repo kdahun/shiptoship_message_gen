@@ -40,6 +40,11 @@ public class VirtualTimeManager {
 	private LocalDateTime baseVirtualTime; // 기준 가상 시간
 	private long lastUpdateNanos; // 마지막 업데이트 시간 (나노초)
 	
+	// PAUSE/RESUME 기능을 위한 필드
+	private LocalDateTime pausedVirtualTime; // PAUSE 시점의 가상시간
+	private LocalDateTime pausedRealTime; // PAUSE 시점의 실제시간
+	private boolean isPaused = false; // PAUSE 상태 여부
+	
 	// 허용되는 배속 값
 	private static final double[] ALLOWED_SPEEDS = {1.0, 2.0, 4.0, 8.0};
 	
@@ -60,8 +65,14 @@ public class VirtualTimeManager {
 	/**
 	 * 현재 가상 시간을 반환
 	 * 배속이 적용된 가상 시뮬레이션 시간
+	 * PAUSE 중이면 pausedVirtualTime을 계속 반환 (고정된 시간)
 	 */
 	public LocalDateTime getCurrentVirtualTime() {
+		// PAUSE 중이면 고정된 시간 반환
+		if (isPaused && pausedVirtualTime != null) {
+			return pausedVirtualTime;
+		}
+		
 		if (timeMode == TimeMode.SYSTEM) {
 			return LocalDateTime.now();
 		}
@@ -213,12 +224,73 @@ public class VirtualTimeManager {
 	}
 	
 	/**
+	 * PAUSE 시 가상시간 정지
+	 * 현재 가상시간을 저장하고, getCurrentVirtualTime()이 고정된 시간을 반환하도록 함
+	 */
+	public void pauseTime() {
+		pausedVirtualTime = getCurrentVirtualTime();
+		pausedRealTime = LocalDateTime.now();
+		isPaused = true;
+		log.info("가상시간 정지 - pausedVirtualTime: {}, pausedRealTime: {}", 
+				pausedVirtualTime, pausedRealTime);
+	}
+	
+	/**
+	 * RESUME 시 가상시간 재개
+	 * 가상시간 기준점을 pausedVirtualTime으로 재설정하여 PAUSE 시점부터 다시 흐르게 함
+	 */
+	public void resumeTime() {
+		if (pausedVirtualTime != null) {
+			// 가상시간 기준점을 pausedVirtualTime으로 재설정
+			this.baseVirtualTime = pausedVirtualTime;
+			this.baseRealTime = LocalDateTime.now();
+			this.lastUpdateNanos = System.nanoTime();
+			isPaused = false;
+			log.info("가상시간 재개 - baseVirtualTime: {}, baseRealTime: {}", 
+					pausedVirtualTime, this.baseRealTime);
+		} else {
+			log.warn("pausedVirtualTime이 null입니다. resumeTime() 실행 불가.");
+		}
+	}
+	
+	/**
+	 * PAUSE된 가상시간 반환 (디버깅용)
+	 */
+	public LocalDateTime getPausedVirtualTime() {
+		return pausedVirtualTime;
+	}
+	
+	/**
+	 * PAUSE 상태 여부 반환
+	 */
+	public boolean isPaused() {
+		return isPaused;
+	}
+	
+	/**
+	 * STOP 시 완전 초기화
+	 * 모든 PAUSE 관련 상태를 초기화하고 시간 기준점을 재설정
+	 */
+	public void reset() {
+		isPaused = false;
+		pausedVirtualTime = null;
+		pausedRealTime = null;
+		init(); // @PostConstruct 로직 재실행
+		log.info("VirtualTimeManager 완전 초기화 완료");
+	}
+	
+	/**
 	 * 디버그용: 현재 시간 상태 출력
 	 */
 	public void printCurrentStatus() {
 		log.info("========== VirtualTimeManager 상태 ==========");
 		log.info("시간 모드: {}", timeMode);
 		log.info("배속: {}배", speedMultiplier);
+		log.info("PAUSE 상태: {}", isPaused);
+		if (isPaused) {
+			log.info("PAUSE된 가상시간: {}", pausedVirtualTime);
+			log.info("PAUSE된 실제시간: {}", pausedRealTime);
+		}
 		log.info("기준 실제 시간: {}", baseRealTime);
 		log.info("기준 가상 시간: {}", baseVirtualTime);
 		log.info("현재 실제 시간: {}", LocalDateTime.now());

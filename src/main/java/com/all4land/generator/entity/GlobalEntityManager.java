@@ -25,7 +25,9 @@ import com.all4land.generator.entity.SlotStateManager;
 import com.all4land.generator.util.RandomGenerator;
 
 import dk.dma.ais.sentence.Vdm;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Component
 public class GlobalEntityManager {
 	//
@@ -1504,6 +1506,57 @@ public class GlobalEntityManager {
 	public String getUuid() {
 		return uuid;
 	}
+	
+	/**
+	 * STOP 시 모든 엔티티 상태 초기화
+	 * 시뮬레이션을 완전히 중단하고 모든 리소스를 정리합니다.
+	 */
+	public void clearAllState() {
+		log.info("모든 엔티티 상태 초기화 시작 - 총 {} 개 엔티티", 
+			mmsiEntityLists != null ? mmsiEntityLists.size() : 0);
+		
+		if (mmsiEntityLists == null || mmsiEntityLists.isEmpty()) {
+			log.info("초기화할 엔티티가 없습니다.");
+			return;
+		}
+		
+		int clearedCount = 0;
+		
+		for (MmsiEntity entity : mmsiEntityLists) {
+			try {
+				// 슬롯 점유 해제
+				slotStateManager.releaseSlotsByMmsi(entity.getMmsi());
+				
+				// 타겟 슬롯 초기화
+				entity.clearTargetSlotEntity();
+				entity.setnIndex(0);
+				entity.setNSS(entity.getStartSlotNumber());
+				entity.clearShootCount(-1);
+				
+				// Job 참조 제거
+				entity.setJob(null);
+				entity.setSlotTimeOutJob(null);
+				
+				// ASM 엔티티 초기화
+				entity.removeAllAsmEntities();
+				
+				// VDE 엔티티가 있으면 초기화
+				if (entity.getVdeEntity() != null) {
+					// VDE Job 참조 제거 등 필요한 초기화
+					entity.getVdeEntity().setVdeStartTimeJob(null);
+				}
+				
+				clearedCount++;
+				
+			} catch (Exception e) {
+				log.error("MMSI {} 상태 초기화 중 오류 발생: {}", entity.getMmsi(), e.getMessage());
+			}
+		}
+		
+		log.info("모든 엔티티 상태 초기화 완료 - {} / {} 개 초기화", 
+			clearedCount, mmsiEntityLists.size());
+	}
 
 	
 }
+

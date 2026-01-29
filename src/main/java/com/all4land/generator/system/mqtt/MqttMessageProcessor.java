@@ -7,6 +7,7 @@ import java.util.List;
 
 import com.all4land.generator.entity.GlobalEntityManager;
 import com.all4land.generator.entity.SlotStateManager;
+import com.all4land.generator.system.component.SimulationStateManager;
 import com.all4land.generator.system.component.TimeMapRangeCompnents;
 import com.all4land.generator.system.component.VirtualTimeManager;
 import com.all4land.generator.system.netty.dto.CreateMmsiRequest;
@@ -69,6 +70,7 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 	private final SlotStateManager slotStateManager;
 	private final TsqMessageQueue tsqMessageQueue;
 	private final MqttClientConfiguration mqttClient;
+	private final SimulationStateManager simulationStateManager;
 	private final Gson gson = new Gson();
 	private final AtomicInteger tsqSeq = new AtomicInteger(1);
 	private final AtomicBoolean isProcessingQueue = new AtomicBoolean(false);
@@ -83,7 +85,8 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 			TimeMapRangeCompnents timeMapRangeCompnents,
 			SlotStateManager slotStateManager,
 			TsqMessageQueue tsqMessageQueue,
-			MqttClientConfiguration mqttClient) {
+			MqttClientConfiguration mqttClient,
+			SimulationStateManager simulationStateManager) {
 		this.globalEntityManager = globalEntityManager;
 		this.scheduler = scheduler;
 		this.quartzCoreService = quartzCoreService;
@@ -95,6 +98,7 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 		this.slotStateManager = slotStateManager;
 		this.tsqMessageQueue = tsqMessageQueue;
 		this.mqttClient = mqttClient;
+		this.simulationStateManager = simulationStateManager;
 	}
 	
 	@Override
@@ -630,18 +634,19 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 	}
 	
 	/**
-	 * 시뮬레이터 배속 상태 제어 메시지를 처리합니다.
+	 * 시뮬레이터 배속 및 상태 제어 메시지를 처리합니다.
 	 * 토픽: mt/mg/simulator/sim-state/{timestamp}
-	 * 형식: [{"state": "3", "simulationSpeed":"8"}]
+	 * 형식: [{"state": "1", "simulationSpeed":"8"}]
+	 * state: 1=RUN, 2=PAUSE, 3=배속변경, 4=STOP
 	 */
 	private void processSimStateMessage(String message) {
-		System.out.println("[DEBUG] ========== 시뮬레이터 배속 상태 제어 메시지 처리 ==========");
+		System.out.println("[DEBUG] ========== 시뮬레이터 상태 제어 메시지 처리 ==========");
 		
 		try {
 			String trimmedMessage = message.trim();
 			
-			if (virtualTimeManager == null) {
-				System.out.println("[DEBUG] ❌ VirtualTimeManager를 찾을 수 없습니다.");
+			if (simulationStateManager == null) {
+				System.out.println("[DEBUG] ❌ SimulationStateManager를 찾을 수 없습니다.");
 				return;
 			}
 			
@@ -649,7 +654,7 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 			List<SimStateMessage> simStates;
 			if (trimmedMessage.startsWith("[")) {
 				// 배열 형식: [{"state": "3", "simulationSpeed":"8"}]
-				System.out.println("[DEBUG] 배열 형식 시뮬레이터 배속 상태 제어 메시지 감지");
+				System.out.println("[DEBUG] 배열 형식 시뮬레이터 상태 제어 메시지 감지");
 				java.lang.reflect.Type listType = new TypeToken<List<SimStateMessage>>(){}.getType();
 				simStates = gson.fromJson(trimmedMessage, listType);
 			} else if (trimmedMessage.startsWith("{")) {
@@ -662,32 +667,55 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 			}
 			
 			if (simStates == null || simStates.isEmpty()) {
-				System.out.println("[DEBUG] ⚠️ 시뮬레이터 배속 상태 메시지에 데이터가 없습니다.");
+				System.out.println("[DEBUG] ⚠️ 시뮬레이터 상태 메시지에 데이터가 없습니다.");
 				return;
 			}
 			
 			// 첫 번째 메시지만 처리
 			SimStateMessage simState = simStates.get(0);
+			String state = simState.getState();
 			String simulationSpeed = simState.getSimulationSpeed();
 			
-			if (simulationSpeed == null || simulationSpeed.trim().isEmpty()) {
-				System.out.println("[DEBUG] ⚠️ simulationSpeed 값이 없습니다.");
-				return;
-			}
-			
-			boolean success = virtualTimeManager.setSpeedMultiplier(simulationSpeed);
-			if (success) {
-				System.out.println("[DEBUG] ✅ 시뮬레이터 배속 변경 성공: " + simulationSpeed + "배");
-				virtualTimeManager.printCurrentStatus();
-			} else {
-				System.out.println("[DEBUG] ❌ 시뮬레이터 배속 변경 실패: " + simulationSpeed + 
-						"배 (1, 2, 4, 8배만 허용)");
+			// state 값에 따라 처리
+			switch (state) {
+				case "1": // RUN (재개)
+					simulationStateManager.run();
+					System.out.println("[DEBUG] ✅ 시뮬레이션 재개/시작");
+					break;
+					
+				case "2": // PAUSE
+					simulationStateManager.pause();
+					System.out.println("[DEBUG] ⏸️ 시뮬레이션 일시정지");
+					break;
+					
+				case "3": // 배속 변경
+					if (simulationSpeed != null && !simulationSpeed.trim().isEmpty()) {
+						boolean success = virtualTimeManager.setSpeedMultiplier(simulationSpeed);
+						if (success) {
+							System.out.println("[DEBUG] ✅ 배속 변경: " + simulationSpeed + "배");
+							virtualTimeManager.printCurrentStatus();
+						} else {
+							System.out.println("[DEBUG] ❌ 배속 변경 실패: " + simulationSpeed + 
+									"배 (1, 2, 4, 8배만 허용)");
+						}
+					} else {
+						System.out.println("[DEBUG] ⚠️ simulationSpeed 값이 없습니다.");
+					}
+					break;
+					
+				case "4": // STOP
+					simulationStateManager.stop();
+					System.out.println("[DEBUG] 🛑 시뮬레이션 완전 중단");
+					break;
+					
+				default:
+					System.out.println("[DEBUG] ⚠️ 알 수 없는 state: " + state);
 			}
 		} catch (JsonSyntaxException e) {
-			System.out.println("[DEBUG] ❌ 시뮬레이터 배속 상태 메시지 JSON 파싱 오류: " + e.getMessage());
+			System.out.println("[DEBUG] ❌ JSON 파싱 오류: " + e.getMessage());
 			e.printStackTrace();
 		} catch (Exception e) {
-			System.out.println("[DEBUG] ❌ 시뮬레이터 배속 상태 메시지 처리 중 오류: " + e.getMessage());
+			System.out.println("[DEBUG] ❌ 상태 메시지 처리 중 오류: " + e.getMessage());
 			e.printStackTrace();
 		}
 	}
