@@ -550,11 +550,9 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 					// size 설정
 					if (size != null && !size.isEmpty()) {
 						try {
-							int slotCount = Integer.parseInt(size);
-							if (slotCount >= 1 && slotCount <= 3) {
-								asmEntity.setSlotCount(slotCount);
-								System.out.println("[DEBUG] ✅ SourceMmsi: " + sourceMmsi + " ASM 슬롯 개수 설정: " + slotCount);
-							}
+							int bytes = Integer.parseInt(size);
+							int slotCount =	bytes <= 35 ? 1 : bytes <= 99 ? 2 :	bytes <= 163 ? 3 : 3;
+							asmEntity.setSlotCount(slotCount);
 						} catch (NumberFormatException e) {
 							System.out.println("[DEBUG] ⚠️ SourceMmsi: " + sourceMmsi + " 슬롯 개수 파싱 실패: " + size);
 						}
