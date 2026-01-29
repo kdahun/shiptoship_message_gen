@@ -87,8 +87,8 @@ public class MainFrame extends javax.swing.JFrame {
         jTable1.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
                 {null, "345345636", null},
-                { new Boolean(true), "457473484", null},
-                { new Boolean(true), "568747377", null},
+                { Boolean.TRUE, "457473484", null},
+                { Boolean.TRUE, "568747377", null},
                 {null, "175474567", null}
             },
             new String [] {

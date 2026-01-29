@@ -136,6 +136,10 @@ public class TsqEntityChangeStartDateQuartz implements Job {
 							", Topic: " + mqttTopic + ", SlotNumber: " + slotNumber);
 					System.out.println("[DEBUG] 전송된 메시지:\n" + mqttMessage);
 					
+					// 전송 성공 시 슬롯 해제 (중요: 큐 쌓임 방지)
+					slotStateManager.releaseSlot(slotNumber);
+					System.out.println("[DEBUG] ✅ 슬롯 " + slotNumber + " 해제 완료 (전송 성공)");
+					
 					// 전송 후 다음 큐 메시지 처리
 					// ApplicationContext를 통해 MqttMessageProcessor 조회 (순환 참조 방지)
 					try {

@@ -269,14 +269,14 @@ public class VirtualTimeManager {
 	
 	/**
 	 * STOP 시 완전 초기화
-	 * 모든 PAUSE 관련 상태를 초기화하고 시간 기준점을 재설정
+	 * 모든 PAUSE 관련 상태를 초기화하고, 배속을 1배속으로 리셋하고, 시간 기준점을 재설정
 	 */
 	public void reset() {
 		isPaused = false;
 		pausedVirtualTime = null;
 		pausedRealTime = null;
+		speedMultiplier = 1.0; // 배속을 1배속으로 초기화
 		init(); // @PostConstruct 로직 재실행
-		log.info("VirtualTimeManager 완전 초기화 완료");
 	}
 	
 	/**

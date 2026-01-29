@@ -4,11 +4,13 @@ import java.time.LocalDateTime;
 
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import com.all4land.generator.entity.AsmEntity;
 import com.all4land.generator.entity.GlobalEntityManager;
 import com.all4land.generator.entity.MmsiEntity;
+import com.all4land.generator.system.mqtt.MqttMessageProcessor;
 import com.all4land.generator.system.schedule.QuartzCoreService;
 
 import lombok.extern.slf4j.Slf4j;
@@ -33,15 +35,18 @@ public class SimulationStateManager {
 	private final Scheduler scheduler;
 	private final GlobalEntityManager globalEntityManager;
 	private final QuartzCoreService quartzCoreService;
+	private final MqttMessageProcessor mqttMessageProcessor;
 	
 	public SimulationStateManager(VirtualTimeManager virtualTimeManager,
 	                               Scheduler scheduler,
 	                               GlobalEntityManager globalEntityManager,
-	                               QuartzCoreService quartzCoreService) {
+	                               QuartzCoreService quartzCoreService,
+	                               @Lazy MqttMessageProcessor mqttMessageProcessor) {
 		this.virtualTimeManager = virtualTimeManager;
 		this.scheduler = scheduler;
 		this.globalEntityManager = globalEntityManager;
 		this.quartzCoreService = quartzCoreService;
+		this.mqttMessageProcessor = mqttMessageProcessor;
 	}
 	
 	public boolean isPaused() {
@@ -59,7 +64,7 @@ public class SimulationStateManager {
 	/**
 	 * RUN/RESUME 처리
 	 * - STOPPED → RUNNING: 새로 시작
-	 * - PAUSED → RUNNING: 가상시간 복원 + 트리거 재등록 + Scheduler 재개
+	 * - PAUSED → RUNNING: 가상시간 복원 + 트리거 재등록 + Scheduler 재개 + TSQ 처리 재개
 	 */
 	public synchronized void run() {
 		try {
@@ -73,10 +78,15 @@ public class SimulationStateManager {
 				// (기존 트리거는 과거 startAt이므로 재계산 필요)
 				rescheduleAllJobs();
 				
-				// 3️⃣ Scheduler 재개
+				// 3️⃣ TSQ 처리 재개 (큐에 있는 메시지 다시 처리)
+				if (mqttMessageProcessor != null) {
+					mqttMessageProcessor.resumeTsqProcessing();
+				}
+				
+				// 4️⃣ Scheduler 재개
 				scheduler.start();
 				
-				log.info("시뮬레이션 재개 완료 - Scheduler started, 트리거 재등록 완료");
+				log.info("시뮬레이션 재개 완료 - Scheduler started, 트리거 재등록 완료, TSQ 처리 재개");
 			} else if (currentState == SimulationState.STOPPED) {
 				// 새로 시작
 				if (scheduler.isInStandbyMode()) {
@@ -150,7 +160,7 @@ public class SimulationStateManager {
 	
 	/**
 	 * PAUSE 처리
-	 * Scheduler를 standby 모드로 전환 + 가상시간 정지
+	 * Scheduler를 standby 모드로 전환 + 가상시간 정지 + TSQ 처리 일시 중단
 	 */
 	public synchronized void pause() {
 		if (currentState != SimulationState.RUNNING) {
@@ -162,12 +172,17 @@ public class SimulationStateManager {
 			// 가상시간 정지 (먼저 호출 - getCurrentVirtualTime()이 PAUSE 전 시간을 가져와야 함)
 			virtualTimeManager.pauseTime();
 			
+			// TSQ 처리 일시 중단 (스케줄된 Job 취소하고 큐에 다시 넣기)
+			if (mqttMessageProcessor != null) {
+				mqttMessageProcessor.pauseTsqProcessing();
+			}
+			
 			// Scheduler standby 모드로 전환
 			scheduler.standby();
 			
 			currentState = SimulationState.PAUSED;
 			
-			log.info("시뮬레이션 일시정지 - Scheduler standby, 가상시간: {}", 
+			log.info("시뮬레이션 일시정지 - Scheduler standby, 가상시간: {}, TSQ 처리 일시 중단", 
 				virtualTimeManager.getPausedVirtualTime());
 			
 		} catch (SchedulerException e) {
@@ -177,16 +192,23 @@ public class SimulationStateManager {
 	
 	/**
 	 * STOP 처리 - 완전 초기화
+	 * 모든 Job 삭제, 엔티티 초기화, TSQ 처리 완전 중단, 가상시간 초기화
 	 */
 	public synchronized void stop() {
 		try {
+			// TSQ 처리 완전 중단 (Job 삭제 + 큐 초기화)
+			// scheduler.clear() 전에 호출하여 TSQ Job의 정보를 추출할 수 있도록 함
+			if (mqttMessageProcessor != null) {
+				mqttMessageProcessor.stopTsqProcessing();
+			}
+			
 			scheduler.clear(); // 모든 Quartz Job 삭제
-			globalEntityManager.clearAllState(); // 엔티티 초기화
+			globalEntityManager.clearAllState(); // 엔티티 초기화 (리스트/Set/Bean 모두 정리)
 			virtualTimeManager.reset(); // 가상시간 초기화
 			
 			currentState = SimulationState.STOPPED;
 			
-			log.info("시뮬레이션 완전 중단 및 초기화 완료");
+			log.info("시뮬레이션 완전 중단 및 초기화 완료 (TSQ 처리 중단 포함)");
 			
 		} catch (SchedulerException e) {
 			log.error("STOP 처리 중 오류 발생", e);

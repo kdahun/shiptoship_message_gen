@@ -1271,11 +1271,6 @@ public class GlobalEntityManager {
 		String strValue = "";
 
 		String serviceId = asmEntity.getServiceId() != null ? asmEntity.getServiceId() : "default";
-		System.out.println("=================================");
-		System.out.println("[ASM Slot Count] : " + asmEntity.getSlotCount());
-		System.out.println("[ASM    Channel] : " + asmEntity.getChannel());
-		System.out.println("[ASM ServiceId] : " + serviceId);
-		System.out.println("=================================");
 		if (asmEntity.getChannel() == 'A') {
 			//
 			switch (asmEntity.getSlotCount()) {
@@ -1379,8 +1374,8 @@ public class GlobalEntityManager {
 				
 				// 연속으로 8개 이상 찾으면 반환
 				if (consecutiveCount >= 8) {
-					System.out.println("[DEBUG] findAsmRule1 성공 - MMSI: " + mmsiEntity.getMmsi() + 
-							", 연속 슬롯: " + consecutiveCount);
+					//System.out.println("[DEBUG] findAsmRule1 성공 - MMSI: " + mmsiEntity.getMmsi() + 
+					//		", 연속 슬롯: " + consecutiveCount);
 					return targetInfoList;
 				}
 			} else {
@@ -1423,8 +1418,8 @@ public class GlobalEntityManager {
 				targetInfoList.add(targetCell);
 				
 				if (consecutiveCount >= 8) {
-					System.out.println("[DEBUG] findAsmRule2 성공 - MMSI: " + mmsiEntity.getMmsi() + 
-							", 연속 슬롯: " + consecutiveCount);
+					//System.out.println("[DEBUG] findAsmRule2 성공 - MMSI: " + mmsiEntity.getMmsi() + 
+					//		", 연속 슬롯: " + consecutiveCount);
 					return targetInfoList;
 				}
 			} else {
@@ -1481,8 +1476,8 @@ public class GlobalEntityManager {
 				targetInfoList.add(targetCell);
 				
 				if (consecutiveCount >= 8) {
-					System.out.println("[DEBUG] findAsmRule3 성공 - MMSI: " + mmsiEntity.getMmsi() + 
-							", 연속 슬롯: " + consecutiveCount);
+					//System.out.println("[DEBUG] findAsmRule3 성공 - MMSI: " + mmsiEntity.getMmsi() + 
+					//		", 연속 슬롯: " + consecutiveCount);
 					return targetInfoList;
 				}
 			} else {
@@ -1510,6 +1505,7 @@ public class GlobalEntityManager {
 	/**
 	 * STOP 시 모든 엔티티 상태 초기화
 	 * 시뮬레이션을 완전히 중단하고 모든 리소스를 정리합니다.
+	 * 리스트, Set, Spring Bean 등록을 모두 정리하여 STOP 후 재생 시 중복을 방지합니다.
 	 */
 	public void clearAllState() {
 		log.info("모든 엔티티 상태 초기화 시작 - 총 {} 개 엔티티", 
@@ -1517,15 +1513,21 @@ public class GlobalEntityManager {
 		
 		if (mmsiEntityLists == null || mmsiEntityLists.isEmpty()) {
 			log.info("초기화할 엔티티가 없습니다.");
+			// 리스트가 비어있어도 Set과 슬롯은 정리
+			generatedMmsiSet.clear();
+			slotStateManager.clear();
 			return;
 		}
 		
 		int clearedCount = 0;
+		int beanRemovedCount = 0;
 		
 		for (MmsiEntity entity : mmsiEntityLists) {
 			try {
+				long mmsi = entity.getMmsi();
+				
 				// 슬롯 점유 해제
-				slotStateManager.releaseSlotsByMmsi(entity.getMmsi());
+				slotStateManager.releaseSlotsByMmsi(mmsi);
 				
 				// 타겟 슬롯 초기화
 				entity.clearTargetSlotEntity();
@@ -1546,6 +1548,15 @@ public class GlobalEntityManager {
 					entity.getVdeEntity().setVdeStartTimeJob(null);
 				}
 				
+				// Spring Bean 제거 (등록된 MMSI Bean 삭제)
+				try {
+					BeanUtils.removeBean(String.valueOf(mmsi));
+					beanRemovedCount++;
+					log.debug("MMSI {} Bean 제거 완료", mmsi);
+				} catch (Exception e) {
+					log.warn("MMSI {} Bean 제거 중 오류: {}", mmsi, e.getMessage());
+				}
+				
 				clearedCount++;
 				
 			} catch (Exception e) {
@@ -1553,8 +1564,21 @@ public class GlobalEntityManager {
 			}
 		}
 		
-		log.info("모든 엔티티 상태 초기화 완료 - {} / {} 개 초기화", 
-			clearedCount, mmsiEntityLists.size());
+		// 리스트 완전 제거 (중복 방지를 위해 필수)
+		mmsiEntityLists.clear();
+		log.info("mmsiEntityLists 리스트 초기화 완료 - 크기: {}", mmsiEntityLists.size());
+		
+		// 중복 방지 Set 초기화 (중복 방지를 위해 필수)
+		int setSize = generatedMmsiSet.size();
+		generatedMmsiSet.clear();
+		log.info("generatedMmsiSet 초기화 완료 - 제거된 MMSI 개수: {}", setSize);
+		
+		// 모든 슬롯 상태 초기화
+		slotStateManager.clear();
+		log.info("SlotStateManager 초기화 완료");
+		
+		log.info("모든 엔티티 상태 초기화 완료 - 엔티티 초기화: {}, Bean 제거: {}, Set 초기화: {}", 
+			clearedCount, beanRemovedCount, setSize);
 	}
 
 	

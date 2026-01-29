@@ -50,6 +50,7 @@ import org.quartz.JobDetail;
 import org.quartz.SchedulerException;
 import org.quartz.Trigger;
 import org.quartz.TriggerBuilder;
+import org.quartz.impl.matchers.GroupMatcher;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -527,6 +528,11 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 						System.out.println("[DEBUG] ⚠️ SourceMmsi를 찾을 수 없음, 자동 생성 시도: " + sourceMmsi);
 						try {
 							mmsiEntity = globalEntityManager.ensureMmsiEntity(sourceMmsi, scheduler, quartzCoreService);
+							if (mmsiEntity == null) {
+								System.out.println("[DEBUG] ❌ SourceMmsi 자동 생성 후에도 null: " + sourceMmsi);
+								failCount++;
+								continue;
+							}
 							System.out.println("[DEBUG] ✅ SourceMmsi 자동 생성 완료: " + sourceMmsi);
 						} catch (Exception e) {
 							System.out.println("[DEBUG] ❌ SourceMmsi 자동 생성 실패: " + sourceMmsi + ", 오류: " + e.getMessage());
@@ -843,6 +849,133 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 		} finally {
 			isProcessingQueue.set(false);
 		}
+	}
+	
+	/**
+	 * PAUSE 시 TSQ 처리를 일시 중단합니다.
+	 * 스케줄된 TSQ Job들을 취소하고, 슬롯을 해제하고, request를 큐에 다시 넣습니다.
+	 */
+	public void pauseTsqProcessing() {
+		System.out.println("[DEBUG] ========== TSQ 처리 일시 중단 시작 ==========");
+		
+		try {
+			// tsqGroup의 모든 Job 키 조회
+			Set<org.quartz.JobKey> jobKeys = scheduler.getJobKeys(
+				GroupMatcher.jobGroupEquals("tsqGroup")
+			);
+			
+			int cancelledCount = 0;
+			int requeuedCount = 0;
+			
+			for (org.quartz.JobKey jobKey : jobKeys) {
+				try {
+					// Job의 JobDataMap에서 request와 slotNumber 추출
+					org.quartz.JobDetail jobDetail = scheduler.getJobDetail(jobKey);
+					if (jobDetail != null) {
+						org.quartz.JobDataMap jobDataMap = jobDetail.getJobDataMap();
+						TsqResourceRequestMessage request = (TsqResourceRequestMessage) jobDataMap.get("tsqRequest");
+						Integer slotNumber = (Integer) jobDataMap.get("slotNumber");
+						
+						// Job 삭제
+						boolean deleted = scheduler.deleteJob(jobKey);
+						if (deleted) {
+							cancelledCount++;
+							System.out.println("[DEBUG] TSQ Job 취소 완료 - JobKey: " + jobKey + 
+									", SlotNumber: " + slotNumber);
+							
+							// 슬롯 해제
+							if (slotNumber != null) {
+								slotStateManager.releaseSlot(slotNumber);
+								System.out.println("[DEBUG] 슬롯 " + slotNumber + " 해제 완료");
+							}
+							
+							// request를 큐에 다시 넣기 (RESUME 시 다시 처리)
+							if (request != null) {
+								tsqMessageQueue.offer(request);
+								requeuedCount++;
+								System.out.println("[DEBUG] TSQ 요청을 큐에 다시 추가 - Service: " + request.getServiceId());
+							}
+						}
+					}
+				} catch (Exception e) {
+					System.out.println("[DEBUG] ⚠️ TSQ Job 취소 중 오류 - JobKey: " + jobKey + ", 오류: " + e.getMessage());
+				}
+			}
+			
+			System.out.println("[DEBUG] ✅ TSQ 처리 일시 중단 완료 - 취소된 Job: " + cancelledCount + 
+					", 큐에 다시 추가: " + requeuedCount + ", 현재 큐 크기: " + tsqMessageQueue.size());
+			
+		} catch (org.quartz.SchedulerException e) {
+			System.out.println("[DEBUG] ❌ TSQ 처리 일시 중단 중 오류: " + e.getMessage());
+			e.printStackTrace();
+		}
+		
+		System.out.println("[DEBUG] ========== TSQ 처리 일시 중단 종료 ==========");
+	}
+	
+	/**
+	 * RESUME 시 TSQ 처리를 재개합니다.
+	 * 큐에 있는 TSQ 메시지들을 다시 처리합니다.
+	 */
+	public void resumeTsqProcessing() {
+		System.out.println("[DEBUG] ========== TSQ 처리 재개 ==========");
+		System.out.println("[DEBUG] 큐에 있는 TSQ 메시지 개수: " + tsqMessageQueue.size());
+		
+		// 큐가 비어있지 않으면 처리 시작
+		if (!tsqMessageQueue.isEmpty()) {
+			processTsqQueue();
+		} else {
+			System.out.println("[DEBUG] ⚠️ 재개할 TSQ 메시지가 없습니다.");
+		}
+		
+		System.out.println("[DEBUG] ========== TSQ 처리 재개 완료 ==========");
+	}
+	
+	/**
+	 * STOP 시 TSQ 처리를 완전히 중단합니다.
+	 * 모든 TSQ Job을 취소하고 큐를 비웁니다.
+	 */
+	public void stopTsqProcessing() {
+		System.out.println("[DEBUG] ========== TSQ 처리 완전 중단 시작 ==========");
+		
+		try {
+			// tsqGroup의 모든 Job 삭제
+			Set<org.quartz.JobKey> jobKeys = scheduler.getJobKeys(
+				GroupMatcher.jobGroupEquals("tsqGroup")
+			);
+			
+			int deletedCount = 0;
+			for (org.quartz.JobKey jobKey : jobKeys) {
+				try {
+					// Job의 slotNumber 추출하여 슬롯 해제
+					org.quartz.JobDetail jobDetail = scheduler.getJobDetail(jobKey);
+					if (jobDetail != null) {
+						Integer slotNumber = (Integer) jobDetail.getJobDataMap().get("slotNumber");
+						if (slotNumber != null) {
+							slotStateManager.releaseSlot(slotNumber);
+						}
+					}
+					
+					boolean deleted = scheduler.deleteJob(jobKey);
+					if (deleted) {
+						deletedCount++;
+					}
+				} catch (Exception e) {
+					System.out.println("[DEBUG] ⚠️ TSQ Job 삭제 중 오류 - JobKey: " + jobKey);
+				}
+			}
+			
+			// 큐 초기화
+			tsqMessageQueue.clear();
+			
+			System.out.println("[DEBUG] ✅ TSQ 처리 완전 중단 완료 - 삭제된 Job: " + deletedCount + ", 큐 초기화 완료");
+			
+		} catch (org.quartz.SchedulerException e) {
+			System.out.println("[DEBUG] ❌ TSQ 처리 완전 중단 중 오류: " + e.getMessage());
+			e.printStackTrace();
+		}
+		
+		System.out.println("[DEBUG] ========== TSQ 처리 완전 중단 종료 ==========");
 	}
 	
 	/**

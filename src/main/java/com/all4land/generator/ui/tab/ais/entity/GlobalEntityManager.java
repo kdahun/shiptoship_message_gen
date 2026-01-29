@@ -1048,10 +1048,7 @@ public class GlobalEntityManager {
 		// 마킹
 		String strValue = "";
 
-		System.out.println("=================================");
-		System.out.println("[ASM Slot Count] : " + mmsiEntity.getAsmEntity().getSlotCount());
-		System.out.println("[ASM    Channel] : " + mmsiEntity.getAsmEntity().getChannel());
-		System.out.println("=================================");
+
 		if (mmsiEntity.getAsmEntity().getChannel() == 'A') {
 			//
 			switch (mmsiEntity.getAsmEntity().getSlotCount()) {
