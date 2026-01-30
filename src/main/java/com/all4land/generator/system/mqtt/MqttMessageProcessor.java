@@ -138,39 +138,56 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 		
 		try {
 			// 토픽의 액션에 따라 다른 처리
-			if (action != null) {
-				switch (action) {
-					case "create":
-						// 선박 생성: traffic-ships/create
-						processCreateMessage(message);
-						break;
-					case "ais-state":
-						// AIS 상태 제어: traffic-ships/ais-state
-						processAisStateMessage(message);
-						break;
-					case "asm-state":
-						// ASM 상태 제어: traffic-ships/asm-state
-						processAsmStateMessage(message);
-						break;
-					case "tsq-state":
-						// TSQ 상태 제어: traffic-ships/tsq-state/{timestamp}
-						processTsqStateMessage(message);
-						break;
-					case "sim-state":
-						// 시뮬레이터 배속 제어: simulator/sim-state
-						processSimStateMessage(message);
+			if(category != null){
+				switch (category){
+					case "test-entities":
+						if (action != null){
+							switch (action){
+								case "create":
+									break;
+								case "dynamic-info":
+									processCreateMessage(message,category);
+									break;
+							}
+						}
 						break;
 					default:
-						// 기타 액션은 기본 JSON 처리
-						processJsonMessage(message);
+						if (action != null) {
+							switch (action) {
+								case "create":
+									// 선박 생성: traffic-ships/create
+									processCreateMessage(message,category);
+									break;
+								case "ais-state":
+									// AIS 상태 제어: traffic-ships/ais-state
+									processAisStateMessage(message);
+									break;
+								case "asm-state":
+									// ASM 상태 제어: traffic-ships/asm-state
+									processAsmStateMessage(message);
+									break;
+								case "tsq-state":
+									// TSQ 상태 제어: traffic-ships/tsq-state/{timestamp}
+									processTsqStateMessage(message);
+									break;
+								case "sim-state":
+									// 시뮬레이터 배속 제어: simulator/sim-state
+									processSimStateMessage(message);
+									break;
+								default:
+									// 기타 액션은 기본 JSON 처리
+									processJsonMessage(message, category);
+									break;
+							}
+						} else {
+							// 액션을 추출할 수 없으면 기본 처리
+							if (message.trim().startsWith("$STG-02")) {
+								processNmeaControlMessage(message);
+							} else {
+								processJsonMessage(message, category);
+							}
+						}
 						break;
-				}
-			} else {
-				// 액션을 추출할 수 없으면 기본 처리
-				if (message.trim().startsWith("$STG-02")) {
-					processNmeaControlMessage(message);
-				} else {
-					processJsonMessage(message);
 				}
 			}
 		} catch (Exception e) {
@@ -186,14 +203,14 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 	 * 1. 객체 형식: {"type":"CREATE_MMSI", "data":[...]}
 	 * 2. 배열 형식: [{mmsi:"...", lat:..., lon:..., ...}, ...]
 	 */
-	private void processJsonMessage(String jsonMessage) {
+	private void processJsonMessage(String jsonMessage, String category) {
 		try {
 			String trimmedMessage = jsonMessage.trim();
 			
 			// 배열 형식인지 확인 (첫 문자가 '[')
 			if (trimmedMessage.startsWith("[")) {
 				// 배열 형식: 직접 MmsiData 배열로 파싱
-				handleArrayFormat(trimmedMessage);
+				handleArrayFormat(trimmedMessage, category);
 			} else if (trimmedMessage.startsWith("{")) {
 				// 객체 형식: CreateMmsiRequest로 파싱
 				CreateMmsiRequest request = gson.fromJson(trimmedMessage, CreateMmsiRequest.class);
@@ -207,7 +224,7 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 				
 				switch (request.getType()) {
 					case "CREATE_MMSI":
-						handleCreateMmsi(request);
+						handleCreateMmsi(request, category);
 						break;
 					default:
 						System.out.println("[DEBUG] ⚠️ 알 수 없는 메시지 타입: " + request.getType());
@@ -225,7 +242,7 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 	 * 배열 형식의 JSON 메시지를 처리합니다.
 	 * 형식: [{"mmsi":"...", "lat":..., "lon":..., "aisPeriod":...}, ...]
 	 */
-	private void handleArrayFormat(String jsonMessage) {
+	private void handleArrayFormat(String jsonMessage, String category) {
 		try {
 			// 배열을 MmsiData 리스트로 파싱
 			java.lang.reflect.Type listType = new TypeToken<List<CreateMmsiRequest.MmsiData>>(){}.getType();
@@ -240,8 +257,8 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 			CreateMmsiRequest request = new CreateMmsiRequest();
 			request.setType("CREATE_MMSI");
 			request.setData(mmsiDataList);
-			
-			handleCreateMmsi(request);
+			System.out.println("request : " + request);
+			handleCreateMmsi(request, category);
 		} catch (Exception e) {
 			System.out.println("[DEBUG] ❌ 배열 형식 JSON 파싱 오류: " + e.getMessage());
 			e.printStackTrace();
@@ -251,7 +268,7 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 	/**
 	 * CREATE_MMSI 타입 메시지를 처리하여 선박을 생성합니다.
 	 */
-	private void handleCreateMmsi(CreateMmsiRequest request) {
+	private void handleCreateMmsi(CreateMmsiRequest request, String category) {
 		if (request.getData() == null || request.getData().isEmpty()) {
 			System.out.println("[DEBUG] ⚠️ CREATE_MMSI 메시지에 데이터가 없습니다.");
 			return;
@@ -263,7 +280,17 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 		
 		for (CreateMmsiRequest.MmsiData mmsiData : request.getData()) {
 			try {
-				
+				if (category.equals("test-entities")){
+					if(mmsiData.getSOG()<= 0){
+						mmsiData.setAisPeriod(180);
+					}else if(mmsiData.getSOG()<= 14){
+						mmsiData.setAisPeriod(10);
+					}else if(mmsiData.getSOG()<= 23){
+						mmsiData.setAisPeriod(6);
+					}else{
+						mmsiData.setAisPeriod(2);
+					}
+				}
 				globalEntityManager.createMmsiFromJson(
 					scheduler,
 					quartzCoreService,
@@ -274,8 +301,14 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 					mmsiData.getRegionId()
 				);
 				
-				successCount++;
 				System.out.println("[DEBUG] ✅ 선박 생성 성공 - MMSI: " + mmsiData.getMmsi());
+				if (category.equals("test-entities")){
+					long mmsiLong = Long.parseLong(mmsiData.getMmsi());
+					List<Long> testMmsiList = Collections.singletonList(mmsiLong);
+					globalEntityManager.controlMmsiState(mmsiLong, "1", testMmsiList);	
+					System.out.println("[DEBUG] ✅ 선박 전송 시작 - MMSI: " + mmsiLong);
+				}
+				successCount++;
 			} catch (IllegalArgumentException e) {
 				// 중복된 MMSI 등으로 인한 스킵
 				skipCount++;
@@ -287,21 +320,26 @@ public class MqttMessageProcessor implements MqttMessageCallback {
 						", 오류: " + e.getMessage());
 				e.printStackTrace();
 			}
+			 
 		}
 		
 		System.out.println("[DEBUG] ========== 선박 생성 완료 ==========");
 		System.out.println("[DEBUG] 성공: " + successCount + ", 스킵: " + skipCount + ", 실패: " + errorCount);
+
 	}
 	
 	/**
 	 * 선박 생성 메시지를 처리합니다.
 	 * 토픽: mt/mg/traffic-ships/create/{timestamp}
 	 */
-	private void processCreateMessage(String message) {
+	private void processCreateMessage(String message, String category) {
 		System.out.println("[DEBUG] ========== 선박 생성 메시지 처리 ==========");
-		processJsonMessage(message);
+		System.out.println("[DEBUG] "+message);
+		processJsonMessage(message, category);
 	}
 	
+	
+
 	/**
 	 * AIS 상태 제어 메시지를 처리합니다.
 	 * 토픽: mt/mg/traffic-ships/ais-state/{timestamp}

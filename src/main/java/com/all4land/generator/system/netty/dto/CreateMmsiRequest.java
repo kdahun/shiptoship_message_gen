@@ -19,6 +19,7 @@ public class CreateMmsiRequest {
 		private double lat;
 		private double lon;
 		private int aisPeriod; // AIS 메시지 전송 주기 (초 단위)
+		private int SOG;
 	}
 }
 
