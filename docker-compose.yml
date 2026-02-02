@@ -12,3 +12,4 @@ services:
       # Windows/Mac Docker Desktop: host.docker.internal points to your host machine.
       # Override as needed: `MQTT_BROKER_URL=tcp://<broker-host>:1883`
       - MQTT_BROKER_URL=${MQTT_BROKER_URL:-tcp://host.docker.internal:1883}
+    restart: always
