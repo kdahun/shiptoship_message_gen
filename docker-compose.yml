@@ -1,0 +1,14 @@
+version: "3.9"
+
+services:
+  generator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      # Use an existing MQTT broker (already installed/running outside this compose).
+      # Windows/Mac Docker Desktop: host.docker.internal points to your host machine.
+      # Override as needed: `MQTT_BROKER_URL=tcp://<broker-host>:1883`
+      - MQTT_BROKER_URL=${MQTT_BROKER_URL:-tcp://host.docker.internal:1883}
