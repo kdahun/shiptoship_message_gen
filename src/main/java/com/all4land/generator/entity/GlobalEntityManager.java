@@ -1373,23 +1373,38 @@ public class GlobalEntityManager {
 		List<TargetCellInfoEntity> targetInfoList = new ArrayList<>();
 		
 		int consecutiveCount = 0;
-		int maxSlot = Math.min(startIndex + 235, 2249); // 최대 슬롯 번호 제한
+		//int maxSlot = Math.min(startIndex + 235, 2249); // 최대 슬롯 번호 제한
 		
-		// startIndex부터 연속된 빈 슬롯 찾기
-		for (int slot = startIndex; slot <= maxSlot; slot++) {
-			SlotStateManager.SlotInfo slotInfo = slotStateManager.getSlotInfo(slot);
-			
+		int slotCount = mmsiEntity.getAsmEntity().getSlotCount();
+		System.out.println("[SlotCount] : "+mmsiEntity.getAsmEntity().getSlotCount());
+		
+		int checkedSlot = 0;
+		while(checkedSlot < 235){
+			//int slot = (startIndex + checkedSlot) % 2250;
+
+			int slotStart = (startIndex + checkedSlot) % 2250;
+			boolean slotAvailable = true;
+
+			for(int offset = 0; offset < slotCount; offset++){
+				int slot = (startIndex + checkedSlot + offset) % 2250;
+				SlotStateManager.SlotInfo slotInfo = slotStateManager.getSlotInfo(slot);
+				// 1. 해당 슬롯이 점유된 경우
+				if(slotInfo != null && slotInfo.isOccupied()){
+					slotAvailable = false;
+					break;
+				}
+			}
 			// 슬롯이 비어있거나 점유되지 않은 경우
-			if (slotInfo == null || !slotInfo.isOccupied()) {
+			if (slotAvailable) {
 				consecutiveCount++;
 				TargetCellInfoEntity targetCell = new TargetCellInfoEntity();
 				
 				// 슬롯 번호를 기반으로 row, col 계산 (간단한 매핑)
-				int row = slot / 32;
-				int col = slot % 32;
+				int row = slotStart / 32;
+				int col = slotStart % 32;
 				targetCell.setRow(row);
 				targetCell.setCol(col);
-				targetCell.setSlotNumber(String.valueOf(slot));
+				targetCell.setSlotNumber(String.valueOf(slotStart));
 				targetInfoList.add(targetCell);
 				
 				// 연속으로 8개 이상 찾으면 반환
@@ -1403,7 +1418,38 @@ public class GlobalEntityManager {
 				targetInfoList.clear();
 				consecutiveCount = 0;
 			}
+			checkedSlot++;
 		}
+
+		// // startIndex부터 연속된 빈 슬롯 찾기
+		// for (int slot = startIndex; slot <= maxSlot; slot++) {
+		// 	SlotStateManager.SlotInfo slotInfo = slotStateManager.getSlotInfo(slot);
+			
+		// 	// 슬롯이 비어있거나 점유되지 않은 경우
+		// 	if (slotInfo == null || !slotInfo.isOccupied()) {
+		// 		consecutiveCount++;
+		// 		TargetCellInfoEntity targetCell = new TargetCellInfoEntity();
+				
+		// 		// 슬롯 번호를 기반으로 row, col 계산 (간단한 매핑)
+		// 		int row = slot / 32;
+		// 		int col = slot % 32;
+		// 		targetCell.setRow(row);
+		// 		targetCell.setCol(col);
+		// 		targetCell.setSlotNumber(String.valueOf(slot));
+		// 		targetInfoList.add(targetCell);
+				
+		// 		// 연속으로 8개 이상 찾으면 반환
+		// 		if (consecutiveCount >= 8) {
+		// 			//System.out.println("[DEBUG] findAsmRule1 성공 - MMSI: " + mmsiEntity.getMmsi() + 
+		// 			//		", 연속 슬롯: " + consecutiveCount);
+		// 			return targetInfoList;
+		// 		}
+		// 	} else {
+		// 		// 연속이 끊기면 초기화
+		// 		targetInfoList.clear();
+		// 		consecutiveCount = 0;
+		// 	}
+		// }
 		
 		System.out.println("[DEBUG] findAsmRule1 실패 - MMSI: " + mmsiEntity.getMmsi() + 
 				", 찾은 연속 슬롯: " + consecutiveCount);
@@ -1420,21 +1466,39 @@ public class GlobalEntityManager {
 		List<TargetCellInfoEntity> targetInfoList = new ArrayList<>();
 		
 		int consecutiveCount = 0;
-		int maxSlot = Math.min(startIndex + 235, 2249);
+		int checkedSlot = 0;
+		int slotCount = mmsiEntity.getAsmEntity().getSlotCount(); // 슬롯 점유 개수
+
+		//int maxSlot = Math.min(startIndex + 235, 2249);
 		
-		for (int slot = startIndex; slot <= maxSlot; slot++) {
-			SlotStateManager.SlotInfo slotInfo = slotStateManager.getSlotInfo(slot);
-			
-			// 슬롯이 비어있거나 AIS 메시지 타입이 아닌 경우
-			if (slotInfo == null || !slotInfo.isOccupied() || 
-					!"AIS".equals(slotInfo.getMessageType())) {
+		while(checkedSlot < 235){
+			int slotStart = (startIndex + checkedSlot) % 2250;
+			boolean slotAvailable = true;
+
+			// 슬롯 점유 개수별로 후보 슬롯 확인
+			for(int offset = 0; offset < slotCount; offset++){
+				int slot = (startIndex + checkedSlot + offset) % 2250; 
+				SlotStateManager.SlotInfo slotInfo = slotStateManager.getSlotInfo(slot);
+
+				// 1. 해당 슬롯이 점유가 된 경우
+				if(slotInfo != null && slotInfo.isOccupied()){
+					// 2. 점유가 되었고 점유 메시지가 AIS와 ASM인 경우
+					if("AIS".equals(slotInfo.getMessageType())||"ASM".equals(slotInfo.getMessageType())){
+						slotAvailable = false;
+						break;
+					}
+				}				
+			}
+
+			// slotAvailable : 슬롯이 비어있거나 AIS 메시지 타입이 아닌 경우 
+			if (slotAvailable) {
 				consecutiveCount++;
 				TargetCellInfoEntity targetCell = new TargetCellInfoEntity();
-				int row = slot / 32;
-				int col = slot % 32;
+				int row = slotStart / 32;
+				int col = slotStart % 32;
 				targetCell.setRow(row);
 				targetCell.setCol(col);
-				targetCell.setSlotNumber(String.valueOf(slot));
+				targetCell.setSlotNumber(String.valueOf(slotStart));
 				targetInfoList.add(targetCell);
 				
 				if (consecutiveCount >= 8) {
@@ -1446,7 +1510,34 @@ public class GlobalEntityManager {
 				targetInfoList.clear();
 				consecutiveCount = 0;
 			}
+			checkedSlot++;
 		}
+
+		// for (int slot = startIndex; slot <= maxSlot; slot++) {
+		// 	SlotStateManager.SlotInfo slotInfo = slotStateManager.getSlotInfo(slot);
+			
+		// 	// 슬롯이 비어있거나 AIS 메시지 타입이 아닌 경우
+		// 	if (slotInfo == null || !slotInfo.isOccupied() || 
+		// 			!"AIS".equals(slotInfo.getMessageType())) {
+		// 		consecutiveCount++;
+		// 		TargetCellInfoEntity targetCell = new TargetCellInfoEntity();
+		// 		int row = slot / 32;
+		// 		int col = slot % 32;
+		// 		targetCell.setRow(row);
+		// 		targetCell.setCol(col);
+		// 		targetCell.setSlotNumber(String.valueOf(slot));
+		// 		targetInfoList.add(targetCell);
+				
+		// 		if (consecutiveCount >= 8) {
+		// 			//System.out.println("[DEBUG] findAsmRule2 성공 - MMSI: " + mmsiEntity.getMmsi() + 
+		// 			//		", 연속 슬롯: " + consecutiveCount);
+		// 			return targetInfoList;
+		// 		}
+		// 	} else {
+		// 		targetInfoList.clear();
+		// 		consecutiveCount = 0;
+		// 	}
+		// }
 		
 		System.out.println("[DEBUG] findAsmRule2 실패 - MMSI: " + mmsiEntity.getMmsi() + 
 				", 찾은 연속 슬롯: " + consecutiveCount);
@@ -1463,36 +1554,51 @@ public class GlobalEntityManager {
 		// 		", startIndex: " + startIndex + ", Channel: " + mmsiEntity.getAsmEntity().getChannel());
 		List<TargetCellInfoEntity> targetInfoList = new ArrayList<>();
 		
+		//int maxSlot = Math.min(startIndex + 235, 2249);
 		int consecutiveCount = 0;
-		int maxSlot = Math.min(startIndex + 235, 2249);
 		char targetChannel = mmsiEntity.getAsmEntity().getChannel();
-		
-		for (int slot = startIndex; slot <= maxSlot; slot++) {
-			SlotStateManager.SlotInfo slotInfo = slotStateManager.getSlotInfo(slot);
-			
-			// 슬롯이 비어있거나, AIS가 아니고, ASM이 아니거나 다른 채널인 경우
-			boolean isAvailable = false;
-			if (slotInfo == null || !slotInfo.isOccupied()) {
-				isAvailable = true;
-			} else {
-				String msgType = slotInfo.getMessageType();
-				boolean isChannel = slotInfo.isChannel();
-				
-				// AIS가 아니고, ASM이 아니거나 같은 채널이 아닌 경우
-				if (!"AIS".equals(msgType) && 
-					(!"ASM".equals(msgType) || (targetChannel == 'A' && !isChannel) || (targetChannel == 'B' && isChannel))) {
-					isAvailable = true;
+		int checkedSlot = 0;
+
+		int slotCount = mmsiEntity.getAsmEntity().getSlotCount();
+
+		while(checkedSlot < 235){
+			int slotStart = (startIndex + checkedSlot) % 2250;
+			boolean slotAvailable = true;
+
+			for(int offset = 0; offset < slotCount;offset++){
+				int slot = (startIndex + checkedSlot + offset) % 2250;
+				SlotStateManager.SlotInfo slotInfo = slotStateManager.getSlotInfo(slot);
+
+				// 1. 해당 슬롯이 점유된 경우
+				if (slotInfo != null && slotInfo.isOccupied()) {
+					// 2. AIS 메시지로 점유된 경우 
+					if("AIS".equals(slotInfo.getMessageType())){
+						slotAvailable = false;
+						break;
+					}
+					// 3. ASM 메시지가 점유되었으나 채널이 같은 경우
+					if("ASM".equals(slotInfo.getMessageType())){
+						boolean isChannel = slotInfo.isChannel();
+						//isChannel (TRUE : A Channel, FALSE : B Channel)
+						if((targetChannel == 'A' && isChannel)||(targetChannel == 'B' && !isChannel)){
+							slotAvailable = false;
+							break;
+						}
+					}
 				}
 			}
 			
-			if (isAvailable) {
+			
+
+			
+			if (slotAvailable) {
 				consecutiveCount++;
 				TargetCellInfoEntity targetCell = new TargetCellInfoEntity();
-				int row = slot / 32;
-				int col = slot % 32;
+				int row = slotStart / 32;
+				int col = slotStart % 32;
 				targetCell.setRow(row);
 				targetCell.setCol(col);
-				targetCell.setSlotNumber(String.valueOf(slot));
+				targetCell.setSlotNumber(String.valueOf(slotStart));
 				targetInfoList.add(targetCell);
 				
 				if (consecutiveCount >= 8) {
@@ -1504,7 +1610,47 @@ public class GlobalEntityManager {
 				targetInfoList.clear();
 				consecutiveCount = 0;
 			}
+			checkedSlot++;
 		}
+		
+		// for (int slot = startIndex; slot <= maxSlot; slot++) {
+		// 	SlotStateManager.SlotInfo slotInfo = slotStateManager.getSlotInfo(slot);
+			
+		// 	// 슬롯이 비어있거나, AIS가 아니고, ASM이 아니거나 다른 채널인 경우
+		// 	boolean isAvailable = false;
+		// 	if (slotInfo == null || !slotInfo.isOccupied()) {
+		// 		isAvailable = true;
+		// 	} else {
+		// 		String msgType = slotInfo.getMessageType();
+		// 		boolean isChannel = slotInfo.isChannel();
+				
+		// 		// AIS가 아니고, ASM이 아니거나 같은 채널이 아닌 경우
+		// 		if (!"AIS".equals(msgType) && 
+		// 			(!"ASM".equals(msgType) || (targetChannel == 'A' && !isChannel) || (targetChannel == 'B' && isChannel))) {
+		// 			isAvailable = true;
+		// 		}
+		// 	}
+			
+		// 	if (isAvailable) {
+		// 		consecutiveCount++;
+		// 		TargetCellInfoEntity targetCell = new TargetCellInfoEntity();
+		// 		int row = slot / 32;
+		// 		int col = slot % 32;
+		// 		targetCell.setRow(row);
+		// 		targetCell.setCol(col);
+		// 		targetCell.setSlotNumber(String.valueOf(slot));
+		// 		targetInfoList.add(targetCell);
+				
+		// 		if (consecutiveCount >= 8) {
+		// 			//System.out.println("[DEBUG] findAsmRule3 성공 - MMSI: " + mmsiEntity.getMmsi() + 
+		// 			//		", 연속 슬롯: " + consecutiveCount);
+		// 			return targetInfoList;
+		// 		}
+		// 	} else {
+		// 		targetInfoList.clear();
+		// 		consecutiveCount = 0;
+		// 	}
+		// }
 		
 		System.out.println("[DEBUG] findAsmRule3 실패 - MMSI: " + mmsiEntity.getMmsi() + 
 				", 찾은 연속 슬롯: " + consecutiveCount);
